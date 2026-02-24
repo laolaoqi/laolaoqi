@@ -1,15 +1,14 @@
 // ===================================================================
-// NewsDigest — 舆情摘要
-// 赛博战术指挥中心：终端风格信息展示
+// NewsDigest — 舆情摘要 v2 (多语言)
 // ===================================================================
 
 import { NewsDigest as NewsData } from '@/lib/marketData';
 import HudPanel from './HudPanel';
+import { useApp } from '@/contexts/AppContext';
+import { t } from '@/lib/i18n';
 import { MessageSquare, TrendingUp, Target } from 'lucide-react';
 
-interface NewsDigestProps {
-  digest: NewsData;
-}
+interface Props { digest: NewsData; }
 
 function DigestItem({ icon, label, text, color }: { icon: React.ReactNode; label: string; text: string; color: string }) {
   return (
@@ -23,28 +22,14 @@ function DigestItem({ icon, label, text, color }: { icon: React.ReactNode; label
   );
 }
 
-export default function NewsDigestPanel({ digest }: NewsDigestProps) {
+export default function NewsDigestPanel({ digest }: Props) {
+  const { lang } = useApp();
   return (
-    <HudPanel title="舆情摘要">
+    <HudPanel title={t('panel.news', lang)}>
       <div className="space-y-2.5">
-        <DigestItem
-          icon={<MessageSquare className="w-3.5 h-3.5 text-[#00d4ff]" />}
-          label="主基调"
-          text={digest.mainTone}
-          color="#00d4ff"
-        />
-        <DigestItem
-          icon={<TrendingUp className="w-3.5 h-3.5 text-[#f0b429]" />}
-          label="资金动向"
-          text={digest.capitalTrend}
-          color="#f0b429"
-        />
-        <DigestItem
-          icon={<Target className="w-3.5 h-3.5 text-[#00e676]" />}
-          label="策略建议"
-          text={digest.strategy}
-          color="#00e676"
-        />
+        <DigestItem icon={<MessageSquare className="w-3.5 h-3.5 text-[#00d4ff]" />} label={t('news.mainTone', lang)} text={digest.mainTone} color="#00d4ff" />
+        <DigestItem icon={<TrendingUp className="w-3.5 h-3.5 text-[#f0b429]" />} label={t('news.capitalTrend', lang)} text={digest.capitalTrend} color="#f0b429" />
+        <DigestItem icon={<Target className="w-3.5 h-3.5 text-[#00e676]" />} label={t('news.strategy', lang)} text={digest.strategy} color="#00e676" />
       </div>
     </HudPanel>
   );

@@ -1,10 +1,11 @@
 // ===================================================================
-// 猎手阿尔法 — 市场数据 Hook
-// 通过tRPC后端获取真实行情数据，30秒自动刷新
+// 猎手阿尔法 — 市场数据 Hook（多市场联动版）
+// 根据当前选中市场获取对应数据
 // ===================================================================
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
+import { useApp, type MarketId } from '@/contexts/AppContext';
 import {
   IndexData,
   StockRecommendation,
@@ -24,6 +25,7 @@ import {
 
 interface MarketState {
   indices: IndexData[];
+  allIndices: IndexData[]; // All markets combined for panorama
   recommendations: StockRecommendation[];
   modeScores: ModeScore;
   weights: WeightAllocation;
@@ -37,45 +39,61 @@ interface MarketState {
 }
 
 export function useMarketData(refreshInterval = 30000) {
-  // Fetch indices from backend
-  const indicesQuery = trpc.market.indices.useQuery(undefined, {
-    refetchInterval: refreshInterval,
-    retry: 2,
-  });
+  const { market } = useApp();
 
-  // Fetch recommendations from backend
-  const recsQuery = trpc.market.recommendations.useQuery(undefined, {
-    refetchInterval: refreshInterval * 2, // Refresh less frequently
-    retry: 2,
-  });
+  // Fetch indices for current market
+  const indicesQuery = trpc.market.indices.useQuery(
+    { market },
+    { refetchInterval: refreshInterval, retry: 2 }
+  );
+
+  // Fetch ALL market indices for panorama view
+  const cnQuery = trpc.market.indices.useQuery({ market: 'cn' }, { refetchInterval: refreshInterval, retry: 1 });
+  const hkQuery = trpc.market.indices.useQuery({ market: 'hk' }, { refetchInterval: refreshInterval, retry: 1 });
+  const usQuery = trpc.market.indices.useQuery({ market: 'us' }, { refetchInterval: refreshInterval, retry: 1 });
+  const cryptoQuery = trpc.market.indices.useQuery({ market: 'crypto' }, { refetchInterval: refreshInterval, retry: 1 });
+
+  // Fetch recommendations for current market (30 min refresh)
+  const recsQuery = trpc.market.recommendations.useQuery(
+    { market },
+    { refetchInterval: 30 * 60 * 1000, retry: 2 }
+  );
 
   const utils = trpc.useUtils();
 
-  // Compute derived state from API responses
+  const mapApiIndices = (data: any): IndexData[] => {
+    if (!data?.data || data.data.length === 0) return [];
+    return data.data.map((idx: any) => ({
+      symbol: idx.symbol,
+      name: idx.nameZh || idx.nameEn || idx.symbol,
+      nameZh: idx.nameZh, nameEn: idx.nameEn, nameJa: idx.nameJa, nameKo: idx.nameKo, nameAr: idx.nameAr,
+      price: idx.price,
+      change: idx.change,
+      changePercent: idx.changePercent,
+      high: idx.high,
+      low: idx.low,
+      volume: idx.volume,
+      chartData: idx.chartData || [],
+      prevClose: idx.price - idx.change,
+      market: idx.market,
+    }));
+  };
+
   const state = useMemo<MarketState>(() => {
-    const apiIndices = indicesQuery.data?.data;
+    // Current market indices
+    const currentIndices = mapApiIndices(indicesQuery.data);
+    const indices = currentIndices.length > 0 ? currentIndices : generateMockIndices();
     const isLive = indicesQuery.data?.isLive ?? false;
 
-    // Use API data if available, otherwise fall back to mock
-    let indices: IndexData[];
-    if (apiIndices && apiIndices.length > 0) {
-      indices = apiIndices.map((idx: any) => ({
-        symbol: idx.symbol,
-        name: idx.name,
-        price: idx.price,
-        change: idx.change,
-        changePercent: idx.changePercent,
-        high: idx.high,
-        low: idx.low,
-        volume: idx.volume,
-        chartData: idx.chartData || [],
-        prevClose: idx.price - idx.change,
-      }));
-    } else {
-      indices = generateMockIndices();
-    }
+    // All indices for panorama
+    const allIndices = [
+      ...mapApiIndices(cnQuery.data),
+      ...mapApiIndices(hkQuery.data),
+      ...mapApiIndices(usQuery.data),
+      ...mapApiIndices(cryptoQuery.data),
+    ];
 
-    // Use API recommendations if available
+    // Recommendations
     let recommendations: StockRecommendation[];
     if (recsQuery.data?.data && recsQuery.data.data.length > 0) {
       recommendations = recsQuery.data.data as StockRecommendation[];
@@ -91,6 +109,7 @@ export function useMarketData(refreshInterval = 30000) {
 
     return {
       indices,
+      allIndices: allIndices.length > 0 ? allIndices : generateMockIndices(),
       recommendations,
       modeScores,
       weights,
@@ -102,7 +121,8 @@ export function useMarketData(refreshInterval = 30000) {
       isLive,
       error: indicesQuery.error?.message || null,
     };
-  }, [indicesQuery.data, indicesQuery.isLoading, indicesQuery.dataUpdatedAt, indicesQuery.error, recsQuery.data]);
+  }, [indicesQuery.data, indicesQuery.isLoading, indicesQuery.dataUpdatedAt, indicesQuery.error,
+      cnQuery.data, hkQuery.data, usQuery.data, cryptoQuery.data, recsQuery.data]);
 
   const refresh = useCallback(() => {
     utils.market.indices.invalidate();

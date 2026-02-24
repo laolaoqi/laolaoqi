@@ -1,10 +1,14 @@
 // ===================================================================
-// TopBar — 赛博战术指挥中心顶部导航
-// 猎手阿尔法品牌 + 系统状态 + 时间
+// TopBar — 顶部导航 v2
+// 品牌 | 市场标签 | 全球交易时钟 | 语言切换 | 用户
 // ===================================================================
 
-import { useState, useEffect } from 'react';
-import { Activity, Wifi, WifiOff, RefreshCw, User, LogOut } from 'lucide-react';
+import { useApp, type MarketId, type TradingStatus } from '@/contexts/AppContext';
+import { useAuth } from '@/_core/hooks/useAuth';
+import { getLoginUrl } from '@/const';
+import { t, LANGS, type Lang } from '@/lib/i18n';
+import { RefreshCw, Wifi, WifiOff, Globe, ChevronDown, LogIn, LogOut, User } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
 interface TopBarProps {
   isLive: boolean;
@@ -12,84 +16,201 @@ interface TopBarProps {
   onRefresh: () => void;
 }
 
-const LOGO_URL = 'https://private-us-east-1.manuscdn.com/sessionFile/5mBhgnjK6Lia4j3MfXGMvH/sandbox/NOT8bhL1LfjHxBx0AyI0wR_1771952368755_na1fn_bG9nby1pY29u.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvNW1CaGduaks2TGlhNGozTWZYR012SC9zYW5kYm94L05PVDhiaEwxTGZqSHhCeDBBeUkwd1JfMTc3MTk1MjM2ODc1NV9uYTFmbl9iRzluYnkxcFkyOXUucG5nP3gtb3NzLXByb2Nlc3M9aW1hZ2UvcmVzaXplLHdfMTkyMCxoXzE5MjAvZm9ybWF0LHdlYnAvcXVhbGl0eSxxXzgwIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzk4NzYxNjAwfX19XX0_&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=NH1YkrtZvw0nQ3IbUVZzMTKDmqY8X2qORRf0nArVfDweRuwL10mLqsge8JFvw1pOoBEWn0ck2431~i7y~~dPkBipKXG2ElPL3wvpq2ftaw61ZlLlp9iXbOAMXkIWkRDc4lGXo2L-BB4YkkJVcO8AZT9l6m-eFR-8DBd8urZrM63KsI9-Qg4FQmF3Gw7d~6t70t5gQ7hyj2fA8SW~RC-QoAF1sFNbPBRPHU2S~~1bOBNhrVCWsV7IFz6i1DaVb5EvvmE7Dr7BQDIAS4fy~X--h9AEV-67p4Is1uhzrp~e1wPCucAAlsRSQi3rnxW9SQmUtG5QdabM7Nkwuh8Xu470Zg__';
+const MARKETS: { id: MarketId; icon: string }[] = [
+  { id: 'cn', icon: '🇨🇳' },
+  { id: 'hk', icon: '🇭🇰' },
+  { id: 'us', icon: '🇺🇸' },
+  { id: 'crypto', icon: '₿' },
+];
+
+const STATUS_CONFIG: Record<TradingStatus, { color: string; pulse: boolean }> = {
+  trading: { color: '#00ff88', pulse: true },
+  closed: { color: '#ff4466', pulse: false },
+  premarket: { color: '#ffaa00', pulse: true },
+  afterhours: { color: '#ffaa00', pulse: false },
+  lunchbreak: { color: '#ffaa00', pulse: true },
+  '24h': { color: '#00ff88', pulse: true },
+};
 
 export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
-  const [time, setTime] = useState(new Date());
+  const { lang, setLang, market, setMarket, clocks, userLocalTime } = useApp();
+  const { user, isAuthenticated, logout } = useAuth();
+  const [langOpen, setLangOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdowns on outside click
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const handler = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+      if (userRef.current && !userRef.current.contains(e.target as Node)) setUserOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const formatTime = (d: Date) => {
-    return d.toLocaleTimeString('zh-CN', { hour12: false });
-  };
-
-  const formatDate = (d: Date) => {
-    return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
-  };
-
   return (
-    <header className="relative h-14 flex items-center px-4 lg:px-6 border-b border-[rgba(0,212,255,0.12)] bg-[rgba(10,14,23,0.98)]">
-      {/* Glow line top */}
+    <header className="sticky top-0 z-50 border-b border-[rgba(0,212,255,0.12)] bg-[rgba(8,12,20,0.95)] backdrop-blur-xl">
+      {/* Glow line */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent opacity-60" />
 
-      {/* Logo & Brand */}
-      <div className="flex items-center gap-3">
-        <img src={LOGO_URL} alt="Logo" className="w-8 h-8 opacity-90" />
-        <div className="flex flex-col">
-          <span
-            className="text-sm font-bold tracking-[0.15em] text-[#00d4ff]"
-            style={{ fontFamily: "'Orbitron', sans-serif" }}
-          >
-            HUNTER ALPHA
-          </span>
-          <span className="text-[10px] text-[#00d4ff]/40 tracking-wider">猎手阿尔法 · 战术指挥中心</span>
-        </div>
-      </div>
-
-      {/* Center: Status */}
-      <div className="flex-1 flex items-center justify-center gap-6">
-        <div className="hidden md:flex items-center gap-2 text-xs">
-          {isLive ? (
-            <>
-              <Wifi className="w-3.5 h-3.5 text-[#00e676]" />
-              <span className="text-[#00e676]">实时数据</span>
-            </>
-          ) : (
-            <>
-              <WifiOff className="w-3.5 h-3.5 text-[#f0b429]" />
-              <span className="text-[#f0b429]">模拟数据</span>
-            </>
-          )}
-        </div>
-        {lastUpdate && (
-          <span className="hidden md:inline text-[10px] text-[#00d4ff]/40" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            更新于 {formatTime(lastUpdate)}
-          </span>
-        )}
-      </div>
-
-      {/* Right: Time & Actions */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={onRefresh}
-          className="p-1.5 hover:bg-[rgba(0,212,255,0.1)] rounded transition-colors"
-          title="刷新数据"
-        >
-          <RefreshCw className="w-3.5 h-3.5 text-[#00d4ff]/60 hover:text-[#00d4ff]" />
-        </button>
-
-        <div className="flex flex-col items-end" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-          <span className="text-sm text-[#00d4ff] font-medium tabular-nums">{formatTime(time)}</span>
-          <span className="text-[10px] text-[#00d4ff]/40">{formatDate(time)}</span>
-        </div>
-
-        <div className="hidden md:flex items-center gap-2 pl-4 border-l border-[rgba(0,212,255,0.12)]">
-          <div className="w-7 h-7 rounded bg-[rgba(0,212,255,0.1)] flex items-center justify-center">
-            <User className="w-3.5 h-3.5 text-[#00d4ff]/60" />
+      {/* Main bar */}
+      <div className="max-w-[1600px] mx-auto px-3 lg:px-5">
+        <div className="flex items-center h-12 gap-2 sm:gap-3">
+          {/* Brand */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-7 h-7 rounded bg-gradient-to-br from-[#00d4ff] to-[#0066ff] flex items-center justify-center shadow-[0_0_12px_rgba(0,212,255,0.3)]">
+              <span className="text-[10px] font-black text-white" style={{ fontFamily: "'Orbitron', sans-serif" }}>HA</span>
+            </div>
+            <span className="text-sm font-bold text-[#00d4ff] hidden sm:block tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+              {t('brand.name', lang)}
+            </span>
           </div>
+
+          {/* Divider */}
+          <div className="w-[1px] h-5 bg-[rgba(0,212,255,0.12)] hidden sm:block" />
+
+          {/* Market Tabs */}
+          <div className="flex items-center gap-0.5 sm:gap-1">
+            {MARKETS.map(m => (
+              <button
+                key={m.id}
+                onClick={() => setMarket(m.id)}
+                className={`px-2 sm:px-2.5 py-1 rounded text-[10px] sm:text-xs font-medium transition-all duration-200 ${
+                  market === m.id
+                    ? 'bg-[rgba(0,212,255,0.15)] text-[#00d4ff] border border-[rgba(0,212,255,0.3)] shadow-[0_0_8px_rgba(0,212,255,0.15)]'
+                    : 'text-[#667788] hover:text-[#aabbcc] hover:bg-[rgba(255,255,255,0.03)] border border-transparent'
+                }`}
+              >
+                <span className="mr-0.5 sm:mr-1">{m.icon}</span>
+                <span className="hidden sm:inline">{t(`market.${m.id}`, lang)}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Trading Clocks - desktop */}
+          <div className="hidden xl:flex items-center gap-4">
+            {clocks.map(c => {
+              const cfg = STATUS_CONFIG[c.status];
+              const isActive = c.market === market;
+              return (
+                <button
+                  key={c.market}
+                  onClick={() => setMarket(c.market)}
+                  className={`flex items-center gap-1.5 transition-opacity ${isActive ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+                >
+                  <div className="relative shrink-0">
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.color }} />
+                    {cfg.pulse && <div className="absolute inset-0 w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: cfg.color, opacity: 0.4 }} />}
+                  </div>
+                  <span className="text-[10px] text-[#8899aa] font-mono tabular-nums">{c.localTime}</span>
+                  <span className="text-[9px] px-1 py-0.5 rounded" style={{ color: cfg.color, backgroundColor: `${cfg.color}15` }}>
+                    {t(`status.${c.status}`, lang)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Data Status */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[rgba(0,0,0,0.3)]">
+            {isLive ? (
+              <Wifi size={11} className="text-[#00ff88]" />
+            ) : (
+              <WifiOff size={11} className="text-[#ff8800]" />
+            )}
+            <span className="text-[10px] font-mono" style={{ color: isLive ? '#00ff88' : '#ff8800' }}>
+              {isLive ? t('topbar.live', lang) : t('topbar.mock', lang)}
+            </span>
+          </div>
+
+          {/* Refresh */}
+          <button onClick={onRefresh} className="p-1.5 rounded hover:bg-[rgba(0,212,255,0.08)] text-[#667788] hover:text-[#00d4ff] transition-colors" title={t('topbar.refresh', lang)}>
+            <RefreshCw size={13} />
+          </button>
+
+          {/* Language Switcher */}
+          <div ref={langRef} className="relative">
+            <button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-[rgba(0,212,255,0.08)] text-[#667788] hover:text-[#aabbcc] transition-colors">
+              <Globe size={13} />
+              <span className="text-[10px]">{LANGS.find(l => l.id === lang)?.flag}</span>
+              <ChevronDown size={9} className={`transition-transform ${langOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {langOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-[#0d1117] border border-[rgba(0,212,255,0.15)] rounded-lg shadow-2xl overflow-hidden z-50 min-w-[140px]">
+                {LANGS.map(l => (
+                  <button
+                    key={l.id}
+                    onClick={() => { setLang(l.id); setLangOpen(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[rgba(0,212,255,0.08)] transition-colors ${lang === l.id ? 'text-[#00d4ff] bg-[rgba(0,212,255,0.05)]' : 'text-[#8899aa]'}`}
+                  >
+                    <span>{l.flag}</span>
+                    <span>{l.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* User */}
+          <div ref={userRef} className="relative">
+            {isAuthenticated ? (
+              <>
+                <button onClick={() => setUserOpen(!userOpen)} className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[rgba(0,212,255,0.08)] text-[#8899aa] transition-colors">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#00d4ff] to-[#0066ff] flex items-center justify-center">
+                    <User size={10} className="text-white" />
+                  </div>
+                  <span className="text-[10px] hidden sm:inline max-w-[60px] truncate">{user?.name || 'User'}</span>
+                </button>
+                {userOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-[#0d1117] border border-[rgba(0,212,255,0.15)] rounded-lg shadow-2xl overflow-hidden z-50 min-w-[120px]">
+                    <div className="px-3 py-2 border-b border-[rgba(0,212,255,0.08)]">
+                      <div className="text-xs text-[#aabbcc]">{user?.name}</div>
+                      <div className="text-[10px] text-[#556677]">{user?.email}</div>
+                    </div>
+                    <button
+                      onClick={() => { logout(); setUserOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#ff4466] hover:bg-[rgba(255,68,102,0.08)] transition-colors"
+                    >
+                      <LogOut size={12} />
+                      <span>{t('topbar.logout', lang)}</span>
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <a href={getLoginUrl()} className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[rgba(0,212,255,0.1)] border border-[rgba(0,212,255,0.2)] text-[#00d4ff] hover:bg-[rgba(0,212,255,0.18)] transition-all text-[10px] font-medium">
+                <LogIn size={11} />
+                <span>{t('topbar.login', lang)}</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Trading Clock Bar - mobile/tablet */}
+      <div className="xl:hidden border-t border-[rgba(0,212,255,0.06)] px-3 py-1">
+        <div className="flex items-center justify-between gap-1 overflow-x-auto">
+          {clocks.map(c => {
+            const cfg = STATUS_CONFIG[c.status];
+            const isActive = c.market === market;
+            return (
+              <button
+                key={c.market}
+                onClick={() => setMarket(c.market)}
+                className={`flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded transition-all ${isActive ? 'opacity-100 bg-[rgba(0,212,255,0.05)]' : 'opacity-35 hover:opacity-60'}`}
+              >
+                <div className="w-1 h-1 rounded-full" style={{ backgroundColor: cfg.color }} />
+                <span className="text-[9px] text-[#8899aa] font-mono">{t(`market.${c.market}`, lang)}</span>
+                <span className="text-[9px] text-[#556677] font-mono tabular-nums">{c.localTime}</span>
+                <span className="text-[8px]" style={{ color: cfg.color }}>{t(`status.${c.status}`, lang)}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </header>
