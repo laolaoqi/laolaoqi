@@ -1,0 +1,114 @@
+// ===================================================================
+// MarketSentiment — 市场情绪指标
+// 赛博战术指挥中心：涨跌比可视化 + 涨停跌停统计
+// ===================================================================
+
+import { MarketSentiment as SentimentData } from '@/lib/marketData';
+import HudPanel from './HudPanel';
+
+interface MarketSentimentProps {
+  sentiment: SentimentData;
+}
+
+export default function MarketSentimentPanel({ sentiment }: MarketSentimentProps) {
+  const total = sentiment.riseCount + sentiment.flatCount + sentiment.fallCount;
+  const riseRatio = (sentiment.riseCount / total) * 100;
+  const flatRatio = (sentiment.flatCount / total) * 100;
+
+  return (
+    <HudPanel title="市场情绪指标">
+      {/* Rise/Fall ratio bar */}
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-[#8899aa]">涨跌比</span>
+          <span
+            className="font-bold tabular-nums"
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              color: riseRatio > 50 ? '#00e676' : '#ff3b3b',
+            }}
+          >
+            {riseRatio.toFixed(1)}%
+          </span>
+        </div>
+        <div className="h-4 bg-[rgba(255,255,255,0.04)] rounded-sm overflow-hidden flex">
+          <div
+            className="h-full transition-all duration-1000"
+            style={{
+              width: `${riseRatio}%`,
+              background: 'linear-gradient(90deg, #00e676, #00e67680)',
+              boxShadow: '0 0 8px #00e67630',
+            }}
+          />
+          <div
+            className="h-full transition-all duration-1000"
+            style={{
+              width: `${flatRatio}%`,
+              background: '#8899aa40',
+            }}
+          />
+          <div
+            className="h-full flex-1 transition-all duration-1000"
+            style={{
+              background: 'linear-gradient(90deg, #ff3b3b80, #ff3b3b)',
+              boxShadow: '0 0 8px #ff3b3b30',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="text-center p-2 bg-[rgba(0,230,118,0.05)] rounded-sm border border-[rgba(0,230,118,0.1)]">
+          <div className="text-[10px] text-[#00e676]/60 mb-0.5">涨</div>
+          <div
+            className="text-sm font-bold text-[#00e676] tabular-nums"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {sentiment.riseCount}
+          </div>
+        </div>
+        <div className="text-center p-2 bg-[rgba(136,153,170,0.05)] rounded-sm border border-[rgba(136,153,170,0.1)]">
+          <div className="text-[10px] text-[#8899aa]/60 mb-0.5">平</div>
+          <div
+            className="text-sm font-bold text-[#8899aa] tabular-nums"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {sentiment.flatCount}
+          </div>
+        </div>
+        <div className="text-center p-2 bg-[rgba(255,59,59,0.05)] rounded-sm border border-[rgba(255,59,59,0.1)]">
+          <div className="text-[10px] text-[#ff3b3b]/60 mb-0.5">跌</div>
+          <div
+            className="text-sm font-bold text-[#ff3b3b] tabular-nums"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {sentiment.fallCount}
+          </div>
+        </div>
+      </div>
+
+      {/* Limit up/down */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 flex items-center justify-between p-2 bg-[rgba(0,230,118,0.03)] rounded-sm">
+          <span className="text-[10px] text-[#8899aa]">涨停</span>
+          <span
+            className="text-sm font-bold text-[#00e676] tabular-nums"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {sentiment.limitUp}
+          </span>
+        </div>
+        <div className="flex-1 flex items-center justify-between p-2 bg-[rgba(255,59,59,0.03)] rounded-sm">
+          <span className="text-[10px] text-[#8899aa]">跌停</span>
+          <span
+            className="text-sm font-bold text-[#ff3b3b] tabular-nums"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {sentiment.limitDown}
+          </span>
+        </div>
+      </div>
+    </HudPanel>
+  );
+}
