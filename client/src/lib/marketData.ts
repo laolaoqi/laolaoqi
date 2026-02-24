@@ -23,6 +23,7 @@ export interface StockRecommendation {
   name: string;
   nameZh?: string; nameEn?: string;
   code: string;
+  symbol?: string;
   industry: string;
   price: number;
   change: number;

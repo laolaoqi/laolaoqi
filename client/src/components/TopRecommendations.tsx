@@ -1,11 +1,13 @@
 // ===================================================================
-// TopRecommendations — 核心推荐 TOP 10 v2 (多语言)
+// TopRecommendations — 核心推荐 TOP 10 v3 (多语言 + 点击跳转详情)
 // ===================================================================
 
 import { StockRecommendation } from '@/lib/marketData';
 import HudPanel from './HudPanel';
 import { useApp } from '@/contexts/AppContext';
-import { t } from '@/lib/i18n';
+import { t, getName, getReason } from '@/lib/i18n';
+import { Link } from 'wouter';
+import { ExternalLink } from 'lucide-react';
 
 interface Props { recommendations: StockRecommendation[]; }
 
@@ -63,6 +65,10 @@ export default function TopRecommendations({ recommendations }: Props) {
               const isUp = stock.changePercent >= 0;
               const color = isUp ? '#00e676' : '#ff3b3b';
               const flowColor = stock.capitalFlow >= 0 ? '#00e676' : '#ff3b3b';
+              const displayName = getName(stock as any, lang) || stock.name;
+              const displayReason = getReason(stock as any, lang) || stock.reason;
+              const stockSymbol = stock.symbol || stock.code;
+
               return (
                 <tr key={stock.code} className="border-b border-[rgba(0,212,255,0.04)] hover:bg-[rgba(0,212,255,0.03)] transition-colors">
                   <td className="py-2 px-1">
@@ -70,7 +76,15 @@ export default function TopRecommendations({ recommendations }: Props) {
                       {stock.rank}
                     </span>
                   </td>
-                  <td className="py-2 px-1 text-[#e0e8f0] font-medium">{stock.name}</td>
+                  <td className="py-2 px-1">
+                    <Link
+                      href={`/stock/${encodeURIComponent(stockSymbol)}`}
+                      className="text-[#e0e8f0] font-medium hover:text-[#00d4ff] transition-colors inline-flex items-center gap-1 group"
+                    >
+                      {displayName}
+                      <ExternalLink size={10} className="opacity-0 group-hover:opacity-60 transition-opacity" />
+                    </Link>
+                  </td>
                   <td className="py-2 px-1 text-[#8899aa] hidden sm:table-cell">{stock.code}</td>
                   <td className="py-2 px-1 text-[#8899aa] hidden md:table-cell">{stock.industry}</td>
                   <td className="py-2 px-1 text-right tabular-nums" style={{ color }}>{currency}{stock.price.toFixed(2)}</td>
@@ -84,12 +98,19 @@ export default function TopRecommendations({ recommendations }: Props) {
                   <td className="py-2 px-1 text-right tabular-nums hidden lg:table-cell" style={{ color: flowColor }}>
                     {stock.capitalFlow >= 0 ? '+' : ''}{stock.capitalFlow.toFixed(2)}{t('table.flowUnit', lang)}
                   </td>
-                  <td className="py-2 px-1 text-[#8899aa]/70 hidden xl:table-cell text-[10px]">{stock.reason}</td>
+                  <td className="py-2 px-1 text-[#8899aa]/70 hidden xl:table-cell text-[10px]">{displayReason}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Next update hint */}
+      <div className="flex items-center justify-end mt-2 pt-2 border-t border-[rgba(0,212,255,0.06)]">
+        <span className="text-[9px] text-[#556677] font-mono">
+          {t('rec.nextUpdate', lang)}: 30 min · {t('market.' + market, lang)}
+        </span>
       </div>
     </HudPanel>
   );

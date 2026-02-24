@@ -151,6 +151,9 @@ const translations: Record<string, Record<Lang, string>> = {
 
   // === Heatmap ===
   'heatmap.sector': { zh: '板块', en: 'Sector', ja: 'セクター', ko: '섹터', ar: 'القطاع' },
+
+  // === AI Summary ===
+  'panel.aiSummary': { zh: 'AI 智能市场摘要', en: 'AI MARKET SUMMARY', ja: 'AI マーケットサマリー', ko: 'AI 시장 요약', ar: 'ملخص السوق بالذكاء الاصطناعي' },
 };
 
 // Get translation

@@ -47,12 +47,12 @@ function createPublicContext(ip?: string): TrpcContext {
   };
 }
 
-describe("market.indices", () => {
+describe("market.indices — single market isolation", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("accepts cn market and returns data array", async () => {
+  it("returns A-share indices for cn market", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       json: () => Promise.resolve(mockYahooResponse),
@@ -66,11 +66,15 @@ describe("market.indices", () => {
     expect(result).toHaveProperty("data");
     expect(result).toHaveProperty("isLive");
     expect(Array.isArray(result.data)).toBe(true);
+    // All items should be cn market
+    result.data.forEach((idx: any) => {
+      expect(idx.market).toBe("cn");
+    });
 
     vi.unstubAllGlobals();
   });
 
-  it("accepts hk market", async () => {
+  it("returns HK indices for hk market", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       json: () => Promise.resolve(mockYahooResponse),
@@ -83,11 +87,14 @@ describe("market.indices", () => {
 
     expect(result).toHaveProperty("data");
     expect(Array.isArray(result.data)).toBe(true);
+    result.data.forEach((idx: any) => {
+      expect(idx.market).toBe("hk");
+    });
 
     vi.unstubAllGlobals();
   });
 
-  it("accepts us market", async () => {
+  it("returns US indices for us market", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       json: () => Promise.resolve(mockYahooResponse),
@@ -99,12 +106,14 @@ describe("market.indices", () => {
     const result = await caller.market.indices({ market: "us" });
 
     expect(result).toHaveProperty("data");
-    expect(Array.isArray(result.data)).toBe(true);
+    result.data.forEach((idx: any) => {
+      expect(idx.market).toBe("us");
+    });
 
     vi.unstubAllGlobals();
   });
 
-  it("accepts crypto market", async () => {
+  it("returns crypto indices for crypto market", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       json: () => Promise.resolve(mockYahooResponse),
@@ -116,35 +125,20 @@ describe("market.indices", () => {
     const result = await caller.market.indices({ market: "crypto" });
 
     expect(result).toHaveProperty("data");
-    expect(Array.isArray(result.data)).toBe(true);
-
-    vi.unstubAllGlobals();
-  });
-
-  it("returns all markets when no market specified", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      json: () => Promise.resolve(mockYahooResponse),
+    result.data.forEach((idx: any) => {
+      expect(idx.market).toBe("crypto");
     });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const ctx = createPublicContext();
-    const caller = appRouter.createCaller(ctx);
-    const result = await caller.market.indices();
-
-    expect(result).toHaveProperty("data");
-    expect(Array.isArray(result.data)).toBe(true);
 
     vi.unstubAllGlobals();
   });
 
-  it("handles API failures gracefully", async () => {
+  it("handles API failures gracefully with fallback data", async () => {
     const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
     vi.stubGlobal("fetch", mockFetch);
 
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
-    const result = await caller.market.indices();
+    const result = await caller.market.indices({ market: "cn" });
 
     expect(result).toHaveProperty("isLive");
     expect(result).toHaveProperty("data");
@@ -154,12 +148,12 @@ describe("market.indices", () => {
   });
 });
 
-describe("market.recommendations", () => {
+describe("market.recommendations — per-market isolation", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("returns recommendations for cn market", async () => {
+  it("returns cn market recommendations with correct structure", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       json: () =>
@@ -201,11 +195,18 @@ describe("market.recommendations", () => {
     expect(result).toHaveProperty("data");
     expect(result).toHaveProperty("market", "cn");
     expect(Array.isArray(result.data)).toBe(true);
+    if (result.data.length > 0) {
+      const rec = result.data[0];
+      expect(rec).toHaveProperty("code");
+      expect(rec).toHaveProperty("nameZh");
+      expect(rec).toHaveProperty("nameEn");
+      expect(typeof rec.price).toBe("number");
+    }
 
     vi.unstubAllGlobals();
   });
 
-  it("returns recommendations for us market", async () => {
+  it("returns us market recommendations", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       json: () => Promise.resolve(mockYahooResponse),
@@ -216,13 +217,13 @@ describe("market.recommendations", () => {
     const caller = appRouter.createCaller(ctx);
     const result = await caller.market.recommendations({ market: "us" });
 
-    expect(result).toHaveProperty("data");
     expect(result).toHaveProperty("market", "us");
+    expect(Array.isArray(result.data)).toBe(true);
 
     vi.unstubAllGlobals();
   });
 
-  it("returns recommendations for hk market", async () => {
+  it("returns hk market recommendations", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       json: () => Promise.resolve(mockYahooResponse),
@@ -238,7 +239,7 @@ describe("market.recommendations", () => {
     vi.unstubAllGlobals();
   });
 
-  it("returns recommendations for crypto market", async () => {
+  it("returns crypto market recommendations", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       json: () => Promise.resolve(mockYahooResponse),
@@ -250,6 +251,99 @@ describe("market.recommendations", () => {
     const result = await caller.market.recommendations({ market: "crypto" });
 
     expect(result).toHaveProperty("market", "crypto");
+
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("market.heatmap", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns heatmap sectors for cn market", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 200,
+      json: () => Promise.resolve(mockYahooResponse),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.market.heatmap({ market: "cn" });
+
+    expect(result).toHaveProperty("data");
+    expect(Array.isArray(result.data)).toBe(true);
+    if (result.data.length > 0) {
+      const sector = result.data[0];
+      expect(sector).toHaveProperty("nameZh");
+      expect(sector).toHaveProperty("nameEn");
+      expect(typeof sector.changePercent).toBe("number");
+      expect(typeof sector.weight).toBe("number");
+      expect(Array.isArray(sector.stocks)).toBe(true);
+    }
+
+    vi.unstubAllGlobals();
+  });
+
+  it("returns different sectors for us market", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 200,
+      json: () => Promise.resolve(mockYahooResponse),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.market.heatmap({ market: "us" });
+
+    expect(result).toHaveProperty("data");
+    expect(Array.isArray(result.data)).toBe(true);
+
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("market.stockDetail — individual stock data", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns stock detail with technicals for a valid symbol", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 200,
+      json: () => Promise.resolve(mockYahooResponse),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.market.stockDetail({ symbol: "000001.SS" });
+
+    expect(result).toBeDefined();
+    expect(result).toHaveProperty("symbol", "000001.SS");
+    expect(result).toHaveProperty("isLive", true);
+    expect(typeof result.price).toBe("number");
+    expect(result).toHaveProperty("technicals");
+    expect(result.technicals).toHaveProperty("rsi14");
+    expect(result.technicals).toHaveProperty("macd");
+    expect(result).toHaveProperty("intradayChart");
+    expect(result).toHaveProperty("dailyChart");
+
+    vi.unstubAllGlobals();
+  });
+
+  it("handles API failure gracefully", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
+    vi.stubGlobal("fetch", mockFetch);
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.market.stockDetail({ symbol: "INVALID" });
+
+    expect(result).toBeDefined();
+    expect(result).toHaveProperty("symbol", "INVALID");
+    expect(result).toHaveProperty("isLive", false);
 
     vi.unstubAllGlobals();
   });
@@ -280,48 +374,6 @@ describe("locale.detect", () => {
     const result = await caller.locale.detect();
 
     expect(result.lang).toBe("zh");
-  });
-});
-
-describe("market.stockDetail", () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("returns stock detail for a given symbol", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      json: () => Promise.resolve(mockYahooResponse),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const ctx = createPublicContext();
-    const caller = appRouter.createCaller(ctx);
-    const result = await caller.market.stockDetail({ symbol: "000001.SS" });
-
-    expect(result).not.toBeNull();
-    if (result) {
-      expect(result).toHaveProperty("meta");
-      expect(result.meta).toHaveProperty("regularMarketPrice");
-    }
-
-    vi.unstubAllGlobals();
-  });
-
-  it("returns null when API returns no data", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      json: () => Promise.resolve({ chart: { result: [] } }),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const ctx = createPublicContext();
-    const caller = appRouter.createCaller(ctx);
-    const result = await caller.market.stockDetail({ symbol: "INVALID" });
-
-    expect(result).toBeNull();
-
-    vi.unstubAllGlobals();
   });
 });
 

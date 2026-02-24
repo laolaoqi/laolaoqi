@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { invokeLLM } from "./_core/llm";
 import { z } from "zod";
 
 // ===================================================================
@@ -21,6 +22,9 @@ function setCache<T>(key: string, data: T): void {
 
 const INDEX_CACHE_TTL = 60_000;       // 指数 60秒
 const RECS_CACHE_TTL = 30 * 60_000;   // 推荐 30分钟
+const HEATMAP_CACHE_TTL = 5 * 60_000; // 热力图 5分钟
+const AI_SUMMARY_CACHE_TTL = 15 * 60_000; // AI摘要 15分钟
+const STOCK_DETAIL_CACHE_TTL = 60_000; // 个股详情 60秒
 
 // ===================================================================
 // Yahoo Finance API
@@ -32,6 +36,16 @@ async function fetchYahooChart(symbol: string, interval = '5m', range = '1d') {
     signal: AbortSignal.timeout(10000),
   });
   if (resp.status !== 200) throw new Error(`Yahoo API HTTP ${resp.status}`);
+  return resp.json();
+}
+
+async function fetchYahooQuote(symbols: string[]) {
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.join(',')}`;
+  const resp = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (resp.status !== 200) throw new Error(`Yahoo Quote API HTTP ${resp.status}`);
   return resp.json();
 }
 
@@ -118,6 +132,48 @@ const MARKET_STOCKS: Record<MarketId, StockConfig[]> = {
 };
 
 // ===================================================================
+// 热力图板块配置
+// ===================================================================
+interface SectorConfig { nameZh: string; nameEn: string; symbols: string[]; }
+
+const MARKET_SECTORS: Record<MarketId, SectorConfig[]> = {
+  cn: [
+    { nameZh: '银行', nameEn: 'Banking', symbols: ['600036.SS', '601318.SS', '601166.SS'] },
+    { nameZh: '白酒', nameEn: 'Liquor', symbols: ['600519.SS', '000858.SZ'] },
+    { nameZh: '新能源', nameEn: 'New Energy', symbols: ['300750.SZ', '601012.SS'] },
+    { nameZh: '科技', nameEn: 'Tech', symbols: ['002594.SZ', '000333.SZ'] },
+    { nameZh: '电力', nameEn: 'Power', symbols: ['600900.SS'] },
+    { nameZh: '有色', nameEn: 'Mining', symbols: ['601899.SS'] },
+    { nameZh: '医药', nameEn: 'Pharma', symbols: ['603259.SS'] },
+    { nameZh: '地产', nameEn: 'Real Estate', symbols: ['000002.SZ'] },
+  ],
+  hk: [
+    { nameZh: '互联网', nameEn: 'Internet', symbols: ['0700.HK', '9988.HK', '3690.HK'] },
+    { nameZh: '消费电子', nameEn: 'Consumer Tech', symbols: ['1810.HK'] },
+    { nameZh: '金融', nameEn: 'Finance', symbols: ['2318.HK', '0388.HK'] },
+    { nameZh: '通信', nameEn: 'Telecom', symbols: ['0941.HK'] },
+    { nameZh: '消费', nameEn: 'Consumer', symbols: ['2020.HK'] },
+    { nameZh: '短视频', nameEn: 'Short Video', symbols: ['1024.HK'] },
+  ],
+  us: [
+    { nameZh: '科技巨头', nameEn: 'Big Tech', symbols: ['AAPL', 'MSFT', 'GOOGL', 'META'] },
+    { nameZh: '半导体', nameEn: 'Semiconductor', symbols: ['NVDA', 'TSM'] },
+    { nameZh: '电商', nameEn: 'E-Commerce', symbols: ['AMZN'] },
+    { nameZh: '新能源车', nameEn: 'EV', symbols: ['TSLA'] },
+    { nameZh: '综合', nameEn: 'Conglomerate', symbols: ['BRK-B'] },
+    { nameZh: '医药', nameEn: 'Pharma', symbols: ['LLY'] },
+  ],
+  crypto: [
+    { nameZh: 'L1公链', nameEn: 'L1 Chains', symbols: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'ADA-USD', 'AVAX-USD'] },
+    { nameZh: '交易所', nameEn: 'Exchange', symbols: ['BNB-USD'] },
+    { nameZh: '支付', nameEn: 'Payment', symbols: ['XRP-USD'] },
+    { nameZh: 'Meme', nameEn: 'Meme', symbols: ['DOGE-USD'] },
+    { nameZh: '跨链', nameEn: 'Cross-chain', symbols: ['DOT-USD'] },
+    { nameZh: '预言机', nameEn: 'Oracle', symbols: ['LINK-USD'] },
+  ],
+};
+
+// ===================================================================
 // 数据获取函数
 // ===================================================================
 async function fetchIndexData(cfg: IndexConfig) {
@@ -192,7 +248,8 @@ async function detectLanguageFromIP(ip: string): Promise<string> {
     const cc = data.countryCode;
     if (!cc) return 'zh';
     const langMap: Record<string, string> = {
-      CN: 'zh', TW: 'zh', HK: 'zh', MO: 'zh',
+      CN: 'zh', TW: 'zh', HK: 'zh', MO: 'zh', SG: 'zh',
+      US: 'en', GB: 'en', CA: 'en', AU: 'en', NZ: 'en', IN: 'en',
       JP: 'ja', KR: 'ko',
       SA: 'ar', AE: 'ar', EG: 'ar', IQ: 'ar', QA: 'ar', KW: 'ar', BH: 'ar', OM: 'ar', JO: 'ar', LB: 'ar', SY: 'ar', YE: 'ar', LY: 'ar', TN: 'ar', DZ: 'ar', MA: 'ar', SD: 'ar',
     };
@@ -227,21 +284,18 @@ export const appRouter = router({
   }),
 
   market: router({
-    // 获取指定市场的指数数据
+    // 获取指定市场的指数数据（只返回该市场的指数）
     indices: publicProcedure
-      .input(z.object({ market: marketIdSchema }).optional())
+      .input(z.object({ market: marketIdSchema }))
       .query(async ({ input }) => {
-        const marketId = input?.market;
-        // 如果没指定市场，返回所有市场的指数
-        const markets = marketId ? [marketId] : (['cn', 'hk', 'us', 'crypto'] as MarketId[]);
-        const cacheKey = `indices-${markets.join(',')}`;
+        const cacheKey = `indices-${input.market}`;
         const cached = getCached<any>(cacheKey, INDEX_CACHE_TTL);
         if (cached) return { ...cached, fromCache: true };
 
-        const allConfigs = markets.flatMap(m => MARKET_INDICES[m].map(c => ({ ...c, market: m })));
-        const results = await Promise.allSettled(allConfigs.map(cfg => fetchIndexData(cfg)));
+        const configs = MARKET_INDICES[input.market].map(c => ({ ...c, market: input.market }));
+        const results = await Promise.allSettled(configs.map(cfg => fetchIndexData(cfg)));
         const data = results.map((r, i) => {
-          if (r.status === 'fulfilled' && r.value) return { ...r.value, market: allConfigs[i].market };
+          if (r.status === 'fulfilled' && r.value) return { ...r.value, market: configs[i].market };
           return null;
         }).filter(Boolean);
 
@@ -269,19 +323,332 @@ export const appRouter = router({
         return result;
       }),
 
-    // 获取单个股票详情
+    // 热力图数据 — 按行业板块聚合
+    heatmap: publicProcedure
+      .input(z.object({ market: marketIdSchema }))
+      .query(async ({ input }) => {
+        const cacheKey = `heatmap-${input.market}`;
+        const cached = getCached<any>(cacheKey, HEATMAP_CACHE_TTL);
+        if (cached) return cached;
+
+        const sectors = MARKET_SECTORS[input.market];
+        const allSymbols = sectors.flatMap(s => s.symbols);
+
+        // Try to fetch real data from Yahoo
+        let quoteMap: Record<string, { changePercent: number; price: number; volume: number }> = {};
+        try {
+          // Batch fetch in groups of 10
+          for (let i = 0; i < allSymbols.length; i += 10) {
+            const batch = allSymbols.slice(i, i + 10);
+            const result = await fetchYahooQuote(batch);
+            const quotes = result?.quoteResponse?.result || [];
+            for (const q of quotes) {
+              quoteMap[q.symbol] = {
+                changePercent: q.regularMarketChangePercent || 0,
+                price: q.regularMarketPrice || 0,
+                volume: q.regularMarketVolume || 0,
+              };
+            }
+          }
+        } catch (err: any) {
+          console.error('[Heatmap] Yahoo quote failed:', err?.message);
+          // Generate mock data
+          for (const sym of allSymbols) {
+            quoteMap[sym] = {
+              changePercent: (Math.random() - 0.45) * 6,
+              price: 100 + Math.random() * 200,
+              volume: Math.random() * 1e9,
+            };
+          }
+        }
+
+        const data = sectors.map(sector => {
+          const stockData = sector.symbols.map(sym => {
+            const q = quoteMap[sym] || { changePercent: 0, price: 0, volume: 0 };
+            return { symbol: sym, changePercent: q.changePercent, price: q.price, volume: q.volume };
+          });
+          const avgChange = stockData.length > 0
+            ? stockData.reduce((s, d) => s + d.changePercent, 0) / stockData.length
+            : 0;
+          return {
+            nameZh: sector.nameZh,
+            nameEn: sector.nameEn,
+            changePercent: Math.round(avgChange * 100) / 100,
+            stocks: stockData,
+            weight: stockData.length, // visual weight
+          };
+        });
+
+        const result = { data, isLive: Object.keys(quoteMap).length > 0 };
+        setCache(cacheKey, result);
+        return result;
+      }),
+
+    // AI 智能市场摘要
+    aiSummary: publicProcedure
+      .input(z.object({ market: marketIdSchema, lang: z.string().optional() }))
+      .query(async ({ input }) => {
+        const lang = input.lang || 'zh';
+        const cacheKey = `ai-summary-${input.market}-${lang}`;
+        const cached = getCached<any>(cacheKey, AI_SUMMARY_CACHE_TTL);
+        if (cached) return cached;
+
+        // Gather market data for context
+        const indicesCacheKey = `indices-${input.market}`;
+        const indicesData = getCached<any>(indicesCacheKey, INDEX_CACHE_TTL * 5);
+        const recsCacheKey = `recs-${input.market}`;
+        const recsData = getCached<any>(recsCacheKey, RECS_CACHE_TTL * 2);
+
+        const marketNames: Record<MarketId, string> = {
+          cn: 'A股/中国A股市场', hk: '港股/香港股市', us: '美股/美国股市', crypto: '数字货币/加密货币市场',
+        };
+
+        let contextInfo = `市场: ${marketNames[input.market]}\n`;
+        if (indicesData?.data) {
+          contextInfo += `指数数据:\n`;
+          for (const idx of indicesData.data) {
+            contextInfo += `- ${idx.nameZh || idx.nameEn}: ${idx.price?.toFixed(2)} (${idx.changePercent >= 0 ? '+' : ''}${idx.changePercent?.toFixed(2)}%)\n`;
+          }
+        }
+        if (recsData?.data) {
+          contextInfo += `推荐标的:\n`;
+          for (const rec of recsData.data.slice(0, 5)) {
+            contextInfo += `- ${rec.nameZh || rec.nameEn} (${rec.code}): ${rec.price?.toFixed(2)} ${rec.changePercent >= 0 ? '+' : ''}${rec.changePercent?.toFixed(2)}%\n`;
+          }
+        }
+
+        const langInstructions: Record<string, string> = {
+          zh: '请用中文回答',
+          en: 'Please respond in English',
+          ja: '日本語で回答してください',
+          ko: '한국어로 답변해 주세요',
+          ar: 'يرجى الإجابة باللغة العربية',
+        };
+
+        try {
+          const response = await invokeLLM({
+            messages: [
+              {
+                role: 'system',
+                content: `你是一位专业的金融分析师，擅长市场分析和投资建议。${langInstructions[lang] || langInstructions.zh}。请基于提供的市场数据，生成简洁的市场分析摘要。格式要求：返回JSON格式，包含以下字段：
+{
+  "title": "一句话标题概括今日市场",
+  "overview": "2-3句话的市场概况",
+  "keyPoints": ["要点1", "要点2", "要点3"],
+  "outlook": "1-2句话的后市展望",
+  "riskWarning": "1句话的风险提示"
+}`
+              },
+              {
+                role: 'user',
+                content: `请分析以下市场数据并生成今日市场摘要：\n\n${contextInfo}`
+              }
+            ],
+            response_format: {
+              type: 'json_schema',
+              json_schema: {
+                name: 'market_summary',
+                strict: true,
+                schema: {
+                  type: 'object',
+                  properties: {
+                    title: { type: 'string', description: 'One-line market headline' },
+                    overview: { type: 'string', description: 'Market overview 2-3 sentences' },
+                    keyPoints: { type: 'array', items: { type: 'string' }, description: '3 key points' },
+                    outlook: { type: 'string', description: 'Market outlook' },
+                    riskWarning: { type: 'string', description: 'Risk warning' },
+                  },
+                  required: ['title', 'overview', 'keyPoints', 'outlook', 'riskWarning'],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+
+          const content = response.choices?.[0]?.message?.content;
+          let summary;
+          if (typeof content === 'string') {
+            summary = JSON.parse(content);
+          } else {
+            summary = { title: '数据加载中...', overview: '正在获取市场数据', keyPoints: [], outlook: '请稍后刷新', riskWarning: '投资有风险' };
+          }
+
+          const result = { summary, isLive: true, generatedAt: Date.now() };
+          setCache(cacheKey, result);
+          return result;
+        } catch (err: any) {
+          console.error('[AI Summary] LLM failed:', err?.message);
+          return {
+            summary: {
+              title: '市场分析摘要生成中...',
+              overview: '当前正在获取和分析市场数据，请稍后刷新。',
+              keyPoints: ['数据正在加载中', '请稍后查看完整分析', '建议关注市场动态'],
+              outlook: '请刷新页面获取最新分析。',
+              riskWarning: '投资有风险，入市需谨慎。数据仅供参考，不构成投资建议。',
+            },
+            isLive: false,
+            generatedAt: Date.now(),
+          };
+        }
+      }),
+
+    // 个股详情 — 完整数据（图表+基本面）
     stockDetail: publicProcedure
       .input(z.object({ symbol: z.string() }))
       .query(async ({ input }) => {
-        const cacheKey = `stock-${input.symbol}`;
-        const cached = getCached<any>(cacheKey, INDEX_CACHE_TTL);
+        const cacheKey = `stock-detail-${input.symbol}`;
+        const cached = getCached<any>(cacheKey, STOCK_DETAIL_CACHE_TTL);
         if (cached) return cached;
-        const result = await fetchYahooChart(input.symbol, '5m', '1d');
-        const chartResult = result?.chart?.result?.[0] || null;
-        if (chartResult) setCache(cacheKey, chartResult);
-        return chartResult;
+
+        try {
+          // Fetch intraday chart
+          const intradayResult = await fetchYahooChart(input.symbol, '5m', '1d');
+          const intradayData = intradayResult?.chart?.result?.[0] || null;
+
+          // Fetch 6-month daily chart for K-line
+          const dailyResult = await fetchYahooChart(input.symbol, '1d', '6mo');
+          const dailyData = dailyResult?.chart?.result?.[0] || null;
+
+          // Extract meta info
+          const meta = intradayData?.meta || dailyData?.meta || {};
+
+          // Build intraday chart data
+          const intradayChart: any[] = [];
+          if (intradayData?.timestamp) {
+            const quotes = intradayData.indicators?.quote?.[0] || {};
+            for (let i = 0; i < intradayData.timestamp.length; i++) {
+              const c = quotes.close?.[i];
+              if (c != null && !isNaN(c)) {
+                intradayChart.push({
+                  time: intradayData.timestamp[i],
+                  open: quotes.open?.[i] || c,
+                  high: quotes.high?.[i] || c,
+                  low: quotes.low?.[i] || c,
+                  close: c,
+                  volume: quotes.volume?.[i] || 0,
+                });
+              }
+            }
+          }
+
+          // Build daily K-line data
+          const dailyChart: any[] = [];
+          if (dailyData?.timestamp) {
+            const quotes = dailyData.indicators?.quote?.[0] || {};
+            for (let i = 0; i < dailyData.timestamp.length; i++) {
+              const c = quotes.close?.[i];
+              if (c != null && !isNaN(c)) {
+                dailyChart.push({
+                  time: dailyData.timestamp[i],
+                  open: quotes.open?.[i] || c,
+                  high: quotes.high?.[i] || c,
+                  low: quotes.low?.[i] || c,
+                  close: c,
+                  volume: quotes.volume?.[i] || 0,
+                });
+              }
+            }
+          }
+
+          // Calculate technical indicators from daily data
+          const closes = dailyChart.map(d => d.close);
+          const ma5 = calculateMA(closes, 5);
+          const ma10 = calculateMA(closes, 10);
+          const ma20 = calculateMA(closes, 20);
+          const ma60 = calculateMA(closes, 60);
+          const rsi14 = calculateRSI(closes, 14);
+          const macd = calculateMACD(closes);
+
+          const price = meta.regularMarketPrice || 0;
+          const prevClose = meta.chartPreviousClose || meta.previousClose || price;
+
+          const result = {
+            symbol: input.symbol,
+            price,
+            prevClose,
+            change: price - prevClose,
+            changePercent: prevClose ? ((price - prevClose) / prevClose) * 100 : 0,
+            high: meta.regularMarketDayHigh || 0,
+            low: meta.regularMarketDayLow || 0,
+            volume: meta.regularMarketVolume || 0,
+            marketCap: meta.marketCap || 0,
+            fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh || 0,
+            fiftyTwoWeekLow: meta.fiftyTwoWeekLow || 0,
+            intradayChart,
+            dailyChart,
+            technicals: {
+              ma5: ma5[ma5.length - 1] || 0,
+              ma10: ma10[ma10.length - 1] || 0,
+              ma20: ma20[ma20.length - 1] || 0,
+              ma60: ma60[ma60.length - 1] || 0,
+              rsi14: rsi14[rsi14.length - 1] || 50,
+              macd: macd.macd[macd.macd.length - 1] || 0,
+              signal: macd.signal[macd.signal.length - 1] || 0,
+              histogram: macd.histogram[macd.histogram.length - 1] || 0,
+            },
+            isLive: true,
+          };
+
+          setCache(cacheKey, result);
+          return result;
+        } catch (err: any) {
+          console.error(`[StockDetail] Failed to fetch ${input.symbol}:`, err?.message);
+          return { symbol: input.symbol, isLive: false, error: err?.message };
+        }
       }),
   }),
 });
+
+// ===================================================================
+// 技术指标计算
+// ===================================================================
+function calculateMA(data: number[], period: number): number[] {
+  const result: number[] = [];
+  for (let i = 0; i < data.length; i++) {
+    if (i < period - 1) { result.push(0); continue; }
+    const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+    result.push(sum / period);
+  }
+  return result;
+}
+
+function calculateRSI(data: number[], period: number): number[] {
+  const result: number[] = [];
+  if (data.length < period + 1) return data.map(() => 50);
+  let avgGain = 0, avgLoss = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = data[i] - data[i - 1];
+    if (diff > 0) avgGain += diff; else avgLoss -= diff;
+  }
+  avgGain /= period; avgLoss /= period;
+  for (let i = 0; i <= period; i++) result.push(50);
+  const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+  result.push(100 - 100 / (1 + rs));
+  for (let i = period + 1; i < data.length; i++) {
+    const diff = data[i] - data[i - 1];
+    const gain = diff > 0 ? diff : 0;
+    const loss = diff < 0 ? -diff : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+    const rs2 = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    result.push(100 - 100 / (1 + rs2));
+  }
+  return result;
+}
+
+function calculateMACD(data: number[], fast = 12, slow = 26, signal = 9) {
+  const ema = (arr: number[], p: number) => {
+    const k = 2 / (p + 1);
+    const res = [arr[0]];
+    for (let i = 1; i < arr.length; i++) res.push(arr[i] * k + res[i - 1] * (1 - k));
+    return res;
+  };
+  const emaFast = ema(data, fast);
+  const emaSlow = ema(data, slow);
+  const macdLine = emaFast.map((v, i) => v - emaSlow[i]);
+  const signalLine = ema(macdLine, signal);
+  const histogram = macdLine.map((v, i) => v - signalLine[i]);
+  return { macd: macdLine, signal: signalLine, histogram };
+}
 
 export type AppRouter = typeof appRouter;

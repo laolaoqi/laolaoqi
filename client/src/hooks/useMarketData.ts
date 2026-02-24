@@ -1,12 +1,12 @@
 // ===================================================================
-// 猎手阿尔法 — 市场数据 Hook（多市场联动版）
-// 根据当前选中市场获取对应数据
+// useMarketData — 按当前选中市场获取数据
+// 点A股只获取A股数据，点H股只获取港股数据，以此类推
 // ===================================================================
 
 import { useMemo, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
-import { useApp, type MarketId } from '@/contexts/AppContext';
-import {
+import { useApp } from '@/contexts/AppContext';
+import type {
   IndexData,
   StockRecommendation,
   ModeScore,
@@ -14,6 +14,8 @@ import {
   MarketSentiment,
   NewsDigest,
   RiskControl,
+} from '@/lib/marketData';
+import {
   generateMockIndices,
   calculateModeScores,
   calculateWeights,
@@ -23,37 +25,16 @@ import {
   getRiskControl,
 } from '@/lib/marketData';
 
-interface MarketState {
-  indices: IndexData[];
-  allIndices: IndexData[]; // All markets combined for panorama
-  recommendations: StockRecommendation[];
-  modeScores: ModeScore;
-  weights: WeightAllocation;
-  sentiment: MarketSentiment;
-  newsDigest: NewsDigest;
-  riskControl: RiskControl;
-  marketLoading: boolean;
-  lastUpdate: Date | null;
-  isLive: boolean;
-  error: string | null;
-}
-
 export function useMarketData(refreshInterval = 30000) {
   const { market } = useApp();
 
-  // Fetch indices for current market
+  // Only fetch current market indices
   const indicesQuery = trpc.market.indices.useQuery(
     { market },
     { refetchInterval: refreshInterval, retry: 2 }
   );
 
-  // Fetch ALL market indices for panorama view
-  const cnQuery = trpc.market.indices.useQuery({ market: 'cn' }, { refetchInterval: refreshInterval, retry: 1 });
-  const hkQuery = trpc.market.indices.useQuery({ market: 'hk' }, { refetchInterval: refreshInterval, retry: 1 });
-  const usQuery = trpc.market.indices.useQuery({ market: 'us' }, { refetchInterval: refreshInterval, retry: 1 });
-  const cryptoQuery = trpc.market.indices.useQuery({ market: 'crypto' }, { refetchInterval: refreshInterval, retry: 1 });
-
-  // Fetch recommendations for current market (30 min refresh)
+  // Only fetch current market recommendations (30 min refresh)
   const recsQuery = trpc.market.recommendations.useQuery(
     { market },
     { refetchInterval: 30 * 60 * 1000, retry: 2 }
@@ -79,21 +60,13 @@ export function useMarketData(refreshInterval = 30000) {
     }));
   };
 
-  const state = useMemo<MarketState>(() => {
-    // Current market indices
+  const state = useMemo(() => {
+    // Current market indices only
     const currentIndices = mapApiIndices(indicesQuery.data);
-    const indices = currentIndices.length > 0 ? currentIndices : generateMockIndices();
+    const indices = currentIndices.length > 0 ? currentIndices : generateMockIndices().slice(0, 3);
     const isLive = indicesQuery.data?.isLive ?? false;
 
-    // All indices for panorama
-    const allIndices = [
-      ...mapApiIndices(cnQuery.data),
-      ...mapApiIndices(hkQuery.data),
-      ...mapApiIndices(usQuery.data),
-      ...mapApiIndices(cryptoQuery.data),
-    ];
-
-    // Recommendations
+    // Current market recommendations only
     let recommendations: StockRecommendation[];
     if (recsQuery.data?.data && recsQuery.data.data.length > 0) {
       recommendations = recsQuery.data.data as StockRecommendation[];
@@ -109,7 +82,6 @@ export function useMarketData(refreshInterval = 30000) {
 
     return {
       indices,
-      allIndices: allIndices.length > 0 ? allIndices : generateMockIndices(),
       recommendations,
       modeScores,
       weights,
@@ -121,8 +93,7 @@ export function useMarketData(refreshInterval = 30000) {
       isLive,
       error: indicesQuery.error?.message || null,
     };
-  }, [indicesQuery.data, indicesQuery.isLoading, indicesQuery.dataUpdatedAt, indicesQuery.error,
-      cnQuery.data, hkQuery.data, usQuery.data, cryptoQuery.data, recsQuery.data]);
+  }, [indicesQuery.data, indicesQuery.isLoading, indicesQuery.dataUpdatedAt, indicesQuery.error, recsQuery.data]);
 
   const refresh = useCallback(() => {
     utils.market.indices.invalidate();
