@@ -194,7 +194,10 @@ async function fetchIndexData(cfg: IndexConfig) {
       if (closeVal != null && !isNaN(closeVal)) chartData.push({ time: timestamps[i], value: closeVal });
     }
     const price = meta.regularMarketPrice || 0;
-    const prevClose = meta.chartPreviousClose || meta.previousClose || price;
+    // For 1d range, chartPreviousClose = yesterday's close (correct for indices)
+    // But also check closes array as fallback
+    const allCloses = (quotes.close || []).filter((v: any) => v != null && !isNaN(v));
+    const prevClose = meta.chartPreviousClose || meta.previousClose || (allCloses.length >= 2 ? allCloses[0] : price);
     const change = price - prevClose;
     const changePercent = prevClose ? (change / prevClose) * 100 : 0;
     const highs = (quotes.high || []).filter((v: any) => v != null && !isNaN(v));
@@ -218,9 +221,13 @@ async function fetchStockData(stock: StockConfig, rank: number) {
   try {
     const result = await fetchYahooChart(stock.symbol, '1d', '5d');
     if (!result?.chart?.result?.[0]) return null;
-    const meta = result.chart.result[0].meta;
-    const price = meta.regularMarketPrice || 0;
-    const prevClose = meta.chartPreviousClose || meta.previousClose || price;
+    const data = result.chart.result[0];
+    const meta = data.meta;
+    const quotes = data.indicators?.quote?.[0] || {};
+    const closes = (quotes.close || []).filter((v: any) => v != null && !isNaN(v));
+    const price = meta.regularMarketPrice || (closes.length > 0 ? closes[closes.length - 1] : 0);
+    // Use yesterday's close (second-to-last) for accurate daily change
+    const prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.previousClose || meta.chartPreviousClose || price);
     const change = price - prevClose;
     const changePercent = prevClose ? (change / prevClose) * 100 : 0;
     const score = Math.min(99, Math.max(50, Math.round(75 + changePercent * 5 + Math.random() * 10)));

@@ -1,0 +1,8 @@
+{
+  "query": "SELECT `rank`, name_zh, symbol, price, change_percent, score, signal FROM stock_recommendations WHERE market='cn' ORDER BY `rank` ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT `rank`, name_zh, symbol, price, change_percent, score, signal FROM stock_recommendations WHERE market='cn' ORDER BY `rank` ASC;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'name_zh' in 'field list'"
+  ]
+}

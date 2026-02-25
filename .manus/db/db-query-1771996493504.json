@@ -1,0 +1,110 @@
+{
+  "query": "SELECT `rank`, nameZh, symbol, price, changePercent, score, signal, batchId FROM stock_recommendations WHERE market='cn' ORDER BY createdAt DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT `rank`, nameZh, symbol, price, changePercent, score, signal, batchId FROM stock_recommendations WHERE market='cn' ORDER BY createdAt DESC LIMIT 10;",
+  "rows": [
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add",
+      "batchId": "RIKtQRVUD-c_1OSIYtqXG"
+    }
+  ],
+  "messages": [],
+  "stdout": "rank\tnameZh\tsymbol\tprice\tchangePercent\tscore\tsignal\tbatchId\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\tRIKtQRVUD-c_1OSIYtqXG\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\tRIKtQRVUD-c_1OSIYtqXG\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\tRIKtQRVUD-c_1OSIYtqXG\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\tRIKtQRVUD-c_1OSIYtqXG\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\tRIKtQRVUD-c_1OSIYtqXG\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\tRIKtQRVUD-c_1OSIYtqXG\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\tRIKtQRVUD-c_1OSIYtqXG\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\tRIKtQRVUD-c_1OSIYtqXG\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\tRIKtQRVUD-c_1OSIYtqXG\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\tRIKtQRVUD-c_1OSIYtqXG\n",
+  "stderr": "",
+  "execution_time_ms": 1549
+}

@@ -1,0 +1,76 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='stock_recommendations' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='stock_recommendations' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "market"
+    },
+    {
+      "COLUMN_NAME": "rank"
+    },
+    {
+      "COLUMN_NAME": "code"
+    },
+    {
+      "COLUMN_NAME": "symbol"
+    },
+    {
+      "COLUMN_NAME": "nameZh"
+    },
+    {
+      "COLUMN_NAME": "nameEn"
+    },
+    {
+      "COLUMN_NAME": "industry"
+    },
+    {
+      "COLUMN_NAME": "price"
+    },
+    {
+      "COLUMN_NAME": "priceChange"
+    },
+    {
+      "COLUMN_NAME": "changePercent"
+    },
+    {
+      "COLUMN_NAME": "score"
+    },
+    {
+      "COLUMN_NAME": "signal"
+    },
+    {
+      "COLUMN_NAME": "pe"
+    },
+    {
+      "COLUMN_NAME": "pb"
+    },
+    {
+      "COLUMN_NAME": "dividendYield"
+    },
+    {
+      "COLUMN_NAME": "capitalFlow"
+    },
+    {
+      "COLUMN_NAME": "reason"
+    },
+    {
+      "COLUMN_NAME": "reasonDetail"
+    },
+    {
+      "COLUMN_NAME": "tags"
+    },
+    {
+      "COLUMN_NAME": "batchId"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nmarket\nrank\ncode\nsymbol\nnameZh\nnameEn\nindustry\nprice\npriceChange\nchangePercent\nscore\nsignal\npe\npb\ndividendYield\ncapitalFlow\nreason\nreasonDetail\ntags\nbatchId\ncreatedAt\n",
+  "stderr": "",
+  "execution_time_ms": 1592
+}

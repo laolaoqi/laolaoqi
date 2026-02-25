@@ -1,0 +1,30 @@
+{
+  "query": "SELECT market, batchId, COUNT(*) as cnt FROM stock_recommendations WHERE batchId = (SELECT batchId FROM stock_recommendations ORDER BY createdAt DESC LIMIT 1) GROUP BY market, batchId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT market, batchId, COUNT(*) as cnt FROM stock_recommendations WHERE batchId = (SELECT batchId FROM stock_recommendations ORDER BY createdAt DESC LIMIT 1) GROUP BY market, batchId;",
+  "rows": [
+    {
+      "market": "cn",
+      "batchId": "MlZJG6hjMzhYaAu8j25hU",
+      "cnt": "10"
+    },
+    {
+      "market": "hk",
+      "batchId": "MlZJG6hjMzhYaAu8j25hU",
+      "cnt": "10"
+    },
+    {
+      "market": "crypto",
+      "batchId": "MlZJG6hjMzhYaAu8j25hU",
+      "cnt": "10"
+    },
+    {
+      "market": "us",
+      "batchId": "MlZJG6hjMzhYaAu8j25hU",
+      "cnt": "10"
+    }
+  ],
+  "messages": [],
+  "stdout": "market\tbatchId\tcnt\ncn\tMlZJG6hjMzhYaAu8j25hU\t10\nhk\tMlZJG6hjMzhYaAu8j25hU\t10\ncrypto\tMlZJG6hjMzhYaAu8j25hU\t10\nus\tMlZJG6hjMzhYaAu8j25hU\t10\n",
+  "stderr": "",
+  "execution_time_ms": 1521
+}

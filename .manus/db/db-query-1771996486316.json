@@ -1,0 +1,1405 @@
+{
+  "query": "SELECT `rank`, nameZh, symbol, price, changePercent, score, signal FROM stock_recommendations WHERE market='cn' ORDER BY `rank` ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT `rank`, nameZh, symbol, price, changePercent, score, signal FROM stock_recommendations WHERE market='cn' ORDER BY `rank` ASC;",
+  "rows": [
+    {
+      "rank": "1",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "1",
+      "nameZh": "招商银行",
+      "symbol": "600036.SS",
+      "price": "39",
+      "changePercent": "-9.82659",
+      "score": "98",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "2",
+      "nameZh": "兴业银行",
+      "symbol": "601166.SS",
+      "price": "18.48",
+      "changePercent": "-13.64486",
+      "score": "97",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "东方财富",
+      "symbol": "300059.SZ",
+      "price": "22.88",
+      "changePercent": "-2.3057215",
+      "score": "69",
+      "signal": "hold"
+    },
+    {
+      "rank": "3",
+      "nameZh": "万科A",
+      "symbol": "000002.SZ",
+      "price": "5.02",
+      "changePercent": "-16.887417",
+      "score": "95",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "中国中免",
+      "symbol": "601888.SS",
+      "price": "83.08",
+      "changePercent": "4.253984",
+      "score": "60",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "4",
+      "nameZh": "工商银行",
+      "symbol": "601398.SS",
+      "price": "7.06",
+      "changePercent": "-15.042118",
+      "score": "94",
+      "signal": "hold"
+    },
+    {
+      "rank": "5",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "立讯精密",
+      "symbol": "002475.SZ",
+      "price": "51.17",
+      "changePercent": "-8.132854",
+      "score": "60",
+      "signal": "hold"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "5",
+      "nameZh": "中国平安",
+      "symbol": "601318.SS",
+      "price": "65.63",
+      "changePercent": "10.358164",
+      "score": "80",
+      "signal": "buy"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "6",
+      "nameZh": "长江电力",
+      "symbol": "600900.SS",
+      "price": "26.13",
+      "changePercent": "-6.7784514",
+      "score": "78",
+      "signal": "hold"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "7",
+      "nameZh": "紫金矿业",
+      "symbol": "601899.SS",
+      "price": "40.18",
+      "changePercent": "40.933006",
+      "score": "76",
+      "signal": "add"
+    },
+    {
+      "rank": "8",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "8",
+      "nameZh": "五粮液",
+      "symbol": "000858.SZ",
+      "price": "106.04",
+      "changePercent": "-10.522319",
+      "score": "75",
+      "signal": "hold"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "比亚迪",
+      "symbol": "002594.SZ",
+      "price": "91.84",
+      "changePercent": "-2.2042382",
+      "score": "71",
+      "signal": "hold"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "9",
+      "nameZh": "美的集团",
+      "symbol": "000333.SZ",
+      "price": "80.21",
+      "changePercent": "1.9186785",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "隆基绿能",
+      "symbol": "601012.SS",
+      "price": "18.51",
+      "changePercent": "-2.476291",
+      "score": "70",
+      "signal": "hold"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    },
+    {
+      "rank": "10",
+      "nameZh": "三一重工",
+      "symbol": "600031.SS",
+      "price": "24.17",
+      "changePercent": "18.248531",
+      "score": "72",
+      "signal": "add"
+    }
+  ],
+  "messages": [],
+  "stdout": "rank\tnameZh\tsymbol\tprice\tchangePercent\tscore\tsignal\n1\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n1\t招商银行\t600036.SS\t39\t-9.82659\t98\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n2\t兴业银行\t601166.SS\t18.48\t-13.64486\t97\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n3\t东方财富\t300059.SZ\t22.88\t-2.3057215\t69\thold\n3\t万科A\t000002.SZ\t5.02\t-16.887417\t95\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t中国中免\t601888.SS\t83.08\t4.253984\t60\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n4\t工商银行\t601398.SS\t7.06\t-15.042118\t94\thold\n5\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t立讯精密\t002475.SZ\t51.17\t-8.132854\t60\thold\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n5\t中国平安\t601318.SS\t65.63\t10.358164\t80\tbuy\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n6\t长江电力\t600900.SS\t26.13\t-6.7784514\t78\thold\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n7\t紫金矿业\t601899.SS\t40.18\t40.933006\t76\tadd\n8\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n8\t五粮液\t000858.SZ\t106.04\t-10.522319\t75\thold\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t比亚迪\t002594.SZ\t91.84\t-2.2042382\t71\thold\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n9\t美的集团\t000333.SZ\t80.21\t1.9186785\t72\tadd\n10\t隆基绿能\t601012.SS\t18.51\t-2.476291\t70\thold\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n10\t三一重工\t600031.SS\t24.17\t18.248531\t72\tadd\n",
+  "stderr": "",
+  "execution_time_ms": 1496
+}

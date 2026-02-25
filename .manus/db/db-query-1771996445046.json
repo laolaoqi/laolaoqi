@@ -1,0 +1,26 @@
+{
+  "query": "SELECT market, COUNT(*) as count FROM stock_recommendations GROUP BY market ORDER BY market;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT market, COUNT(*) as count FROM stock_recommendations GROUP BY market ORDER BY market;",
+  "rows": [
+    {
+      "market": "cn",
+      "count": "155"
+    },
+    {
+      "market": "crypto",
+      "count": "160"
+    },
+    {
+      "market": "hk",
+      "count": "160"
+    },
+    {
+      "market": "us",
+      "count": "160"
+    }
+  ],
+  "messages": [],
+  "stdout": "market\tcount\ncn\t155\ncrypto\t160\nhk\t160\nus\t160\n",
+  "stderr": "",
+  "execution_time_ms": 1536
+}
