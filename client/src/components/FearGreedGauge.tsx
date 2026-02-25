@@ -60,17 +60,17 @@ export default function FearGreedGauge({ value }: Props) {
             <circle cx="100" cy="100" r="2.5" fill="#0a0e17" />
           </g>
           {/* Labels */}
-          <text x="18" y="115" fill="#ef4444" fontSize="8" textAnchor="start">0</text>
-          <text x="100" y="22" fill="#ef4444" fontSize="8" textAnchor="middle">50</text>
-          <text x="182" y="115" fill="#ef4444" fontSize="8" textAnchor="end">100</text>
+          <text x="18" y="115" fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="start">0</text>
+          <text x="100" y="22" fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="middle">50</text>
+          <text x="182" y="115" fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">100</text>
         </svg>
 
         {/* Value */}
         <div className="text-center -mt-2">
-          <div className="text-2xl font-black tabular-nums" style={{ fontFamily: "'Orbitron', sans-serif", color: zone.color }}>
+          <div className="text-3xl font-black tabular-nums" style={{ fontFamily: "'Orbitron', sans-serif", color: zone.color }}>
             {value}
           </div>
-          <div className="text-xs font-medium mt-0.5" style={{ color: zone.color }}>
+          <div className="text-sm font-bold mt-0.5" style={{ color: zone.color }}>
             {t(zone.labelKey, lang)}
           </div>
         </div>

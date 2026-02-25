@@ -1,0 +1,25 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_aQmoownM6bhHeHmnLNrAci": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_aQmoownM6bhHeHmnLNrAci": "announcements"
+    },
+    {
+      "Tables_in_aQmoownM6bhHeHmnLNrAci": "market_sentiment_data"
+    },
+    {
+      "Tables_in_aQmoownM6bhHeHmnLNrAci": "stock_recommendations"
+    },
+    {
+      "Tables_in_aQmoownM6bhHeHmnLNrAci": "users"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_aQmoownM6bhHeHmnLNrAci\n__drizzle_migrations\nannouncements\nmarket_sentiment_data\nstock_recommendations\nusers\n",
+  "stderr": "",
+  "execution_time_ms": 1581
+}

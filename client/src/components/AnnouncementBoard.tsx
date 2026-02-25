@@ -29,7 +29,7 @@ export default function AnnouncementBoard() {
   if (!announcements || announcements.length === 0) {
     return (
       <HudPanel title={lang === 'zh' ? '公告栏' : 'ANNOUNCEMENTS'}>
-        <div className="flex flex-col items-center justify-center h-32 text-red-500/50">
+        <div className="flex flex-col items-center justify-center h-32 text-red-400/70">
           <Megaphone size={24} className="mb-2" />
           <span className="text-xs">{lang === 'zh' ? '暂无公告' : 'No announcements'}</span>
         </div>
@@ -59,12 +59,12 @@ export default function AnnouncementBoard() {
                   onClick={() => setExpandedImg(ann.imageUrl)}
                 />
                 {ann.imageCaption && (
-                  <span className="text-[9px] text-red-400/60 mt-1 block">{ann.imageCaption}</span>
+                  <span className="text-xs text-red-400/60 mt-1 block">{ann.imageCaption}</span>
                 )}
               </div>
             )}
             {/* Date */}
-            <span className="text-[9px] text-red-400/40 font-mono mt-1 block">
+            <span className="text-xs text-red-400/40 font-mono mt-1 block">
               {new Date(ann.createdAt).toLocaleDateString()}
             </span>
           </div>

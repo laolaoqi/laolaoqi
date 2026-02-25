@@ -25,7 +25,7 @@ function RiskCard({ icon, title, children, accentColor }: { icon: React.ReactNod
 function DataRow({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[10px] text-red-500">{label}</span>
+      <span className="text-xs text-red-500">{label}</span>
       <span className="text-xs font-semibold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color: color || '#c8d0d8' }}>{value}</span>
     </div>
   );
@@ -42,9 +42,9 @@ export default function RiskControlPanel({ riskControl }: Props) {
             <div className="text-2xl font-bold text-[#ff3b3b] tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", textShadow: '0 0 15px rgba(255,59,59,0.3)' }}>
               {riskControl.stopLoss}
             </div>
-            <div className="text-[10px] text-[#ff3b3b]/60 mt-1">{t('risk.hardStop', lang)}</div>
+            <div className="text-xs text-[#ff3b3b]/60 mt-1">{t('risk.hardStop', lang)}</div>
           </div>
-          <div className="text-[10px] text-red-500/50 text-center border-t border-[rgba(255,59,59,0.1)] pt-2">
+          <div className="text-xs text-red-400/70 text-center border-t border-[rgba(255,59,59,0.1)] pt-2">
             {t('risk.strictExec', lang)}
           </div>
         </RiskCard>
@@ -57,7 +57,7 @@ export default function RiskControlPanel({ riskControl }: Props) {
               <span className="text-xs text-[#c8d0d8] font-mono">{tp}</span>
             </div>
           ))}
-          <div className="text-[10px] text-red-500/50 text-center border-t border-[rgba(0,230,118,0.1)] pt-2 mt-1">
+          <div className="text-xs text-red-400/70 text-center border-t border-[rgba(0,230,118,0.1)] pt-2 mt-1">
             {t('risk.batchProfit', lang)}
           </div>
         </RiskCard>
@@ -67,7 +67,7 @@ export default function RiskControlPanel({ riskControl }: Props) {
           <DataRow label={t('risk.current', lang)} value={riskControl.position.current} color="#00d4ff" />
           <DataRow label={t('risk.bull', lang)} value={riskControl.position.bull} color="#00e676" />
           <DataRow label={t('risk.bear', lang)} value={riskControl.position.bear} color="#ff3b3b" />
-          <div className="text-[10px] text-red-500/50 text-center border-t border-[rgba(0,212,255,0.1)] pt-2 mt-1">
+          <div className="text-xs text-red-400/70 text-center border-t border-[rgba(0,212,255,0.1)] pt-2 mt-1">
             {t('risk.dynamicAdjust', lang)}
           </div>
         </RiskCard>

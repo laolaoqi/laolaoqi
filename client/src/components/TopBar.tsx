@@ -62,7 +62,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
           {/* Brand */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-7 h-7 rounded bg-gradient-to-br from-[#00d4ff] to-[#0066ff] flex items-center justify-center shadow-[0_0_12px_rgba(0,212,255,0.3)]">
-              <span className="text-[10px] font-black text-white" style={{ fontFamily: "'Orbitron', sans-serif" }}>HA</span>
+              <span className="text-xs font-black text-white" style={{ fontFamily: "'Orbitron', sans-serif" }}>HA</span>
             </div>
             <span className="text-sm font-bold text-[#00d4ff] hidden sm:block tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>
               {t('brand.name', lang)}
@@ -78,7 +78,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
               <button
                 key={m.id}
                 onClick={() => setMarket(m.id)}
-                className={`px-2 sm:px-2.5 py-1 rounded text-[10px] sm:text-xs font-medium transition-all duration-200 ${
+                className={`px-2 sm:px-2.5 py-1 rounded text-xs sm:text-xs font-medium transition-all duration-200 ${
                   market === m.id
                     ? 'bg-[rgba(0,212,255,0.15)] text-[#00d4ff] border border-[rgba(0,212,255,0.3)] shadow-[0_0_8px_rgba(0,212,255,0.15)]'
                     : 'text-red-500 hover:text-red-400 hover:bg-[rgba(255,255,255,0.03)] border border-transparent'
@@ -108,8 +108,8 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                     {cfg.pulse && <div className="absolute inset-0 w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: cfg.color, opacity: 0.4 }} />}
                   </div>
-                  <span className="text-[10px] text-red-500 font-mono tabular-nums">{c.localTime}</span>
-                  <span className="text-[9px] px-1 py-0.5 rounded" style={{ color: cfg.color, backgroundColor: `${cfg.color}15` }}>
+                  <span className="text-xs text-red-500 font-mono tabular-nums">{c.localTime}</span>
+                  <span className="text-xs px-1 py-0.5 rounded" style={{ color: cfg.color, backgroundColor: `${cfg.color}15` }}>
                     {t(`status.${c.status}`, lang)}
                   </span>
                 </button>
@@ -124,7 +124,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
             ) : (
               <WifiOff size={11} className="text-[#ff8800]" />
             )}
-            <span className="text-[10px] font-mono" style={{ color: isLive ? '#00ff88' : '#ff8800' }}>
+            <span className="text-xs font-mono" style={{ color: isLive ? '#00ff88' : '#ff8800' }}>
               {isLive ? t('topbar.live', lang) : t('topbar.mock', lang)}
             </span>
           </div>
@@ -138,7 +138,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
           <div ref={langRef} className="relative">
             <button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-[rgba(0,212,255,0.08)] text-red-500/70 hover:text-[#aabbcc] transition-colors">
               <Globe size={13} />
-              <span className="text-[10px]">{LANGS.find(l => l.id === lang)?.flag}</span>
+              <span className="text-xs">{LANGS.find(l => l.id === lang)?.flag}</span>
               <ChevronDown size={9} className={`transition-transform ${langOpen ? 'rotate-180' : ''}`} />
             </button>
             {langOpen && (
@@ -165,13 +165,13 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                   <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#00d4ff] to-[#0066ff] flex items-center justify-center">
                     <User size={10} className="text-white" />
                   </div>
-                  <span className="text-[10px] hidden sm:inline max-w-[60px] truncate text-red-400">{user?.name || 'User'}</span>
+                  <span className="text-xs hidden sm:inline max-w-[60px] truncate text-red-400">{user?.name || 'User'}</span>
                 </button>
                 {userOpen && (
                   <div className="absolute right-0 top-full mt-1 bg-popover border border-[var(--theme-panel-border)] rounded-lg shadow-2xl overflow-hidden z-50 min-w-[120px]">
                     <div className="px-3 py-2 border-b border-border">
                       <div className="text-xs text-red-400">{user?.name}</div>
-                      <div className="text-[10px] text-red-500/60">{user?.email}</div>
+                      <div className="text-xs text-red-500/60">{user?.email}</div>
                     </div>
                     {user?.role === 'admin' && (
                       <Link href="/admin">
@@ -195,7 +195,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                 )}
               </>
             ) : (
-              <a href={getLoginUrl()} className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[rgba(0,212,255,0.1)] border border-[rgba(0,212,255,0.2)] text-[#00d4ff] hover:bg-[rgba(0,212,255,0.18)] transition-all text-[10px] font-medium">
+              <a href={getLoginUrl()} className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[rgba(0,212,255,0.1)] border border-[rgba(0,212,255,0.2)] text-[#00d4ff] hover:bg-[rgba(0,212,255,0.18)] transition-all text-xs font-medium">
                 <LogIn size={11} />
                 <span>{t('topbar.login', lang)}</span>
               </a>
@@ -217,9 +217,9 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                 className={`flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded transition-all ${isActive ? 'opacity-100 bg-[rgba(0,212,255,0.05)]' : 'opacity-35 hover:opacity-60'}`}
               >
                 <div className="w-1 h-1 rounded-full" style={{ backgroundColor: cfg.color }} />
-                <span className="text-[9px] text-red-500 font-mono">{t(`market.${c.market}`, lang)}</span>
-                <span className="text-[9px] text-red-500/60 font-mono tabular-nums">{c.localTime}</span>
-                <span className="text-[8px]" style={{ color: cfg.color }}>{t(`status.${c.status}`, lang)}</span>
+                <span className="text-xs text-red-500 font-mono">{t(`market.${c.market}`, lang)}</span>
+                <span className="text-xs text-red-500/60 font-mono tabular-nums">{c.localTime}</span>
+                <span className="text-xs" style={{ color: cfg.color }}>{t(`status.${c.status}`, lang)}</span>
               </button>
             );
           })}

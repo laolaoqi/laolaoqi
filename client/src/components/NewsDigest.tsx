@@ -15,7 +15,7 @@ function DigestItem({ icon, label, text, color }: { icon: React.ReactNode; label
     <div className="flex items-start gap-3 p-2.5 bg-[rgba(255,255,255,0.02)] rounded-sm border-l-2" style={{ borderLeftColor: color }}>
       <div className="mt-0.5 opacity-60">{icon}</div>
       <div className="flex-1 min-w-0">
-        <div className="text-[10px] tracking-wider mb-1" style={{ color: `${color}99` }}>{label}</div>
+        <div className="text-xs tracking-wider mb-1" style={{ color: `${color}99` }}>{label}</div>
         <div className="text-xs text-[#c8d0d8] leading-relaxed">{text}</div>
       </div>
     </div>

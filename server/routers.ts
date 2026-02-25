@@ -4,7 +4,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
-import { listUsers, updateUserRole, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement } from "./db";
+import { listUsers, updateUserRole, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement, saveStrategyResults, getLatestRecommendations, getLatestSentiment, cleanOldStrategyData } from "./db";
+import { runAllStrategies, runStrategyForMarket } from "./strategyEngine";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 
@@ -397,7 +398,7 @@ export const appRouter = router({
         return result;
       }),
 
-    // 获取指定市场的推荐股票
+    // 获取指定市场的推荐股票 — 策略引擎驱动
     recommendations: publicProcedure
       .input(z.object({ market: marketIdSchema }))
       .query(async ({ input }) => {
@@ -405,13 +406,48 @@ export const appRouter = router({
         const cached = getCached<any>(cacheKey, RECS_CACHE_TTL);
         if (cached) return { ...cached, fromCache: true };
 
+        // Try to get from database first (strategy engine results)
+        try {
+          const dbRecs = await getLatestRecommendations(input.market);
+          if (dbRecs.length > 0) {
+            const data = dbRecs.map(r => ({
+              rank: r.rank,
+              symbol: r.symbol,
+              nameZh: r.nameZh,
+              nameEn: r.nameEn,
+              code: r.code,
+              industry: r.industry || '',
+              price: r.price,
+              change: r.change,
+              changePercent: r.changePercent,
+              score: r.score,
+              signal: r.signal,
+              capitalFlow: r.capitalFlow || 0,
+              reasonZh: r.reason || '',
+              reasonEn: r.reason || '',
+              reason: r.reason || '',
+              reasonDetail: r.reasonDetail || '',
+              tags: r.tags ? r.tags.split(',') : [],
+              pe: r.pe,
+              pb: r.pb,
+              dividendYield: r.dividendYield,
+            }));
+            const result = { data, isLive: true, market: input.market, fromStrategy: true };
+            setCache(cacheKey, result);
+            return result;
+          }
+        } catch (err: any) {
+          console.error('[Market] DB recs failed, falling back:', err?.message);
+        }
+
+        // Fallback: use old static stock list + Yahoo data
         const stocks = MARKET_STOCKS[input.market];
         const results = await Promise.allSettled(stocks.map((s, i) => fetchStockData(s, i + 1)));
         const data = results.map(r => r.status === 'fulfilled' ? r.value : null).filter(Boolean);
         data.sort((a: any, b: any) => (b?.score || 0) - (a?.score || 0));
         data.forEach((item: any, i: number) => { item.rank = i + 1; });
 
-        const result = { data, isLive: data.length > 0, market: input.market };
+        const result = { data, isLive: data.length > 0, market: input.market, fromStrategy: false };
         if (data.length > 0) setCache(cacheKey, result);
         return result;
       }),
@@ -689,8 +725,137 @@ export const appRouter = router({
           return { symbol: input.symbol, isLive: false, error: err?.message };
         }
       }),
+
+    // 获取股票详情（包含策略引擎理由）
+    stockStrategy: publicProcedure
+      .input(z.object({ symbol: z.string(), market: marketIdSchema }))
+      .query(async ({ input }) => {
+        try {
+          const dbRecs = await getLatestRecommendations(input.market);
+          const match = dbRecs.find(r => r.symbol === input.symbol || r.code === input.symbol);
+          if (match) {
+            return {
+              found: true,
+              reason: match.reason,
+              reasonDetail: match.reasonDetail,
+              tags: match.tags ? match.tags.split(',') : [],
+              score: match.score,
+              signal: match.signal,
+              pe: match.pe,
+              pb: match.pb,
+              dividendYield: match.dividendYield,
+              capitalFlow: match.capitalFlow,
+            };
+          }
+          return { found: false };
+        } catch {
+          return { found: false };
+        }
+      }),
+
+    // 获取市场情绪数据（策略引擎生成）
+    sentimentData: publicProcedure
+      .input(z.object({ market: marketIdSchema }))
+      .query(async ({ input }) => {
+        try {
+          const data = await getLatestSentiment(input.market);
+          return data || null;
+        } catch {
+          return null;
+        }
+      }),
+  }),
+
+  // ===================================================================
+  // 策略引擎管理（管理员）
+  // ===================================================================
+  strategy: router({
+    // 手动触发策略更新
+    runNow: adminProcedure
+      .input(z.object({ market: marketIdSchema.optional() }))
+      .mutation(async ({ input }) => {
+        try {
+          if (input.market) {
+            const result = await runStrategyForMarket(input.market);
+            const batchId = nanoid();
+            await saveStrategyResults(batchId, input.market, result.stocks, result.sentiment);
+            // Clear cache for this market
+            cache.delete(`recs-${input.market}`);
+            return { success: true, market: input.market, stockCount: result.stocks.length };
+          } else {
+            const { batchId, results } = await runAllStrategies();
+            for (const [mkt, result] of Object.entries(results)) {
+              await saveStrategyResults(batchId, mkt, result.stocks, result.sentiment);
+              cache.delete(`recs-${mkt}`);
+            }
+            return { success: true, markets: Object.keys(results), batchId };
+          }
+        } catch (err: any) {
+          console.error('[Strategy] Manual run failed:', err?.message);
+          return { success: false, error: err?.message };
+        }
+      }),
+
+    // 获取策略运行状态
+    status: adminProcedure.query(async () => {
+      return {
+        lastRun: strategyLastRun,
+        nextRun: strategyNextRun,
+        intervalMinutes: STRATEGY_INTERVAL_MINUTES,
+        isRunning: strategyRunning,
+      };
+    }),
   }),
 });
+
+// ===================================================================
+// 策略引擎定时任务
+// ===================================================================
+let strategyLastRun = 0;
+let strategyNextRun = 0;
+let strategyRunning = false;
+const STRATEGY_INTERVAL_MINUTES = 5;
+
+async function runStrategyJob() {
+  if (strategyRunning) {
+    console.log('[Strategy] Job already running, skipping...');
+    return;
+  }
+  strategyRunning = true;
+  try {
+    console.log('[Strategy] Starting scheduled strategy run...');
+    const { batchId, results } = await runAllStrategies();
+    for (const [market, result] of Object.entries(results)) {
+      if (result.stocks.length > 0) {
+        await saveStrategyResults(batchId, market, result.stocks, result.sentiment);
+        // Clear recommendation cache so next query gets fresh data
+        cache.delete(`recs-${market}`);
+      }
+    }
+    strategyLastRun = Date.now();
+    console.log(`[Strategy] Scheduled run complete, batch=${batchId}`);
+
+    // Clean old data weekly
+    if (Math.random() < 0.01) { // ~1% chance per run = roughly once per ~8 hours
+      await cleanOldStrategyData(7);
+    }
+  } catch (err: any) {
+    console.error('[Strategy] Scheduled run failed:', err?.message);
+  } finally {
+    strategyRunning = false;
+    strategyNextRun = Date.now() + STRATEGY_INTERVAL_MINUTES * 60 * 1000;
+  }
+}
+
+// Start strategy engine timer
+setTimeout(() => {
+  console.log('[Strategy] Initial run starting in 10s...');
+  runStrategyJob();
+}, 10_000);
+
+setInterval(() => {
+  runStrategyJob();
+}, STRATEGY_INTERVAL_MINUTES * 60 * 1000);
 
 // ===================================================================
 // 技术指标计算

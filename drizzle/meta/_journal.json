@@ -15,6 +15,13 @@
       "when": 1771987793814,
       "tag": "0001_mighty_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771992519259,
+      "tag": "0002_bouncy_marvel_boy",
+      "breakpoints": true
     }
   ]
 }

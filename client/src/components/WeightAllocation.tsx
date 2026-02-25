@@ -40,7 +40,7 @@ export default function WeightAllocationPanel({ weights }: Props) {
         <WeightBar label={t('weight.technical', lang)} value={weights.technical} color="#a855f7" icon="📈" />
       </div>
       <div className="mt-3 pt-2 border-t border-[rgba(0,212,255,0.08)]">
-        <span className="text-[10px] text-red-500/50">{t('weight.autoAdjust', lang)}</span>
+        <span className="text-xs text-red-400/70">{t('weight.autoAdjust', lang)}</span>
       </div>
     </HudPanel>
   );

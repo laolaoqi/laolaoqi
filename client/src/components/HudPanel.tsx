@@ -26,9 +26,9 @@ export default function HudPanel({ title, children, className, scan = false, glo
     >
       {/* Title bar */}
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[rgba(0,212,255,0.12)]">
-        <div className="w-1.5 h-4 bg-[#00d4ff] opacity-80" />
+        <div className="w-2 h-5 bg-[#00d4ff]" />
         <h3
-          className="text-xs tracking-[0.2em] uppercase text-[#00d4ff] opacity-90"
+          className="text-sm tracking-[0.2em] uppercase text-[#00d4ff] font-semibold"
           style={{ fontFamily: "'Orbitron', sans-serif" }}
         >
           {title}

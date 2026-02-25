@@ -1,7 +1,8 @@
-import { eq, desc, asc, count } from "drizzle-orm";
+import { eq, desc, asc, count, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, announcements, InsertAnnouncement } from "../drizzle/schema";
+import { InsertUser, users, announcements, InsertAnnouncement, stockRecommendations, marketSentiment } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import type { ScoredStock, MarketSentimentResult } from './strategyEngine';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -166,4 +167,112 @@ export async function deleteAnnouncement(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(announcements).where(eq(announcements.id, id));
+}
+
+// ===================================================================
+// Stock Recommendations CRUD
+// ===================================================================
+
+export async function saveStrategyResults(
+  batchId: string,
+  market: string,
+  stocks: ScoredStock[],
+  sentimentData: MarketSentimentResult
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Insert stock recommendations
+  if (stocks.length > 0) {
+    const values = stocks.map(s => ({
+      market,
+      rank: s.rank,
+      code: s.code,
+      symbol: s.symbol,
+      nameZh: s.nameZh,
+      nameEn: s.nameEn,
+      industry: s.industry || null,
+      price: s.price,
+      change: s.change,
+      changePercent: s.changePercent,
+      score: s.score,
+      signal: s.signal,
+      pe: s.pe,
+      pb: s.pb,
+      dividendYield: s.dividendYield,
+      capitalFlow: s.capitalFlow,
+      reason: s.reason,
+      reasonDetail: s.reasonDetail,
+      tags: s.tags.join(','),
+      batchId,
+    }));
+    await db.insert(stockRecommendations).values(values);
+  }
+
+  // Insert market sentiment
+  await db.insert(marketSentiment).values({
+    market,
+    advanceRatio: sentimentData.advanceRatio,
+    mainForceFlow: sentimentData.mainForceFlow,
+    marketState: sentimentData.marketState,
+    stopLoss: sentimentData.stopLoss,
+    positionSuggestion: sentimentData.positionSuggestion,
+    advice: sentimentData.advice,
+    batchId,
+  });
+}
+
+export async function getLatestRecommendations(market: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get the latest batchId for this market
+  const latestBatch = await db
+    .select({ batchId: stockRecommendations.batchId })
+    .from(stockRecommendations)
+    .where(eq(stockRecommendations.market, market))
+    .orderBy(desc(stockRecommendations.createdAt))
+    .limit(1);
+
+  if (latestBatch.length === 0) return [];
+
+  const batchId = latestBatch[0].batchId;
+  return db
+    .select()
+    .from(stockRecommendations)
+    .where(and(
+      eq(stockRecommendations.market, market),
+      eq(stockRecommendations.batchId, batchId)
+    ))
+    .orderBy(asc(stockRecommendations.rank))
+    .limit(10);
+}
+
+export async function getLatestSentiment(market: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(marketSentiment)
+    .where(eq(marketSentiment.market, market))
+    .orderBy(desc(marketSentiment.createdAt))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function cleanOldStrategyData(keepDays = 7) {
+  const db = await getDb();
+  if (!db) return;
+
+  const cutoff = new Date(Date.now() - keepDays * 24 * 60 * 60 * 1000);
+  // Use raw SQL for date comparison since drizzle doesn't have lt for timestamps easily
+  try {
+    await db.execute(`DELETE FROM stock_recommendations WHERE createdAt < '${cutoff.toISOString().slice(0, 19)}'`);
+    await db.execute(`DELETE FROM market_sentiment_data WHERE createdAt < '${cutoff.toISOString().slice(0, 19)}'`);
+    console.log(`[DB] Cleaned strategy data older than ${keepDays} days`);
+  } catch (err: any) {
+    console.error('[DB] Failed to clean old data:', err?.message);
+  }
 }

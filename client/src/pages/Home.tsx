@@ -62,11 +62,11 @@ function Dashboard() {
       {/* Welcome Banner - PC only */}
       <div className="hidden lg:block max-w-[1600px] mx-auto px-3 lg:px-5 pt-3">
         <div className="flex items-center justify-center gap-3 py-2 px-4 rounded border border-red-500/20 bg-red-500/5">
-          <span className="text-red-500 text-sm font-bold tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+          <span className="text-red-500 text-lg font-bold tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>
             AI选股指南
           </span>
-          <span className="text-red-400/60 text-xs">|</span>
-          <span className="text-red-400/70 text-xs">
+          <span className="text-red-400/80 text-sm">|</span>
+          <span className="text-red-400 text-sm font-medium">
             {t('brand.subtitle', lang)} · {t('market.' + market, lang)}
           </span>
         </div>
@@ -139,11 +139,11 @@ function Dashboard() {
             <div className="flex items-center justify-between py-3 border-t border-[rgba(0,212,255,0.08)]">
               <div className="flex items-center gap-2">
                 <div className="w-1 h-1 rounded-full bg-[#00d4ff] opacity-40" />
-                <span className="text-[10px] text-red-500/40" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <span className="text-[10px] text-red-400/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   {t('brand.version', lang)}
                 </span>
               </div>
-              <span className="text-[10px] text-red-500/30">
+              <span className="text-[10px] text-red-400/60">
                 {t('footer.disclaimer', lang)}
               </span>
             </div>
