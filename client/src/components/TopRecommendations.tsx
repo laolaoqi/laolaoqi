@@ -1,5 +1,5 @@
 // ===================================================================
-// TopRecommendations — 核心推荐 TOP 10 v5 (策略引擎 + 标签 + 理由弹窗)
+// TopRecommendations — 核心推荐 TOP 10 v6 (PC表格 + 移动端卡片)
 // ===================================================================
 
 import { useState } from 'react';
@@ -15,10 +15,10 @@ import { ExternalLink, Lock, X, TrendingUp, TrendingDown, Minus, Info } from 'lu
 interface Props { recommendations: StockRecommendation[]; }
 
 const SIGNAL_CONFIG: Record<string, { bg: string; text: string; border: string; label: string }> = {
-  buy: { bg: 'rgba(0,230,118,0.15)', text: '#00e676', border: 'rgba(0,230,118,0.4)', label: '买入' },
+  buy: { bg: 'rgba(255,59,59,0.15)', text: '#ff3b3b', border: 'rgba(255,59,59,0.4)', label: '买入' },
   add: { bg: 'rgba(0,212,255,0.15)', text: '#00d4ff', border: 'rgba(0,212,255,0.4)', label: '加仓' },
   hold: { bg: 'rgba(240,180,41,0.15)', text: '#f0b429', border: 'rgba(240,180,41,0.4)', label: '持有' },
-  reduce: { bg: 'rgba(255,59,59,0.15)', text: '#ff3b3b', border: 'rgba(255,59,59,0.4)', label: '减仓' },
+  reduce: { bg: 'rgba(0,230,118,0.15)', text: '#00e676', border: 'rgba(0,230,118,0.4)', label: '减仓' },
 };
 
 const TAG_COLORS: Record<string, string> = {
@@ -31,7 +31,7 @@ const TAG_COLORS: Record<string, string> = {
   '超卖反弹': '#a78bfa',
   '强势': '#f0b429',
   '多头排列': '#00e676',
-  '放量上涨': '#00e676',
+  '放量上涨': '#ff3b3b',
   '创新高': '#f0b429',
   '底部区域': '#00d4ff',
 };
@@ -176,6 +176,93 @@ function StockDetailModal({ stock, market, lang, onClose }: { stock: StockRecomm
   );
 }
 
+// ===================================================================
+// Mobile Card Component
+// ===================================================================
+function MobileStockCard({ stock, market, lang, isGuest, currency, onSelect }: {
+  stock: StockRecommendation;
+  market: string;
+  lang: Lang;
+  isGuest: boolean;
+  currency: string;
+  onSelect: (s: StockRecommendation) => void;
+}) {
+  const isUp = stock.changePercent >= 0;
+  const color = isUp ? '#ff3b3b' : '#00e676';
+  const flowColor = stock.capitalFlow >= 0 ? '#ff3b3b' : '#00e676';
+  const displayName = getName(stock as any, lang) || stock.name;
+  const tags: string[] = (stock as any).tags || [];
+
+  return (
+    <div
+      className="border border-[rgba(0,212,255,0.1)] rounded-lg p-3 hover:bg-[rgba(0,212,255,0.03)] transition-colors"
+      onClick={() => !isGuest && onSelect(stock)}
+    >
+      {/* Top row: rank + name + signal */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center justify-center w-7 h-7 text-sm font-bold rounded-sm ${stock.rank <= 3 ? 'bg-[rgba(240,180,41,0.2)] text-[#f0b429] border border-[rgba(240,180,41,0.4)]' : 'text-red-400/60'}`}>
+            {stock.rank}
+          </span>
+          {isGuest ? (
+            <span className="text-red-500/60 font-medium text-base">{'★'.repeat(Math.min(stock.rank, 3))} ***</span>
+          ) : (
+            <span className="text-[#e0e8f0] font-bold text-base">{displayName}</span>
+          )}
+        </div>
+        {isGuest ? (
+          <span className="text-red-500/50 text-xs">***</span>
+        ) : (
+          <SignalBadge signal={stock.signal} lang={lang} />
+        )}
+      </div>
+
+      {/* Middle row: code + industry + score */}
+      {!isGuest && (
+        <div className="flex items-center gap-3 mb-2 text-sm">
+          <span className="text-red-400 font-mono">{stock.code}</span>
+          <span className="text-red-400/70">{stock.industry}</span>
+          <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-sm font-bold rounded-sm" style={{ backgroundColor: `rgba(0,212,255,${stock.score / 300})`, color: stock.score >= 75 ? '#00d4ff' : '#f0b429' }}>
+            {stock.score}分
+          </span>
+        </div>
+      )}
+
+      {/* Price row */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-lg font-bold tabular-nums" style={{ color: isGuest ? '#ef4444' : '#e0e8f0', fontFamily: "'JetBrains Mono', monospace" }}>
+          {isGuest ? '***' : `${currency}${stock.price.toFixed(2)}`}
+        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-base font-bold tabular-nums" style={{ color: isGuest ? '#ef4444' : color, fontFamily: "'JetBrains Mono', monospace" }}>
+            {isGuest ? '***' : `${isUp ? '+' : ''}${stock.changePercent.toFixed(2)}%`}
+          </span>
+          {!isGuest && (
+            <span className="text-sm tabular-nums font-medium" style={{ color: flowColor, fontFamily: "'JetBrains Mono', monospace" }}>
+              {stock.capitalFlow >= 0 ? '+' : ''}{stock.capitalFlow.toFixed(1)}{t('table.flowUnit', lang)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Tags row */}
+      {!isGuest && tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {tags.slice(0, 4).map((tag, i) => <TagBadge key={i} tag={tag} />)}
+          {!isGuest && (
+            <button className="ml-auto text-xs text-[#00d4ff] opacity-60 hover:opacity-100 flex items-center gap-0.5">
+              <Info size={12} /> 详情
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===================================================================
+// Main Component
+// ===================================================================
 export default function TopRecommendations({ recommendations }: Props) {
   const { lang, market } = useApp();
   const { isAuthenticated } = useAuth();
@@ -185,17 +272,18 @@ export default function TopRecommendations({ recommendations }: Props) {
 
   return (
     <HudPanel title={t('panel.topRec', lang)} scan>
-      <div className="overflow-x-auto -mx-1">
+      {/* ===== Desktop Table (hidden on mobile) ===== */}
+      <div className="hidden md:block overflow-x-auto -mx-1">
         <table className="w-full text-base" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
           <thead>
             <tr className="text-red-400 text-base tracking-wider border-b border-[rgba(0,212,255,0.12)]">
               <th className="text-left py-2.5 px-1.5 font-semibold">#</th>
               <th className="text-left py-2.5 px-1.5 font-semibold">{t('table.name', lang)}</th>
-              <th className="text-left py-2.5 px-1.5 font-semibold hidden sm:table-cell">{t('table.code', lang)}</th>
-              <th className="text-left py-2.5 px-1.5 font-semibold hidden md:table-cell">{t('table.industry', lang)}</th>
+              <th className="text-left py-2.5 px-1.5 font-semibold">{t('table.code', lang)}</th>
+              <th className="text-left py-2.5 px-1.5 font-semibold hidden lg:table-cell">{t('table.industry', lang)}</th>
               <th className="text-right py-2.5 px-1.5 font-semibold">{t('table.price', lang)}</th>
               <th className="text-right py-2.5 px-1.5 font-semibold">{t('table.change', lang)}</th>
-              <th className="text-center py-2.5 px-1.5 font-semibold hidden sm:table-cell">{t('table.score', lang)}</th>
+              <th className="text-center py-2.5 px-1.5 font-semibold">{t('table.score', lang)}</th>
               <th className="text-center py-2.5 px-1.5 font-semibold">{t('table.signal', lang)}</th>
               <th className="text-right py-2.5 px-1.5 font-semibold hidden lg:table-cell">{t('table.flow', lang)}</th>
               <th className="text-left py-2.5 px-1.5 font-semibold hidden xl:table-cell">标签</th>
@@ -208,7 +296,6 @@ export default function TopRecommendations({ recommendations }: Props) {
               const color = isUp ? '#ff3b3b' : '#00e676';
               const flowColor = stock.capitalFlow >= 0 ? '#ff3b3b' : '#00e676';
               const displayName = getName(stock as any, lang) || stock.name;
-              const stockSymbol = stock.symbol || stock.code;
               const tags: string[] = (stock as any).tags || [];
 
               return (
@@ -231,11 +318,15 @@ export default function TopRecommendations({ recommendations }: Props) {
                       </button>
                     )}
                   </td>
-                  <td className="py-2.5 px-1.5 text-red-400 hidden sm:table-cell text-sm">{isGuest ? '***' : stock.code}</td>
-                  <td className="py-2.5 px-1.5 text-red-400 hidden md:table-cell text-sm">{isGuest ? '***' : stock.industry}</td>
-                  <td className="py-2.5 px-1.5 text-right tabular-nums font-medium text-sm" style={{ color: isGuest ? '#ef4444' : color }}>{isGuest ? '***' : `${currency}${stock.price.toFixed(2)}`}</td>
-                  <td className="py-2.5 px-1.5 text-right tabular-nums font-medium text-sm" style={{ color: isGuest ? '#ef4444' : color }}>{isGuest ? '***' : `${isUp ? '+' : ''}${stock.changePercent.toFixed(2)}%`}</td>
-                  <td className="py-2.5 px-1.5 text-center hidden sm:table-cell">
+                  <td className="py-2.5 px-1.5 text-red-400 text-sm">{isGuest ? '***' : stock.code}</td>
+                  <td className="py-2.5 px-1.5 text-red-400 hidden lg:table-cell text-sm">{isGuest ? '***' : stock.industry}</td>
+                  <td className="py-2.5 px-1.5 text-right tabular-nums font-medium text-base" style={{ color: isGuest ? '#ef4444' : '#e0e8f0', fontFamily: "'JetBrains Mono', monospace" }}>
+                    {isGuest ? '***' : `${currency}${stock.price.toFixed(2)}`}
+                  </td>
+                  <td className="py-2.5 px-1.5 text-right tabular-nums font-medium text-base" style={{ color: isGuest ? '#ef4444' : color }}>
+                    {isGuest ? '***' : `${isUp ? '+' : ''}${stock.changePercent.toFixed(2)}%`}
+                  </td>
+                  <td className="py-2.5 px-1.5 text-center">
                     {isGuest ? (
                       <span className="text-red-500/50 text-xs">***</span>
                     ) : (
@@ -273,6 +364,21 @@ export default function TopRecommendations({ recommendations }: Props) {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* ===== Mobile Card Layout (visible only on mobile) ===== */}
+      <div className="md:hidden space-y-2">
+        {recommendations.map(stock => (
+          <MobileStockCard
+            key={stock.code}
+            stock={stock}
+            market={market}
+            lang={lang as Lang}
+            isGuest={isGuest}
+            currency={currency}
+            onSelect={setSelectedStock}
+          />
+        ))}
       </div>
 
       {/* Guest login prompt */}

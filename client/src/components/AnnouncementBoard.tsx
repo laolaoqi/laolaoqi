@@ -55,7 +55,7 @@ export default function AnnouncementBoard() {
                 <img
                   src={ann.imageUrl}
                   alt={ann.imageCaption || ann.title}
-                  className="w-full max-h-40 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                  className="w-24 h-24 object-contain rounded cursor-pointer hover:opacity-80 transition-opacity border border-[rgba(0,212,255,0.1)]"
                   onClick={() => setExpandedImg(ann.imageUrl)}
                 />
                 {ann.imageCaption && (

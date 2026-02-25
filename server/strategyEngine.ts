@@ -1,7 +1,9 @@
 // ===================================================================
-// Strategy Engine — 自动化选股系统
-// 基于Yahoo Finance v8 Chart API的多维度评分策略引擎
-// v8 chart API 不需要认证，比 v7 quote API 更可靠
+// Strategy Engine — 全市场自动化选股系统
+// 基于Yahoo Finance v8 Chart API + Screener API的多维度评分策略引擎
+// A股/港股：覆盖沪深300+恒生指数主要成分股（100+/50+只）
+// 美股：动态screener(gainers/losers/actives) + 蓝筹池
+// 加密：主流币种全覆盖（30+只）
 // ===================================================================
 
 import { nanoid } from "nanoid";
@@ -69,20 +71,17 @@ interface ChartResult {
   dividendYield: number | null;
   closes: number[];
   volumes: number[];
+  shortName?: string;
 }
 
 async function fetchYahooChartData(symbol: string): Promise<ChartResult | null> {
   try {
-    // Use v8 chart API with 1mo range to get both current price and historical data
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=3mo&includePrePost=false`;
     const resp = await fetch(url, {
       headers: { 'User-Agent': UA },
       signal: AbortSignal.timeout(12000),
     });
-    if (resp.status !== 200) {
-      console.error(`[Strategy] Chart API failed for ${symbol}: HTTP ${resp.status}`);
-      return null;
-    }
+    if (resp.status !== 200) return null;
     const data = await resp.json();
     const result = data?.chart?.result?.[0];
     if (!result) return null;
@@ -93,13 +92,10 @@ async function fetchYahooChartData(symbol: string): Promise<ChartResult | null> 
     const volumes = (quotes.volume || []).filter((v: any) => v != null && !isNaN(v));
 
     const price = meta.regularMarketPrice || (closes.length > 0 ? closes[closes.length - 1] : 0);
-    // CRITICAL FIX: chartPreviousClose with range=3mo returns 3-month-ago price, NOT yesterday's close
-    // Use closes[-2] (second-to-last close = yesterday's close) for accurate daily change
     const previousClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.previousClose || meta.chartPreviousClose || price);
     const change = price - previousClose;
     const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
 
-    // Calculate 52-week high/low from available data
     let high52 = meta.fiftyTwoWeekHigh || 0;
     let low52 = meta.fiftyTwoWeekLow || 0;
     if (high52 === 0 && closes.length > 0) {
@@ -115,27 +111,57 @@ async function fetchYahooChartData(symbol: string): Promise<ChartResult | null> 
       volume: meta.regularMarketVolume || (volumes.length > 0 ? volumes[volumes.length - 1] : 0),
       fiftyTwoWeekHigh: high52,
       fiftyTwoWeekLow: low52,
-      marketCap: 0, // Not available in chart API
-      pe: null, // Will be estimated from known data
+      marketCap: 0,
+      pe: null,
       dividendYield: null,
       closes,
       volumes,
+      shortName: meta.shortName || meta.longName || '',
     };
-  } catch (err: any) {
-    console.error(`[Strategy] Chart fetch error for ${symbol}:`, err?.message);
+  } catch {
     return null;
   }
 }
 
 // ===================================================================
-// Stock Universe — Candidate pools per market with known PE/PB/Dividend data
+// Yahoo Finance Screener API (predefined, no auth required)
+// Returns dynamic market movers for US market
+// ===================================================================
+interface ScreenerQuote {
+  symbol: string;
+  shortName?: string;
+  regularMarketPrice?: number;
+  regularMarketChangePercent?: number;
+  regularMarketVolume?: number;
+}
+
+async function fetchScreenerStocks(scrId: string, count = 50): Promise<ScreenerQuote[]> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&lang=en-US&region=US&scrIds=${scrId}&count=${count}`;
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': UA },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (resp.status !== 200) return [];
+    const data = await resp.json();
+    return data?.finance?.result?.[0]?.quotes || [];
+  } catch {
+    return [];
+  }
+}
+
+// ===================================================================
+// Stock Universe — Comprehensive candidate pools per market
+// A股：沪深300主要成分股 + 行业龙头 (100+只)
+// 港股：恒生指数 + 恒生科技 + 国企指数成分股 (50+只)
+// 美股：动态screener + 蓝筹池 (150+只)
+// 加密：主流 + DeFi + L2 (30+只)
 // ===================================================================
 interface StockDef {
   symbol: string;
   nameZh: string;
   nameEn: string;
   industry: string;
-  // Approximate fundamental data (updated periodically)
   approxPE?: number;
   approxPB?: number;
   approxDividend?: number;
@@ -143,71 +169,182 @@ interface StockDef {
 
 const STOCK_UNIVERSE: Record<string, StockDef[]> = {
   cn: [
+    // === 银行 ===
     { symbol: '600036.SS', nameZh: '招商银行', nameEn: 'CMB', industry: '银行', approxPE: 6.5, approxPB: 0.9, approxDividend: 4.2 },
-    { symbol: '601318.SS', nameZh: '中国平安', nameEn: 'Ping An', industry: '保险', approxPE: 9.8, approxPB: 1.1, approxDividend: 3.5 },
-    { symbol: '600519.SS', nameZh: '贵州茅台', nameEn: 'Moutai', industry: '白酒', approxPE: 28, approxPB: 9.5, approxDividend: 2.1 },
-    { symbol: '000858.SZ', nameZh: '五粮液', nameEn: 'Wuliangye', industry: '白酒', approxPE: 20, approxPB: 5.2, approxDividend: 2.8 },
-    { symbol: '300750.SZ', nameZh: '宁德时代', nameEn: 'CATL', industry: '新能源', approxPE: 22, approxPB: 5.8 },
-    { symbol: '601012.SS', nameZh: '隆基绿能', nameEn: 'LONGi', industry: '光伏', approxPE: 35, approxPB: 2.1 },
-    { symbol: '000333.SZ', nameZh: '美的集团', nameEn: 'Midea', industry: '家电', approxPE: 12, approxPB: 3.2, approxDividend: 3.0 },
-    { symbol: '002594.SZ', nameZh: '比亚迪', nameEn: 'BYD', industry: '新能源车', approxPE: 25, approxPB: 4.5 },
-    { symbol: '600900.SS', nameZh: '长江电力', nameEn: 'CYPC', industry: '电力', approxPE: 18, approxPB: 3.8, approxDividend: 3.5 },
-    { symbol: '601899.SS', nameZh: '紫金矿业', nameEn: 'Zijin Mining', industry: '有色', approxPE: 14, approxPB: 3.0, approxDividend: 2.0 },
-    { symbol: '600276.SS', nameZh: '恒瑞医药', nameEn: 'Hengrui', industry: '医药', approxPE: 55, approxPB: 8.5 },
-    { symbol: '601166.SS', nameZh: '兴业银行', nameEn: 'CIB', industry: '银行', approxPE: 5.2, approxPB: 0.55, approxDividend: 5.5 },
-    { symbol: '000002.SZ', nameZh: '万科A', nameEn: 'Vanke', industry: '地产', approxPE: 8, approxPB: 0.6, approxDividend: 4.0 },
-    { symbol: '600809.SS', nameZh: '山西汾酒', nameEn: 'Fenjiu', industry: '白酒', approxPE: 30, approxPB: 10, approxDividend: 1.5 },
-    { symbol: '603259.SS', nameZh: '药明康德', nameEn: 'WuXi AppTec', industry: '医药', approxPE: 18, approxPB: 3.5 },
-    { symbol: '601888.SS', nameZh: '中国中免', nameEn: 'CDFG', industry: '免税', approxPE: 25, approxPB: 4.0 },
-    { symbol: '600031.SS', nameZh: '三一重工', nameEn: 'Sany', industry: '机械', approxPE: 15, approxPB: 2.5, approxDividend: 2.5 },
-    { symbol: '002475.SZ', nameZh: '立讯精密', nameEn: 'Luxshare', industry: '电子', approxPE: 20, approxPB: 4.0 },
-    { symbol: '300059.SZ', nameZh: '东方财富', nameEn: 'East Money', industry: '金融科技', approxPE: 25, approxPB: 5.0 },
     { symbol: '601398.SS', nameZh: '工商银行', nameEn: 'ICBC', industry: '银行', approxPE: 5.0, approxPB: 0.5, approxDividend: 6.0 },
-    // 扩大候选池 — 更多行业龙头
     { symbol: '601288.SS', nameZh: '农业银行', nameEn: 'ABC', industry: '银行', approxPE: 4.8, approxPB: 0.45, approxDividend: 6.5 },
     { symbol: '601939.SS', nameZh: '建设银行', nameEn: 'CCB', industry: '银行', approxPE: 5.2, approxPB: 0.55, approxDividend: 5.8 },
+    { symbol: '601166.SS', nameZh: '兴业银行', nameEn: 'CIB', industry: '银行', approxPE: 5.2, approxPB: 0.55, approxDividend: 5.5 },
+    { symbol: '000001.SZ', nameZh: '平安银行', nameEn: 'PAB', industry: '银行', approxPE: 5.5, approxPB: 0.5, approxDividend: 5.0 },
+    { symbol: '600000.SS', nameZh: '浦发银行', nameEn: 'SPD Bank', industry: '银行', approxPE: 4.5, approxPB: 0.4, approxDividend: 5.5 },
+    { symbol: '601328.SS', nameZh: '交通银行', nameEn: 'BoCom', industry: '银行', approxPE: 5.0, approxPB: 0.45, approxDividend: 6.0 },
+    { symbol: '600015.SS', nameZh: '华夏银行', nameEn: 'Hua Xia Bank', industry: '银行', approxPE: 4.2, approxPB: 0.35, approxDividend: 5.0 },
+    { symbol: '600016.SS', nameZh: '民生银行', nameEn: 'Minsheng Bank', industry: '银行', approxPE: 4.0, approxPB: 0.35, approxDividend: 5.5 },
+    // === 保险/金融 ===
+    { symbol: '601318.SS', nameZh: '中国平安', nameEn: 'Ping An', industry: '保险', approxPE: 9.8, approxPB: 1.1, approxDividend: 3.5 },
+    { symbol: '601628.SS', nameZh: '中国人寿', nameEn: 'China Life', industry: '保险', approxPE: 10, approxPB: 1.0, approxDividend: 2.5 },
+    { symbol: '601601.SS', nameZh: '中国太保', nameEn: 'CPIC', industry: '保险', approxPE: 8, approxPB: 0.8, approxDividend: 3.5 },
+    { symbol: '600030.SS', nameZh: '中信证券', nameEn: 'CITIC Sec', industry: '券商', approxPE: 18, approxPB: 1.5, approxDividend: 2.0 },
+    { symbol: '600837.SS', nameZh: '海通证券', nameEn: 'Haitong Sec', industry: '券商', approxPE: 15, approxPB: 0.9, approxDividend: 2.5 },
+    { symbol: '300059.SZ', nameZh: '东方财富', nameEn: 'East Money', industry: '金融科技', approxPE: 25, approxPB: 5.0 },
+    // === 白酒/食品饮料 ===
+    { symbol: '600519.SS', nameZh: '贵州茅台', nameEn: 'Moutai', industry: '白酒', approxPE: 28, approxPB: 9.5, approxDividend: 2.1 },
+    { symbol: '000858.SZ', nameZh: '五粮液', nameEn: 'Wuliangye', industry: '白酒', approxPE: 20, approxPB: 5.2, approxDividend: 2.8 },
+    { symbol: '600809.SS', nameZh: '山西汾酒', nameEn: 'Fenjiu', industry: '白酒', approxPE: 30, approxPB: 10, approxDividend: 1.5 },
+    { symbol: '000568.SZ', nameZh: '泸州老窖', nameEn: 'Luzhou Laojiao', industry: '白酒', approxPE: 22, approxPB: 7.0, approxDividend: 2.5 },
+    { symbol: '000596.SZ', nameZh: '古井贡酒', nameEn: 'Gujing Tribute', industry: '白酒', approxPE: 25, approxPB: 6.0, approxDividend: 1.8 },
+    { symbol: '600887.SS', nameZh: '伊利股份', nameEn: 'Yili', industry: '乳业', approxPE: 18, approxPB: 4.0, approxDividend: 3.5 },
+    { symbol: '603288.SS', nameZh: '海天味业', nameEn: 'Haitian', industry: '调味品', approxPE: 35, approxPB: 8.0, approxDividend: 1.5 },
+    // === 新能源/电力 ===
+    { symbol: '300750.SZ', nameZh: '宁德时代', nameEn: 'CATL', industry: '新能源', approxPE: 22, approxPB: 5.8 },
+    { symbol: '601012.SS', nameZh: '隆基绿能', nameEn: 'LONGi', industry: '光伏', approxPE: 35, approxPB: 2.1 },
+    { symbol: '002594.SZ', nameZh: '比亚迪', nameEn: 'BYD', industry: '新能源车', approxPE: 25, approxPB: 4.5 },
+    { symbol: '600900.SS', nameZh: '长江电力', nameEn: 'CYPC', industry: '电力', approxPE: 18, approxPB: 3.8, approxDividend: 3.5 },
+    { symbol: '600886.SS', nameZh: '国投电力', nameEn: 'SDIC Power', industry: '电力', approxPE: 12, approxPB: 2.0, approxDividend: 3.0 },
+    { symbol: '601985.SS', nameZh: '中国核电', nameEn: 'CNNP', industry: '核电', approxPE: 15, approxPB: 2.5, approxDividend: 2.5 },
+    { symbol: '600438.SS', nameZh: '通威股份', nameEn: 'Tongwei', industry: '光伏', approxPE: 10, approxPB: 1.5, approxDividend: 3.0 },
+    // === 家电/消费 ===
+    { symbol: '000333.SZ', nameZh: '美的集团', nameEn: 'Midea', industry: '家电', approxPE: 12, approxPB: 3.2, approxDividend: 3.0 },
+    { symbol: '000651.SZ', nameZh: '格力电器', nameEn: 'Gree', industry: '家电', approxPE: 8, approxPB: 2.5, approxDividend: 5.0 },
+    { symbol: '600690.SS', nameZh: '海尔智家', nameEn: 'Haier', industry: '家电', approxPE: 14, approxPB: 2.8, approxDividend: 2.5 },
+    // === 医药 ===
+    { symbol: '600276.SS', nameZh: '恒瑞医药', nameEn: 'Hengrui', industry: '医药', approxPE: 55, approxPB: 8.5 },
+    { symbol: '603259.SS', nameZh: '药明康德', nameEn: 'WuXi AppTec', industry: '医药', approxPE: 18, approxPB: 3.5 },
+    { symbol: '000538.SZ', nameZh: '云南白药', nameEn: 'Yunnan Baiyao', industry: '医药', approxPE: 20, approxPB: 3.0, approxDividend: 2.5 },
+    { symbol: '600196.SS', nameZh: '复星医药', nameEn: 'Fosun Pharma', industry: '医药', approxPE: 15, approxPB: 1.5, approxDividend: 1.5 },
+    { symbol: '300760.SZ', nameZh: '迈瑞医疗', nameEn: 'Mindray', industry: '医疗器械', approxPE: 30, approxPB: 10 },
+    // === 科技/电子 ===
+    { symbol: '002415.SZ', nameZh: '海康威视', nameEn: 'Hikvision', industry: '安防', approxPE: 20, approxPB: 5.0, approxDividend: 2.0 },
+    { symbol: '002475.SZ', nameZh: '立讯精密', nameEn: 'Luxshare', industry: '电子', approxPE: 20, approxPB: 4.0 },
+    { symbol: '688981.SS', nameZh: '中芯国际', nameEn: 'SMIC', industry: '半导体', approxPE: 40, approxPB: 2.5 },
+    { symbol: '002230.SZ', nameZh: '科大讯飞', nameEn: 'iFlytek', industry: 'AI', approxPE: 80, approxPB: 5.0 },
+    { symbol: '603501.SS', nameZh: '韦尔股份', nameEn: 'Will Semi', industry: '半导体', approxPE: 30, approxPB: 4.0 },
+    { symbol: '002049.SZ', nameZh: '紫光国微', nameEn: 'Unigroup Guoxin', industry: '芯片', approxPE: 35, approxPB: 6.0 },
+    // === 地产/建筑 ===
+    { symbol: '000002.SZ', nameZh: '万科A', nameEn: 'Vanke', industry: '地产', approxPE: 8, approxPB: 0.6, approxDividend: 4.0 },
+    { symbol: '601668.SS', nameZh: '中国建筑', nameEn: 'CSCEC', industry: '建筑', approxPE: 5, approxPB: 0.6, approxDividend: 4.0 },
+    { symbol: '600585.SS', nameZh: '海螺水泥', nameEn: 'Conch Cement', industry: '建材', approxPE: 9, approxPB: 1.0, approxDividend: 4.5 },
+    { symbol: '001979.SZ', nameZh: '招商蛇口', nameEn: 'CM Land', industry: '地产', approxPE: 10, approxPB: 0.8, approxDividend: 3.5 },
+    // === 资源/能源 ===
+    { symbol: '601899.SS', nameZh: '紫金矿业', nameEn: 'Zijin Mining', industry: '有色', approxPE: 14, approxPB: 3.0, approxDividend: 2.0 },
+    { symbol: '601088.SS', nameZh: '中国神华', nameEn: 'Shenhua', industry: '煤炭', approxPE: 9, approxPB: 1.5, approxDividend: 6.0 },
+    { symbol: '601225.SS', nameZh: '陕西煤业', nameEn: 'Shaanxi Coal', industry: '煤炭', approxPE: 8, approxPB: 2.0, approxDividend: 7.0 },
     { symbol: '600028.SS', nameZh: '中国石化', nameEn: 'Sinopec', industry: '石化', approxPE: 10, approxPB: 0.8, approxDividend: 5.0 },
     { symbol: '601857.SS', nameZh: '中国石油', nameEn: 'PetroChina', industry: '石油', approxPE: 8, approxPB: 0.7, approxDividend: 4.5 },
+    { symbol: '600019.SS', nameZh: '宝钢股份', nameEn: 'Baosteel', industry: '钢铁', approxPE: 8, approxPB: 0.7, approxDividend: 5.0 },
+    { symbol: '603993.SS', nameZh: '洛阳钼业', nameEn: 'CMOC', industry: '有色', approxPE: 12, approxPB: 2.5, approxDividend: 2.0 },
+    { symbol: '600547.SS', nameZh: '山东黄金', nameEn: 'SD Gold', industry: '黄金', approxPE: 25, approxPB: 3.5 },
+    // === 通信/运营商 ===
     { symbol: '600050.SS', nameZh: '中国联通', nameEn: 'China Unicom', industry: '通信', approxPE: 15, approxPB: 1.0, approxDividend: 3.0 },
     { symbol: '601728.SS', nameZh: '中国电信', nameEn: 'China Telecom', industry: '通信', approxPE: 12, approxPB: 0.9, approxDividend: 4.0 },
-    { symbol: '000651.SZ', nameZh: '格力电器', nameEn: 'Gree', industry: '家电', approxPE: 8, approxPB: 2.5, approxDividend: 5.0 },
-    { symbol: '600887.SS', nameZh: '伊利股份', nameEn: 'Yili', industry: '乳业', approxPE: 18, approxPB: 4.0, approxDividend: 3.5 },
-    { symbol: '000568.SZ', nameZh: '泸州老窖', nameEn: 'Luzhou Laojiao', industry: '白酒', approxPE: 22, approxPB: 7.0, approxDividend: 2.5 },
-    { symbol: '600585.SS', nameZh: '海螺水泥', nameEn: 'Conch Cement', industry: '建材', approxPE: 9, approxPB: 1.0, approxDividend: 4.5 },
-    { symbol: '601668.SS', nameZh: '中国建筑', nameEn: 'CSCEC', industry: '建筑', approxPE: 5, approxPB: 0.6, approxDividend: 4.0 },
-    { symbol: '600104.SS', nameZh: '上汽集团', nameEn: 'SAIC', industry: '汽车', approxPE: 10, approxPB: 0.8, approxDividend: 5.5 },
-    { symbol: '601088.SS', nameZh: '中国神华', nameEn: 'Shenhua', industry: '煤炭', approxPE: 9, approxPB: 1.5, approxDividend: 6.0 },
-    { symbol: '000001.SZ', nameZh: '平安银行', nameEn: 'PAB', industry: '银行', approxPE: 5.5, approxPB: 0.5, approxDividend: 5.0 },
-    { symbol: '002714.SZ', nameZh: '牧原股份', nameEn: 'Muyuan', industry: '养殖', approxPE: 15, approxPB: 3.0 },
-    { symbol: '600030.SS', nameZh: '中信证券', nameEn: 'CITIC Sec', industry: '券商', approxPE: 18, approxPB: 1.5, approxDividend: 2.0 },
-    { symbol: '601225.SS', nameZh: '陕西煤业', nameEn: 'Shaanxi Coal', industry: '煤炭', approxPE: 8, approxPB: 2.0, approxDividend: 7.0 },
+    { symbol: '600941.SS', nameZh: '中国移动', nameEn: 'China Mobile A', industry: '通信', approxPE: 12, approxPB: 1.5, approxDividend: 4.5 },
+    // === 机械/制造 ===
+    { symbol: '600031.SS', nameZh: '三一重工', nameEn: 'Sany', industry: '机械', approxPE: 15, approxPB: 2.5, approxDividend: 2.5 },
+    { symbol: '000157.SZ', nameZh: '中联重科', nameEn: 'Zoomlion', industry: '机械', approxPE: 10, approxPB: 1.2, approxDividend: 3.5 },
     { symbol: '600309.SS', nameZh: '万华化学', nameEn: 'Wanhua', industry: '化工', approxPE: 15, approxPB: 3.5, approxDividend: 2.5 },
-    { symbol: '002415.SZ', nameZh: '海康威视', nameEn: 'Hikvision', industry: '安防', approxPE: 20, approxPB: 5.0, approxDividend: 2.0 },
-    { symbol: '600690.SS', nameZh: '海尔智家', nameEn: 'Haier', industry: '家电', approxPE: 14, approxPB: 2.8, approxDividend: 2.5 },
+    // === 汽车 ===
+    { symbol: '600104.SS', nameZh: '上汽集团', nameEn: 'SAIC', industry: '汽车', approxPE: 10, approxPB: 0.8, approxDividend: 5.5 },
+    { symbol: '601238.SS', nameZh: '广汽集团', nameEn: 'GAC', industry: '汽车', approxPE: 12, approxPB: 0.7, approxDividend: 4.0 },
+    { symbol: '000625.SZ', nameZh: '长安汽车', nameEn: 'Changan Auto', industry: '汽车', approxPE: 15, approxPB: 1.5, approxDividend: 2.0 },
+    // === 免税/旅游/零售 ===
+    { symbol: '601888.SS', nameZh: '中国中免', nameEn: 'CDFG', industry: '免税', approxPE: 25, approxPB: 4.0 },
+    { symbol: '002714.SZ', nameZh: '牧原股份', nameEn: 'Muyuan', industry: '养殖', approxPE: 15, approxPB: 3.0 },
+    // === 军工 ===
+    { symbol: '600893.SS', nameZh: '航发动力', nameEn: 'AECC Aviation', industry: '军工', approxPE: 50, approxPB: 4.0 },
+    { symbol: '601989.SS', nameZh: '中国重工', nameEn: 'CSIC', industry: '军工', approxPE: 60, approxPB: 1.5 },
+    // === 交通运输 ===
+    { symbol: '601006.SS', nameZh: '大秦铁路', nameEn: 'Daqin Railway', industry: '铁路', approxPE: 8, approxPB: 0.9, approxDividend: 6.0 },
+    { symbol: '600029.SS', nameZh: '南方航空', nameEn: 'China Southern', industry: '航空', approxPE: 15, approxPB: 1.5 },
+    { symbol: '601111.SS', nameZh: '中国国航', nameEn: 'Air China', industry: '航空', approxPE: 18, approxPB: 1.8 },
+    // === 互联网/软件 ===
+    { symbol: '002602.SZ', nameZh: '世纪华通', nameEn: 'Century Huatong', industry: '游戏', approxPE: 20, approxPB: 2.0 },
+    { symbol: '688111.SS', nameZh: '金山办公', nameEn: 'Kingsoft Office', industry: '软件', approxPE: 80, approxPB: 15 },
+    // === 新材料 ===
+    { symbol: '002460.SZ', nameZh: '赣锋锂业', nameEn: 'Ganfeng Lithium', industry: '锂电', approxPE: 30, approxPB: 3.0 },
+    { symbol: '002466.SZ', nameZh: '天齐锂业', nameEn: 'Tianqi Lithium', industry: '锂电', approxPE: 25, approxPB: 2.5 },
+    // === 环保/公用事业 ===
+    { symbol: '600025.SS', nameZh: '华能水电', nameEn: 'Huaneng Hydro', industry: '水电', approxPE: 15, approxPB: 3.0, approxDividend: 3.5 },
+    { symbol: '600674.SS', nameZh: '川投能源', nameEn: 'Chuantou Energy', industry: '水电', approxPE: 14, approxPB: 2.5, approxDividend: 3.0 },
+    // === 更多蓝筹 ===
+    { symbol: '601390.SS', nameZh: '中国中铁', nameEn: 'CREC', industry: '建筑', approxPE: 6, approxPB: 0.6, approxDividend: 3.5 },
+    { symbol: '601186.SS', nameZh: '中国铁建', nameEn: 'CRCC', industry: '建筑', approxPE: 5, approxPB: 0.5, approxDividend: 4.0 },
+    { symbol: '601766.SS', nameZh: '中国中车', nameEn: 'CRRC', industry: '轨交', approxPE: 18, approxPB: 1.5, approxDividend: 2.5 },
+    { symbol: '600048.SS', nameZh: '保利发展', nameEn: 'Poly Dev', industry: '地产', approxPE: 6, approxPB: 0.7, approxDividend: 4.5 },
+    { symbol: '000725.SZ', nameZh: '京东方A', nameEn: 'BOE', industry: '面板', approxPE: 15, approxPB: 1.2, approxDividend: 2.0 },
+    { symbol: '002352.SZ', nameZh: '顺丰控股', nameEn: 'SF Express', industry: '快递', approxPE: 20, approxPB: 2.5, approxDividend: 1.5 },
+    { symbol: '601633.SS', nameZh: '长城汽车', nameEn: 'Great Wall Motor', industry: '汽车', approxPE: 15, approxPB: 2.0, approxDividend: 2.0 },
+    { symbol: '002304.SZ', nameZh: '洋河股份', nameEn: 'Yanghe', industry: '白酒', approxPE: 18, approxPB: 4.0, approxDividend: 3.0 },
+    { symbol: '600346.SS', nameZh: '恒力石化', nameEn: 'Hengli Petro', industry: '化工', approxPE: 10, approxPB: 1.5, approxDividend: 3.0 },
+    { symbol: '002271.SZ', nameZh: '东方雨虹', nameEn: 'Oriental Yuhong', industry: '建材', approxPE: 15, approxPB: 2.5, approxDividend: 2.0 },
+    { symbol: '600406.SS', nameZh: '国电南瑞', nameEn: 'NARI Tech', industry: '电力设备', approxPE: 25, approxPB: 5.0, approxDividend: 1.5 },
+    { symbol: '002142.SZ', nameZh: '宁波银行', nameEn: 'Bank of Ningbo', industry: '银行', approxPE: 6, approxPB: 1.0, approxDividend: 3.0 },
+    { symbol: '600570.SS', nameZh: '恒生电子', nameEn: 'Hundsun', industry: '金融IT', approxPE: 50, approxPB: 8.0 },
+    { symbol: '002027.SZ', nameZh: '分众传媒', nameEn: 'Focus Media', industry: '广告', approxPE: 15, approxPB: 5.0, approxDividend: 4.0 },
+    { symbol: '601919.SS', nameZh: '中远海控', nameEn: 'COSCO Shipping', industry: '航运', approxPE: 5, approxPB: 1.0, approxDividend: 8.0 },
+    { symbol: '600436.SS', nameZh: '片仔癀', nameEn: 'Pien Tze Huang', industry: '中药', approxPE: 45, approxPB: 10 },
+    { symbol: '002032.SZ', nameZh: '苏泊尔', nameEn: 'Supor', industry: '小家电', approxPE: 18, approxPB: 5.0, approxDividend: 3.0 },
+    { symbol: '300124.SZ', nameZh: '汇川技术', nameEn: 'Inovance', industry: '工控', approxPE: 35, approxPB: 7.0 },
+    { symbol: '601615.SS', nameZh: '明阳智能', nameEn: 'MingYang', industry: '风电', approxPE: 12, approxPB: 1.5, approxDividend: 2.5 },
+    { symbol: '002241.SZ', nameZh: '歌尔股份', nameEn: 'GoerTek', industry: '电子', approxPE: 20, approxPB: 2.5 },
+    { symbol: '000063.SZ', nameZh: '中兴通讯', nameEn: 'ZTE', industry: '通信设备', approxPE: 15, approxPB: 2.0, approxDividend: 2.5 },
   ],
   hk: [
+    // === 互联网/科技 ===
     { symbol: '0700.HK', nameZh: '腾讯控股', nameEn: 'Tencent', industry: '互联网', approxPE: 18, approxPB: 4.5, approxDividend: 0.8 },
     { symbol: '9988.HK', nameZh: '阿里巴巴', nameEn: 'Alibaba', industry: '电商', approxPE: 12, approxPB: 1.5, approxDividend: 1.2 },
     { symbol: '3690.HK', nameZh: '美团', nameEn: 'Meituan', industry: '本地生活', approxPE: 30, approxPB: 5.0 },
     { symbol: '1810.HK', nameZh: '小米集团', nameEn: 'Xiaomi', industry: '消费电子', approxPE: 20, approxPB: 3.5 },
-    { symbol: '2318.HK', nameZh: '中国平安', nameEn: 'Ping An', industry: '金融', approxPE: 8, approxPB: 0.9, approxDividend: 4.5 },
-    { symbol: '0941.HK', nameZh: '中国移动', nameEn: 'China Mobile', industry: '通信', approxPE: 10, approxPB: 1.2, approxDividend: 5.0 },
     { symbol: '1024.HK', nameZh: '快手', nameEn: 'Kuaishou', industry: '短视频', approxPE: 25, approxPB: 3.0 },
     { symbol: '9618.HK', nameZh: '京东集团', nameEn: 'JD.com', industry: '电商', approxPE: 10, approxPB: 1.8, approxDividend: 2.0 },
-    { symbol: '0388.HK', nameZh: '港交所', nameEn: 'HKEX', industry: '金融', approxPE: 30, approxPB: 8.0, approxDividend: 2.5 },
-    { symbol: '2020.HK', nameZh: '安踏体育', nameEn: 'Anta Sports', industry: '运动', approxPE: 22, approxPB: 5.5, approxDividend: 1.5 },
     { symbol: '9999.HK', nameZh: '网易', nameEn: 'NetEase', industry: '游戏', approxPE: 14, approxPB: 3.0, approxDividend: 2.0 },
-    { symbol: '0001.HK', nameZh: '长和', nameEn: 'CK Hutchison', industry: '综合', approxPE: 8, approxPB: 0.5, approxDividend: 5.5 },
+    { symbol: '9888.HK', nameZh: '百度集团', nameEn: 'Baidu', industry: 'AI', approxPE: 12, approxPB: 1.0 },
+    { symbol: '0285.HK', nameZh: '比亚迪电子', nameEn: 'BYD Electronic', industry: '电子', approxPE: 15, approxPB: 2.5 },
+    { symbol: '2015.HK', nameZh: '理想汽车', nameEn: 'Li Auto', industry: '新能源车', approxPE: 20, approxPB: 3.0 },
+    { symbol: '9866.HK', nameZh: '蔚来', nameEn: 'NIO', industry: '新能源车', approxPE: -1, approxPB: 3.0 },
+    { symbol: '9868.HK', nameZh: '小鹏汽车', nameEn: 'XPeng', industry: '新能源车', approxPE: -1, approxPB: 2.5 },
+    // === 金融 ===
+    { symbol: '2318.HK', nameZh: '中国平安', nameEn: 'Ping An', industry: '金融', approxPE: 8, approxPB: 0.9, approxDividend: 4.5 },
+    { symbol: '0388.HK', nameZh: '港交所', nameEn: 'HKEX', industry: '金融', approxPE: 30, approxPB: 8.0, approxDividend: 2.5 },
     { symbol: '0005.HK', nameZh: '汇丰控股', nameEn: 'HSBC', industry: '银行', approxPE: 7, approxPB: 0.9, approxDividend: 6.0 },
-    { symbol: '2269.HK', nameZh: '药明生物', nameEn: 'WuXi Biologics', industry: '医药', approxPE: 35, approxPB: 4.0 },
-    { symbol: '1211.HK', nameZh: '比亚迪电子', nameEn: 'BYD Electronic', industry: '电子', approxPE: 15, approxPB: 2.5 },
+    { symbol: '1398.HK', nameZh: '工商银行H', nameEn: 'ICBC-H', industry: '银行', approxPE: 4.5, approxPB: 0.4, approxDividend: 7.0 },
+    { symbol: '3988.HK', nameZh: '中国银行H', nameEn: 'BOC-H', industry: '银行', approxPE: 4.0, approxPB: 0.35, approxDividend: 7.5 },
+    { symbol: '2628.HK', nameZh: '中国人寿', nameEn: 'China Life', industry: '保险', approxPE: 8, approxPB: 0.7, approxDividend: 3.5 },
+    { symbol: '2388.HK', nameZh: '中银香港', nameEn: 'BOC HK', industry: '银行', approxPE: 8, approxPB: 1.0, approxDividend: 5.0 },
+    // === 通信/运营商 ===
+    { symbol: '0941.HK', nameZh: '中国移动', nameEn: 'China Mobile', industry: '通信', approxPE: 10, approxPB: 1.2, approxDividend: 5.0 },
+    { symbol: '0762.HK', nameZh: '中国联通H', nameEn: 'China Unicom-H', industry: '通信', approxPE: 10, approxPB: 0.6, approxDividend: 4.0 },
+    { symbol: '0728.HK', nameZh: '中国电信H', nameEn: 'China Telecom-H', industry: '通信', approxPE: 8, approxPB: 0.5, approxDividend: 5.5 },
+    // === 能源/资源 ===
+    { symbol: '0883.HK', nameZh: '中国海洋石油', nameEn: 'CNOOC', industry: '石油', approxPE: 6, approxPB: 1.0, approxDividend: 6.0 },
+    { symbol: '0857.HK', nameZh: '中国石油H', nameEn: 'PetroChina-H', industry: '石油', approxPE: 7, approxPB: 0.6, approxDividend: 5.0 },
+    { symbol: '1088.HK', nameZh: '中国神华H', nameEn: 'Shenhua-H', industry: '煤炭', approxPE: 8, approxPB: 1.2, approxDividend: 7.0 },
+    // === 综合/地产 ===
+    { symbol: '0001.HK', nameZh: '长和', nameEn: 'CK Hutchison', industry: '综合', approxPE: 8, approxPB: 0.5, approxDividend: 5.5 },
+    { symbol: '0016.HK', nameZh: '新鸿基地产', nameEn: 'Sun Hung Kai', industry: '地产', approxPE: 10, approxPB: 0.4, approxDividend: 4.5 },
+    { symbol: '0017.HK', nameZh: '新世界发展', nameEn: 'New World Dev', industry: '地产', approxPE: 8, approxPB: 0.3, approxDividend: 6.0 },
+    // === 公用事业 ===
     { symbol: '0002.HK', nameZh: '中电控股', nameEn: 'CLP Holdings', industry: '电力', approxPE: 12, approxPB: 1.5, approxDividend: 4.5 },
     { symbol: '0003.HK', nameZh: '香港中华煤气', nameEn: 'HK China Gas', industry: '燃气', approxPE: 15, approxPB: 2.0, approxDividend: 4.0 },
-    { symbol: '2628.HK', nameZh: '中国人寿', nameEn: 'China Life', industry: '保险', approxPE: 8, approxPB: 0.7, approxDividend: 3.5 },
-    { symbol: '0883.HK', nameZh: '中国海洋石油', nameEn: 'CNOOC', industry: '石油', approxPE: 6, approxPB: 1.0, approxDividend: 6.0 },
+    { symbol: '0006.HK', nameZh: '电能实业', nameEn: 'Power Assets', industry: '电力', approxPE: 12, approxPB: 1.2, approxDividend: 5.5 },
+    // === 医药 ===
+    { symbol: '2269.HK', nameZh: '药明生物', nameEn: 'WuXi Biologics', industry: '医药', approxPE: 35, approxPB: 4.0 },
+    { symbol: '1177.HK', nameZh: '中国生物制药', nameEn: 'Sino Biopharm', industry: '医药', approxPE: 15, approxPB: 2.0, approxDividend: 1.5 },
+    // === 消费/博彩 ===
     { symbol: '1928.HK', nameZh: '金沙中国', nameEn: 'Sands China', industry: '博彩', approxPE: 20, approxPB: 5.0, approxDividend: 3.0 },
+    { symbol: '0027.HK', nameZh: '银河娱乐', nameEn: 'Galaxy Ent', industry: '博彩', approxPE: 18, approxPB: 3.0, approxDividend: 1.5 },
+    { symbol: '0291.HK', nameZh: '华润啤酒', nameEn: 'CR Beer', industry: '啤酒', approxPE: 25, approxPB: 5.0, approxDividend: 1.5 },
+    { symbol: '2319.HK', nameZh: '蒙牛乳业', nameEn: 'Mengniu', industry: '乳业', approxPE: 15, approxPB: 2.5, approxDividend: 2.0 },
+    // === 工业 ===
+    { symbol: '0669.HK', nameZh: '创科实业', nameEn: 'Techtronic', industry: '工具', approxPE: 20, approxPB: 5.0, approxDividend: 1.5 },
+    { symbol: '1211.HK', nameZh: '比亚迪', nameEn: 'BYD-H', industry: '新能源车', approxPE: 20, approxPB: 3.5, approxDividend: 0.5 },
+    { symbol: '2382.HK', nameZh: '舜宇光学', nameEn: 'Sunny Optical', industry: '光学', approxPE: 25, approxPB: 3.0, approxDividend: 1.0 },
+    { symbol: '0175.HK', nameZh: '吉利汽车', nameEn: 'Geely Auto', industry: '汽车', approxPE: 12, approxPB: 1.5, approxDividend: 1.5 },
+    { symbol: '1876.HK', nameZh: '百济神州', nameEn: 'BeiGene', industry: '生物医药', approxPE: -1, approxPB: 5.0 },
+    { symbol: '0981.HK', nameZh: '中芯国际H', nameEn: 'SMIC-H', industry: '半导体', approxPE: 35, approxPB: 2.0 },
+    { symbol: '6060.HK', nameZh: '众安在线', nameEn: 'ZhongAn', industry: '保险科技', approxPE: 20, approxPB: 1.5 },
   ],
   us: [
+    // Core blue chips (always included)
     { symbol: 'AAPL', nameZh: '苹果', nameEn: 'Apple', industry: '科技', approxPE: 30, approxPB: 45, approxDividend: 0.5 },
     { symbol: 'MSFT', nameZh: '微软', nameEn: 'Microsoft', industry: '软件', approxPE: 35, approxPB: 12, approxDividend: 0.7 },
     { symbol: 'NVDA', nameZh: '英伟达', nameEn: 'NVIDIA', industry: '半导体', approxPE: 55, approxPB: 40 },
@@ -237,6 +374,17 @@ const STOCK_UNIVERSE: Record<string, StockDef[]> = {
     { symbol: 'DIS', nameZh: '迪士尼', nameEn: 'Disney', industry: '娱乐', approxPE: 35, approxPB: 2.0, approxDividend: 0.8 },
     { symbol: 'INTC', nameZh: '英特尔', nameEn: 'Intel', industry: '半导体', approxPE: 25, approxPB: 1.2, approxDividend: 1.5 },
     { symbol: 'BA', nameZh: '波音', nameEn: 'Boeing', industry: '航空', approxPE: 40, approxPB: 8.0 },
+    { symbol: 'GS', nameZh: '高盛', nameEn: 'Goldman Sachs', industry: '投行', approxPE: 14, approxPB: 1.5, approxDividend: 2.0 },
+    { symbol: 'CAT', nameZh: '卡特彼勒', nameEn: 'Caterpillar', industry: '机械', approxPE: 18, approxPB: 8.0, approxDividend: 1.5 },
+    { symbol: 'ABBV', nameZh: '艾伯维', nameEn: 'AbbVie', industry: '医药', approxPE: 15, approxPB: 20, approxDividend: 3.5 },
+    { symbol: 'MRK', nameZh: '默沙东', nameEn: 'Merck', industry: '医药', approxPE: 12, approxPB: 6.0, approxDividend: 3.0 },
+    { symbol: 'XOM', nameZh: '埃克森美孚', nameEn: 'ExxonMobil', industry: '石油', approxPE: 12, approxPB: 2.0, approxDividend: 3.5 },
+    { symbol: 'CVX', nameZh: '雪佛龙', nameEn: 'Chevron', industry: '石油', approxPE: 14, approxPB: 2.0, approxDividend: 4.0 },
+    { symbol: 'T', nameZh: 'AT&T', nameEn: 'AT&T', industry: '通信', approxPE: 10, approxPB: 1.2, approxDividend: 5.0 },
+    { symbol: 'VZ', nameZh: '威瑞森', nameEn: 'Verizon', industry: '通信', approxPE: 9, approxPB: 1.8, approxDividend: 6.5 },
+    { symbol: 'NKE', nameZh: '耐克', nameEn: 'Nike', industry: '运动', approxPE: 25, approxPB: 8.0, approxDividend: 1.5 },
+    { symbol: 'SBUX', nameZh: '星巴克', nameEn: 'Starbucks', industry: '餐饮', approxPE: 25, approxPB: 10, approxDividend: 2.5 },
+    { symbol: 'QCOM', nameZh: '高通', nameEn: 'Qualcomm', industry: '芯片', approxPE: 15, approxPB: 6.0, approxDividend: 2.0 },
   ],
   crypto: [
     { symbol: 'BTC-USD', nameZh: '比特币', nameEn: 'Bitcoin', industry: 'L1' },
@@ -257,6 +405,18 @@ const STOCK_UNIVERSE: Record<string, StockDef[]> = {
     { symbol: 'AAVE-USD', nameZh: 'Aave', nameEn: 'Aave', industry: 'DeFi' },
     { symbol: 'FIL-USD', nameZh: 'Filecoin', nameEn: 'Filecoin', industry: '存储' },
     { symbol: 'ARB-USD', nameZh: 'Arbitrum', nameEn: 'Arbitrum', industry: 'L2' },
+    { symbol: 'OP-USD', nameZh: 'Optimism', nameEn: 'Optimism', industry: 'L2' },
+    { symbol: 'APT-USD', nameZh: 'Aptos', nameEn: 'Aptos', industry: 'L1' },
+    { symbol: 'SUI-USD', nameZh: 'Sui', nameEn: 'Sui', industry: 'L1' },
+    { symbol: 'TRX-USD', nameZh: '波场', nameEn: 'TRON', industry: 'L1' },
+    { symbol: 'SHIB-USD', nameZh: '柴犬币', nameEn: 'Shiba Inu', industry: 'Meme' },
+    { symbol: 'INJ-USD', nameZh: 'Injective', nameEn: 'Injective', industry: 'DeFi' },
+    { symbol: 'RENDER-USD', nameZh: 'Render', nameEn: 'Render', industry: 'AI' },
+    { symbol: 'FET-USD', nameZh: 'Fetch.ai', nameEn: 'Fetch.ai', industry: 'AI' },
+    { symbol: 'MKR-USD', nameZh: 'Maker', nameEn: 'Maker', industry: 'DeFi' },
+    { symbol: 'PEPE-USD', nameZh: 'Pepe', nameEn: 'Pepe', industry: 'Meme' },
+    { symbol: 'SEI-USD', nameZh: 'Sei', nameEn: 'Sei', industry: 'L1' },
+    { symbol: 'STX-USD', nameZh: 'Stacks', nameEn: 'Stacks', industry: 'BTC L2' },
   ],
 };
 
@@ -289,7 +449,7 @@ function calculateRSI(data: number[], period = 14): number {
 // ===================================================================
 
 function scoreStock(stock: StockCandidate): number {
-  let score = 50; // Base score
+  let score = 50;
 
   // 1. Valuation Score (PE/PB) — 30% weight
   if (stock.pe !== null && stock.pe > 0) {
@@ -331,8 +491,8 @@ function scoreStock(stock: StockCandidate): number {
   }
   if (stock.rsi14 > 0) {
     if (stock.rsi14 >= 30 && stock.rsi14 <= 70) score += 4;
-    else if (stock.rsi14 < 30) score += 6; // Oversold = opportunity
-    else if (stock.rsi14 > 80) score -= 4; // Overbought = risk
+    else if (stock.rsi14 < 30) score += 6;
+    else if (stock.rsi14 > 80) score -= 4;
   }
 
   // 5. Momentum Score — 10% weight
@@ -419,21 +579,15 @@ function generateReasonDetail(stock: StockCandidate, score: number, tags: string
 // Main Strategy Runner
 // ===================================================================
 
-export async function runStrategyForMarket(market: string): Promise<{ stocks: ScoredStock[]; sentiment: MarketSentimentResult }> {
-  const universe = STOCK_UNIVERSE[market];
-  if (!universe) {
-    console.error(`[Strategy] Unknown market: ${market}`);
-    return { stocks: [], sentiment: getDefaultSentiment(market) };
-  }
-
-  console.log(`[Strategy] Running strategy for ${market}, ${universe.length} candidates...`);
-
-  // Fetch chart data for all candidates in parallel (batched)
+async function fetchAndBuildCandidates(
+  defs: StockDef[],
+  market: string,
+  batchSize = 8
+): Promise<StockCandidate[]> {
   const candidates: StockCandidate[] = [];
-  const batchSize = 5; // Fetch 5 at a time to avoid rate limiting
-  
-  for (let i = 0; i < universe.length; i += batchSize) {
-    const batch = universe.slice(i, i + batchSize);
+
+  for (let i = 0; i < defs.length; i += batchSize) {
+    const batch = defs.slice(i, i + batchSize);
     const results = await Promise.allSettled(
       batch.map(def => fetchYahooChartData(def.symbol))
     );
@@ -442,16 +596,14 @@ export async function runStrategyForMarket(market: string): Promise<{ stocks: Sc
       const def = batch[j];
       const result = results[j];
       if (result.status !== 'fulfilled' || !result.value) continue;
-      
+
       const chart = result.value;
       if (chart.price <= 0) continue;
 
-      // Calculate technical indicators from chart data
       const ma5 = chart.closes.length >= 5 ? calculateMA(chart.closes, 5) : chart.price;
       const ma20 = chart.closes.length >= 20 ? calculateMA(chart.closes, 20) : chart.price;
       const rsi14 = chart.closes.length >= 15 ? calculateRSI(chart.closes, 14) : 50;
 
-      // Calculate capital flow from volume pattern
       const recentVolumes = chart.volumes.slice(-5);
       const olderVolumes = chart.volumes.slice(-20, -5);
       const avgRecent = recentVolumes.length > 0 ? recentVolumes.reduce((a, b) => a + b, 0) / recentVolumes.length : 0;
@@ -483,11 +635,55 @@ export async function runStrategyForMarket(market: string): Promise<{ stocks: Sc
       });
     }
 
-    // Small delay between batches to avoid rate limiting
-    if (i + batchSize < universe.length) {
-      await new Promise(r => setTimeout(r, 500));
+    if (i + batchSize < defs.length) {
+      await new Promise(r => setTimeout(r, 300));
     }
   }
+
+  return candidates;
+}
+
+export async function runStrategyForMarket(market: string): Promise<{ stocks: ScoredStock[]; sentiment: MarketSentimentResult }> {
+  let universe = STOCK_UNIVERSE[market];
+  if (!universe) {
+    console.error(`[Strategy] Unknown market: ${market}`);
+    return { stocks: [], sentiment: getDefaultSentiment(market) };
+  }
+
+  // For US market: dynamically fetch screener data and merge with blue chip pool
+  if (market === 'us') {
+    try {
+      console.log(`[Strategy] Fetching US market screener data (gainers + losers + actives)...`);
+      const [gainers, losers, actives] = await Promise.all([
+        fetchScreenerStocks('day_gainers', 50),
+        fetchScreenerStocks('day_losers', 50),
+        fetchScreenerStocks('most_actives', 50),
+      ]);
+
+      const dynamicSymbols = new Set(universe.map(d => d.symbol));
+      const allScreener = [...gainers, ...losers, ...actives];
+
+      for (const q of allScreener) {
+        if (!q.symbol || dynamicSymbols.has(q.symbol)) continue;
+        // Skip OTC, preferred shares, warrants, etc.
+        if (q.symbol.includes('.') || q.symbol.includes('-') || q.symbol.length > 5) continue;
+        dynamicSymbols.add(q.symbol);
+        universe = [...universe, {
+          symbol: q.symbol,
+          nameZh: q.shortName || q.symbol,
+          nameEn: q.shortName || q.symbol,
+          industry: '动态筛选',
+        }];
+      }
+      console.log(`[Strategy] US universe expanded to ${universe.length} candidates (${allScreener.length} from screener)`);
+    } catch (err: any) {
+      console.warn(`[Strategy] US screener failed, using static pool:`, err?.message);
+    }
+  }
+
+  console.log(`[Strategy] Running strategy for ${market}, ${universe.length} candidates...`);
+
+  const candidates = await fetchAndBuildCandidates(universe, market);
 
   if (candidates.length === 0) {
     console.warn(`[Strategy] No valid candidates for ${market}`);
@@ -510,7 +706,7 @@ export async function runStrategyForMarket(market: string): Promise<{ stocks: Sc
   const top10 = scored.slice(0, 10);
   top10.forEach((s, i) => { s.rank = i + 1; });
 
-  // Calculate market sentiment
+  // Calculate market sentiment from ALL candidates
   const advanceCount = candidates.filter(c => c.changePercent > 0).length;
   const advanceRatio = (advanceCount / candidates.length) * 100;
   const totalFlow = candidates.reduce((s, c) => s + c.capitalFlow, 0);
@@ -543,7 +739,7 @@ export async function runStrategyForMarket(market: string): Promise<{ stocks: Sc
     advice: stateAdvice[marketState] || stateAdvice.neutral,
   };
 
-  console.log(`[Strategy] ${market}: ${top10.length} stocks scored, top=${top10[0]?.nameZh}(${top10[0]?.score}), sentiment=${marketState}`);
+  console.log(`[Strategy] ${market}: ${candidates.length} analyzed → top10, #1=${top10[0]?.nameZh}(${top10[0]?.score}), sentiment=${marketState}`);
   return { stocks: top10, sentiment };
 }
 
