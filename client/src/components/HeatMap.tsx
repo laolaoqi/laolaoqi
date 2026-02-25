@@ -8,15 +8,16 @@ import { t, type Lang } from '@/lib/i18n';
 import { trpc } from '@/lib/trpc';
 
 function getHeatColor(change: number): string {
-  if (change >= 3) return '#00c853';
-  if (change >= 2) return '#00e676';
-  if (change >= 1) return '#66bb6a';
-  if (change >= 0.3) return '#2e7d32';
+  // 红涨绿跌（中国标准）
+  if (change >= 3) return '#d50000';
+  if (change >= 2) return '#ff1744';
+  if (change >= 1) return '#e53935';
+  if (change >= 0.3) return '#c62828';
   if (change > -0.3) return '#37474f';
-  if (change > -1) return '#c62828';
-  if (change > -2) return '#e53935';
-  if (change > -3) return '#ff1744';
-  return '#d50000';
+  if (change > -1) return '#2e7d32';
+  if (change > -2) return '#66bb6a';
+  if (change > -3) return '#00e676';
+  return '#00c853';
 }
 
 function getTextColor(change: number): string {
@@ -53,8 +54,8 @@ function SectorTile({ sector, lang }: { sector: SectorBlock; lang: Lang }) {
       }} />
 
       <div className="relative z-10">
-        <div className="text-xs font-bold mb-1" style={{ color: textColor }}>{name}</div>
-        <div className="text-lg font-black tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color: textColor }}>
+<div className="text-sm font-bold mb-1" style={{ color: textColor }}>{name}</div>
+<div className="text-xl font-black tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color: textColor }}>
           {isUp ? '+' : ''}{sector.changePercent.toFixed(2)}%
         </div>
         <div className="text-xs mt-1 opacity-70" style={{ color: textColor }}>
@@ -68,7 +69,7 @@ function SectorTile({ sector, lang }: { sector: SectorBlock; lang: Lang }) {
         {sector.stocks.map(s => (
           <div key={s.symbol} className="flex justify-between text-xs py-0.5">
             <span className="text-red-500 font-mono">{s.symbol.replace('.SS', '').replace('.SZ', '').replace('.HK', '').replace('-USD', '')}</span>
-            <span className={s.changePercent >= 0 ? 'text-[#00e676]' : 'text-[#ff3b3b]'} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <span className={s.changePercent >= 0 ? 'text-[#ff3b3b]' : 'text-[#00e676]'} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {s.changePercent >= 0 ? '+' : ''}{s.changePercent.toFixed(2)}%
             </span>
           </div>
@@ -117,11 +118,11 @@ export default function HeatMap() {
       {/* Legend */}
       <div className="flex items-center justify-center gap-1 mt-3 pt-2 border-t border-[rgba(0,212,255,0.08)]">
         {[
-          { label: '-3%', color: '#d50000' },
-          { label: '-1%', color: '#e53935' },
+          { label: '-3%', color: '#00c853' },
+          { label: '-1%', color: '#66bb6a' },
           { label: '0%', color: '#37474f' },
-          { label: '+1%', color: '#66bb6a' },
-          { label: '+3%', color: '#00c853' },
+          { label: '+1%', color: '#e53935' },
+          { label: '+3%', color: '#d50000' },
         ].map(item => (
           <div key={item.label} className="flex items-center gap-1">
             <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: item.color }} />

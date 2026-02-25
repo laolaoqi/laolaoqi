@@ -31,7 +31,7 @@ export default function AnnouncementBoard() {
       <HudPanel title={lang === 'zh' ? '公告栏' : 'ANNOUNCEMENTS'}>
         <div className="flex flex-col items-center justify-center h-32 text-red-400/70">
           <Megaphone size={24} className="mb-2" />
-          <span className="text-xs">{lang === 'zh' ? '暂无公告' : 'No announcements'}</span>
+          <span className="text-sm">{lang === 'zh' ? '暂无公告' : 'No announcements'}</span>
         </div>
       </HudPanel>
     );
@@ -45,7 +45,7 @@ export default function AnnouncementBoard() {
             {/* Title */}
             <div className="flex items-center gap-2 mb-1">
               <Megaphone size={12} className="text-red-500 shrink-0" />
-              <h4 className="text-xs font-bold text-red-500 truncate">{ann.title}</h4>
+              <h4 className="text-sm font-bold text-red-500 truncate">{ann.title}</h4>
             </div>
             {/* Content */}
             <p className="text-[11px] text-red-400/80 leading-relaxed mb-2">{ann.content}</p>
@@ -59,12 +59,12 @@ export default function AnnouncementBoard() {
                   onClick={() => setExpandedImg(ann.imageUrl)}
                 />
                 {ann.imageCaption && (
-                  <span className="text-xs text-red-400/60 mt-1 block">{ann.imageCaption}</span>
+                  <span className="text-sm text-red-400/60 mt-1 block">{ann.imageCaption}</span>
                 )}
               </div>
             )}
             {/* Date */}
-            <span className="text-xs text-red-400/40 font-mono mt-1 block">
+            <span className="text-sm text-red-400/40 font-mono mt-1 block">
               {new Date(ann.createdAt).toLocaleDateString()}
             </span>
           </div>

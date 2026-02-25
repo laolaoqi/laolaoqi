@@ -1,0 +1,556 @@
+// ===================================================================
+// About — 网站介绍 + 数据模型说明 + PDF下载
+// ===================================================================
+
+import { useAuth } from '@/_core/hooks/useAuth';
+import { getLoginUrl } from '@/const';
+import { useApp } from '@/contexts/AppContext';
+import { AppProvider } from '@/contexts/AppContext';
+import TopBar from '@/components/TopBar';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
+import HudPanel from '@/components/HudPanel';
+import { Link } from 'wouter';
+import { motion } from 'framer-motion';
+import {
+  ArrowLeft, Download, Lock, TrendingUp, BarChart3, Brain,
+  Shield, Activity, Target, Layers, Database, Cpu, LineChart,
+  Zap, AlertTriangle, BookOpen
+} from 'lucide-react';
+import { useState } from 'react';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+function AboutContent() {
+  const { isAuthenticated } = useAuth();
+  const { lang } = useApp();
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    if (!isAuthenticated) return;
+    setDownloading(true);
+    try {
+      // Generate PDF via server API
+      const resp = await fetch('/api/trpc/system.generateModelPDF?input={}', {
+        credentials: 'include',
+      });
+      const json = await resp.json();
+      const url = json?.result?.data?.url;
+      if (url) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'HunterAlpha-DataModel-Guide.pdf';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        // Fallback: generate client-side
+        generateClientPDF();
+      }
+    } catch {
+      generateClientPDF();
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const generateClientPDF = () => {
+    // Open print dialog as PDF fallback
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(getPDFHTML());
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 500);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background grid-bg">
+      <TopBar isLive={true} lastUpdate={new Date()} onRefresh={() => {}} />
+      <ThemeSwitcher />
+
+      <main className="flex-1 relative z-10">
+        <motion.div
+          className="max-w-[1100px] mx-auto px-4 lg:px-6 py-6 space-y-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Back button */}
+          <motion.div variants={itemVariants}>
+            <Link href="/" className="inline-flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-base font-medium">
+              <ArrowLeft size={18} />
+              返回首页
+            </Link>
+          </motion.div>
+
+          {/* Title */}
+          <motion.div variants={itemVariants}>
+            <HudPanel title="关于 HUNTER ALPHA · AI选股指南">
+              <div className="space-y-4">
+                <p className="text-base text-foreground/90 leading-relaxed">
+                  <strong className="text-red-400">HUNTER ALPHA（猎手阿尔法）</strong>是一个基于人工智能和量化分析的全球股票筛选与推荐平台。
+                  系统覆盖<strong>A股、港股、美股、加密货币</strong>四大市场，通过多维度数据采集、策略引擎评分和AI智能分析，
+                  为投资者提供实时的市场洞察和标的推荐。
+                </p>
+                <p className="text-base text-foreground/80 leading-relaxed">
+                  本平台旨在帮助投资者快速了解市场全貌、发现潜在投资机会、控制投资风险。
+                  所有数据和推荐仅供参考，不构成投资建议。
+                </p>
+              </div>
+            </HudPanel>
+          </motion.div>
+
+          {/* Platform Features */}
+          <motion.div variants={itemVariants}>
+            <HudPanel title="平台核心功能">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { icon: TrendingUp, title: '实时行情监控', desc: '覆盖全球4大市场主要指数和个股的实时行情数据，每30秒自动刷新' },
+                  { icon: Brain, title: 'AI智能选股', desc: '基于多维度量化策略引擎，自动筛选评分Top 10推荐标的' },
+                  { icon: BarChart3, title: '市场热力图', desc: '按行业板块聚合的涨跌热力图，直观展示市场资金流向' },
+                  { icon: Activity, title: '恐惧贪婪指数', desc: '综合涨跌比、资金流、市场情绪等多指标的综合情绪指数' },
+                  { icon: Shield, title: '风险控制面板', desc: '实时止损线、仓位建议、风险预警等风控指标' },
+                  { icon: Target, title: 'AI市场摘要', desc: '基于LLM大语言模型的智能市场分析报告，每15分钟更新' },
+                ].map((item, i) => (
+                  <div key={i} className="p-4 rounded-lg border border-[rgba(0,212,255,0.12)] bg-[rgba(0,212,255,0.03)] hover:border-[rgba(0,212,255,0.25)] transition-all">
+                    <div className="flex items-center gap-3 mb-2">
+                      <item.icon size={22} className="text-red-400 shrink-0" />
+                      <h3 className="text-base font-bold text-foreground">{item.title}</h3>
+                    </div>
+                    <p className="text-sm text-foreground/70 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </HudPanel>
+          </motion.div>
+
+          {/* Data Model */}
+          <motion.div variants={itemVariants}>
+            <HudPanel title="数据模型说明">
+              <div className="space-y-6">
+
+                {/* Data Sources */}
+                <div>
+                  <h3 className="text-lg font-bold text-red-400 flex items-center gap-2 mb-3">
+                    <Database size={20} /> 数据来源
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-[rgba(0,212,255,0.15)]">
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">数据类型</th>
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">来源</th>
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">更新频率</th>
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">说明</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-foreground/80">
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">实时行情</td>
+                          <td className="py-2.5 px-3">Yahoo Finance v8 Chart API</td>
+                          <td className="py-2.5 px-3">30秒</td>
+                          <td className="py-2.5 px-3">价格、涨跌幅、成交量、日内走势</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">技术指标</td>
+                          <td className="py-2.5 px-3">自研计算引擎</td>
+                          <td className="py-2.5 px-3">5分钟</td>
+                          <td className="py-2.5 px-3">MA5/MA20均线、RSI14、MACD、布林带</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">基本面数据</td>
+                          <td className="py-2.5 px-3">预设+API补充</td>
+                          <td className="py-2.5 px-3">定期更新</td>
+                          <td className="py-2.5 px-3">PE/PB/股息率/市值等财务指标</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">资金流向</td>
+                          <td className="py-2.5 px-3">成交量分析推算</td>
+                          <td className="py-2.5 px-3">5分钟</td>
+                          <td className="py-2.5 px-3">基于近期vs历史成交量变化推算资金流入/流出</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">AI分析</td>
+                          <td className="py-2.5 px-3">LLM大语言模型</td>
+                          <td className="py-2.5 px-3">15分钟</td>
+                          <td className="py-2.5 px-3">基于市场数据生成智能分析摘要</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Strategy Engine */}
+                <div>
+                  <h3 className="text-lg font-bold text-red-400 flex items-center gap-2 mb-3">
+                    <Cpu size={20} /> 策略引擎架构
+                  </h3>
+                  <p className="text-base text-foreground/80 leading-relaxed mb-4">
+                    策略引擎是平台的核心模块，负责从候选股票池中筛选出综合评分最高的Top 10推荐标的。
+                    引擎每5分钟自动运行一次，覆盖A股(20只)、港股(15只)、美股(20只)、加密货币(12只)共67只候选标的。
+                  </p>
+                  <div className="bg-[rgba(0,212,255,0.03)] border border-[rgba(0,212,255,0.1)] rounded-lg p-4">
+                    <h4 className="text-base font-bold text-foreground mb-3">运行流程</h4>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-0 text-sm">
+                      {[
+                        { step: '1', label: '数据采集', desc: 'Yahoo v8 API' },
+                        { step: '2', label: '指标计算', desc: 'MA/RSI/资金流' },
+                        { step: '3', label: '多维评分', desc: '6维度加权' },
+                        { step: '4', label: '排序筛选', desc: 'Top 10' },
+                        { step: '5', label: '理由生成', desc: '模板化输出' },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 px-3 py-2 rounded bg-[rgba(0,212,255,0.06)] border border-[rgba(0,212,255,0.15)]">
+                            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-red-500/20 text-red-400 text-xs font-bold">{item.step}</span>
+                            <div>
+                              <div className="font-bold text-foreground">{item.label}</div>
+                              <div className="text-foreground/50 text-xs">{item.desc}</div>
+                            </div>
+                          </div>
+                          {i < 4 && <span className="hidden sm:block text-red-400/40 mx-1">→</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scoring Model */}
+                <div>
+                  <h3 className="text-lg font-bold text-red-400 flex items-center gap-2 mb-3">
+                    <LineChart size={20} /> 评分模型详解
+                  </h3>
+                  <p className="text-base text-foreground/80 leading-relaxed mb-4">
+                    每只候选股票通过6个维度进行综合评分，基础分50分，最终得分范围10~99分。各维度权重和评分规则如下：
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-[rgba(0,212,255,0.15)]">
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">维度</th>
+                          <th className="text-center py-2 px-3 text-red-400 font-bold">权重</th>
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">评分规则</th>
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">分值范围</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-foreground/80">
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">估值评分 (PE/PB)</td>
+                          <td className="py-2.5 px-3 text-center font-bold text-red-400">30%</td>
+                          <td className="py-2.5 px-3">PE&lt;10: +15, PE&lt;15: +12, PE&lt;20: +8; PB&lt;1: +8, PB&lt;2: +5</td>
+                          <td className="py-2.5 px-3">-8 ~ +23</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">股息率评分</td>
+                          <td className="py-2.5 px-3 text-center font-bold text-red-400">15%</td>
+                          <td className="py-2.5 px-3">≥5%: +10, ≥4%: +8, ≥3%: +6, ≥2%: +4, ≥1%: +2</td>
+                          <td className="py-2.5 px-3">0 ~ +10</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">资金流向评分</td>
+                          <td className="py-2.5 px-3 text-center font-bold text-red-400">15%</td>
+                          <td className="py-2.5 px-3">净流入&gt;5亿: +8, &gt;2亿: +5; 净流出&gt;5亿: -5</td>
+                          <td className="py-2.5 px-3">-5 ~ +8</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">技术面评分 (MA+RSI)</td>
+                          <td className="py-2.5 px-3 text-center font-bold text-red-400">20%</td>
+                          <td className="py-2.5 px-3">价格&gt;MA20: +5; RSI 30~70: +4, RSI&lt;30(超卖): +6</td>
+                          <td className="py-2.5 px-3">-7 ~ +11</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">动量评分</td>
+                          <td className="py-2.5 px-3 text-center font-bold text-red-400">10%</td>
+                          <td className="py-2.5 px-3">涨幅&gt;3%: +5, &gt;1%: +3; 跌幅&gt;3%: -3</td>
+                          <td className="py-2.5 px-3">-3 ~ +5</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">52周位置评分</td>
+                          <td className="py-2.5 px-3 text-center font-bold text-red-400">10%</td>
+                          <td className="py-2.5 px-3">接近52周低点(&lt;30%): +5; 接近高点(&gt;90%): -2</td>
+                          <td className="py-2.5 px-3">-2 ~ +5</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Signal System */}
+                <div>
+                  <h3 className="text-lg font-bold text-red-400 flex items-center gap-2 mb-3">
+                    <Zap size={20} /> 信号系统
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[
+                      { signal: '买入', color: '#00e676', condition: '评分≥80 且 涨幅>0', desc: '综合评分极高，趋势向好' },
+                      { signal: '加仓', color: '#00d4ff', condition: '评分≥65 且 跌幅<1%', desc: '评分较高，适合逐步建仓' },
+                      { signal: '持有', color: '#f0b429', condition: '评分≥45', desc: '评分中等，维持现有仓位' },
+                      { signal: '减仓', color: '#ff3b3b', condition: '评分<45', desc: '评分偏低，建议降低仓位' },
+                    ].map((item, i) => (
+                      <div key={i} className="p-3 rounded-lg border" style={{ borderColor: `${item.color}33`, backgroundColor: `${item.color}08` }}>
+                        <div className="text-base font-bold mb-1" style={{ color: item.color }}>{item.signal}</div>
+                        <div className="text-xs text-foreground/60 mb-1">{item.condition}</div>
+                        <div className="text-sm text-foreground/70">{item.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <h3 className="text-lg font-bold text-red-400 flex items-center gap-2 mb-3">
+                    <Layers size={20} /> 策略标签体系
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-[rgba(0,212,255,0.15)]">
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">标签</th>
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">触发条件</th>
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">含义</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-foreground/80">
+                        {[
+                          { tag: '低估值', condition: 'PE < 15', meaning: '市盈率低于市场平均，可能被低估' },
+                          { tag: '破净', condition: 'PB < 1.5', meaning: '股价低于或接近每股净资产' },
+                          { tag: '高股息', condition: '股息率 ≥ 4%', meaning: '分红收益率高于市场平均' },
+                          { tag: '稳定分红', condition: '股息率 ≥ 2%', meaning: '有稳定的分红记录' },
+                          { tag: '主力流入', condition: '资金净流入 > 3亿', meaning: '近期有大量资金流入' },
+                          { tag: '主力流出', condition: '资金净流出 > 3亿', meaning: '近期有大量资金流出' },
+                          { tag: '超卖反弹', condition: 'RSI < 30', meaning: '技术指标显示超卖，可能反弹' },
+                          { tag: '强势', condition: 'RSI > 70', meaning: '技术指标显示强势运行' },
+                          { tag: '多头排列', condition: '价格>MA20 且 MA5>MA20', meaning: '均线呈多头排列，趋势向上' },
+                          { tag: '放量上涨', condition: '涨幅 > 3%', meaning: '当日涨幅较大，伴随放量' },
+                          { tag: '创新高', condition: '价格 ≥ 52周高点×95%', meaning: '接近或突破52周新高' },
+                          { tag: '底部区域', condition: '价格 ≤ 52周低点×110%', meaning: '接近52周低点，可能在底部' },
+                        ].map((item, i) => (
+                          <tr key={i} className="border-b border-[rgba(0,212,255,0.06)]">
+                            <td className="py-2 px-3 font-bold text-[#00d4ff]">{item.tag}</td>
+                            <td className="py-2 px-3 font-mono text-foreground/60">{item.condition}</td>
+                            <td className="py-2 px-3">{item.meaning}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Market Coverage */}
+                <div>
+                  <h3 className="text-lg font-bold text-red-400 flex items-center gap-2 mb-3">
+                    <Target size={20} /> 市场覆盖范围
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[
+                      { market: '🇨🇳 A股', count: '20只', examples: '招商银行、贵州茅台、宁德时代、比亚迪等', sectors: '银行、白酒、新能源、医药、科技' },
+                      { market: '🇭🇰 港股', count: '15只', examples: '腾讯、阿里巴巴、美团、小米等', sectors: '互联网、金融、消费、医药' },
+                      { market: '🇺🇸 美股', count: '20只', examples: 'Apple、Microsoft、NVIDIA、Tesla等', sectors: '科技、半导体、支付、医药' },
+                      { market: '₿ 加密', count: '12只', examples: 'BTC、ETH、BNB、SOL等', sectors: '主流币、DeFi、Layer2' },
+                    ].map((item, i) => (
+                      <div key={i} className="p-3 rounded-lg border border-[rgba(0,212,255,0.12)] bg-[rgba(0,212,255,0.03)]">
+                        <div className="text-base font-bold text-foreground mb-1">{item.market}</div>
+                        <div className="text-sm text-red-400 font-bold mb-1">{item.count}候选标的</div>
+                        <div className="text-xs text-foreground/60 mb-1">{item.examples}</div>
+                        <div className="text-xs text-foreground/40">覆盖: {item.sectors}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Risk Warning */}
+                <div>
+                  <h3 className="text-lg font-bold text-red-400 flex items-center gap-2 mb-3">
+                    <AlertTriangle size={20} /> 风险提示
+                  </h3>
+                  <div className="p-4 rounded-lg border border-red-500/20 bg-red-500/5">
+                    <ul className="space-y-2 text-base text-foreground/80">
+                      <li>• 本平台所有数据、分析和推荐<strong>仅供参考</strong>，不构成任何投资建议</li>
+                      <li>• 策略引擎基于历史数据和技术指标，<strong>无法预测未来市场走势</strong></li>
+                      <li>• 投资有风险，入市需谨慎，请根据自身风险承受能力做出投资决策</li>
+                      <li>• 数据来源于第三方API，可能存在延迟或误差，请以交易所官方数据为准</li>
+                      <li>• 过往业绩不代表未来表现，任何投资都可能导致本金损失</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </HudPanel>
+          </motion.div>
+
+          {/* PDF Download */}
+          <motion.div variants={itemVariants}>
+            <HudPanel title="下载数据模型说明文档">
+              <div className="flex flex-col sm:flex-row items-center gap-4 py-4">
+                <BookOpen size={48} className="text-red-400 shrink-0" />
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="text-lg font-bold text-foreground mb-1">HUNTER ALPHA 数据模型说明 (PDF)</h3>
+                  <p className="text-sm text-foreground/60">
+                    包含完整的平台介绍、数据来源、策略引擎架构、评分模型详解、信号系统和标签体系说明
+                  </p>
+                </div>
+                {isAuthenticated ? (
+                  <button
+                    onClick={handleDownloadPDF}
+                    disabled={downloading}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 font-bold text-base hover:bg-red-500/30 transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    <Download size={18} />
+                    {downloading ? '生成中...' : '下载 PDF'}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <Lock size={18} className="text-red-500" />
+                    <span className="text-sm text-red-500">注册用户可下载</span>
+                    <a
+                      href={getLoginUrl()}
+                      className="px-4 py-2 text-sm font-medium bg-red-500/20 border border-red-500/30 text-red-400 rounded hover:bg-red-500/30 transition-colors"
+                    >
+                      登录
+                    </a>
+                  </div>
+                )}
+              </div>
+            </HudPanel>
+          </motion.div>
+
+          {/* Footer */}
+          <motion.div variants={itemVariants}>
+            <div className="flex items-center justify-between py-3 border-t border-[rgba(0,212,255,0.08)]">
+              <span className="text-xs text-red-400/60 font-mono">HUNTER ALPHA v1.0 — AI选股指南</span>
+              <span className="text-xs text-red-400/60">数据仅供参考，不构成投资建议</span>
+            </div>
+          </motion.div>
+        </motion.div>
+      </main>
+    </div>
+  );
+}
+
+// PDF HTML content generator
+function getPDFHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>HUNTER ALPHA 数据模型说明</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; color: #333; line-height: 1.8; padding: 40px; max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 28px; color: #c0392b; text-align: center; margin-bottom: 8px; }
+    h2 { font-size: 20px; color: #c0392b; margin-top: 30px; margin-bottom: 12px; border-bottom: 2px solid #e74c3c; padding-bottom: 6px; }
+    h3 { font-size: 16px; color: #333; margin-top: 16px; margin-bottom: 8px; }
+    p { margin-bottom: 12px; font-size: 14px; }
+    .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 30px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    th { background: #f8f8f8; color: #c0392b; text-align: left; padding: 8px 10px; border: 1px solid #ddd; font-weight: bold; }
+    td { padding: 8px 10px; border: 1px solid #ddd; }
+    tr:nth-child(even) { background: #fafafa; }
+    .warning { background: #fff5f5; border: 1px solid #e74c3c; border-radius: 6px; padding: 16px; margin-top: 20px; }
+    .warning p { color: #c0392b; margin-bottom: 6px; }
+    .flow-step { display: inline-block; background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; padding: 4px 12px; margin: 4px; font-size: 13px; }
+    .flow-arrow { color: #c0392b; margin: 0 4px; }
+    .footer { text-align: center; color: #999; font-size: 12px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 16px; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <h1>HUNTER ALPHA 数据模型说明</h1>
+  <p class="subtitle">猎手阿尔法 · AI选股指南 — 技术文档 v1.0</p>
+
+  <h2>一、平台简介</h2>
+  <p>HUNTER ALPHA（猎手阿尔法）是一个基于人工智能和量化分析的全球股票筛选与推荐平台。系统覆盖A股、港股、美股、加密货币四大市场，通过多维度数据采集、策略引擎评分和AI智能分析，为投资者提供实时的市场洞察和标的推荐。</p>
+
+  <h2>二、数据来源</h2>
+  <table>
+    <tr><th>数据类型</th><th>来源</th><th>更新频率</th><th>说明</th></tr>
+    <tr><td>实时行情</td><td>Yahoo Finance v8 Chart API</td><td>30秒</td><td>价格、涨跌幅、成交量</td></tr>
+    <tr><td>技术指标</td><td>自研计算引擎</td><td>5分钟</td><td>MA5/MA20、RSI14、MACD</td></tr>
+    <tr><td>基本面数据</td><td>预设+API补充</td><td>定期更新</td><td>PE/PB/股息率/市值</td></tr>
+    <tr><td>资金流向</td><td>成交量分析推算</td><td>5分钟</td><td>基于量价关系推算</td></tr>
+    <tr><td>AI分析</td><td>LLM大语言模型</td><td>15分钟</td><td>智能市场分析摘要</td></tr>
+  </table>
+
+  <h2>三、策略引擎架构</h2>
+  <p>策略引擎每5分钟自动运行，覆盖A股(20只)、港股(15只)、美股(20只)、加密货币(12只)共67只候选标的。</p>
+  <p>
+    <span class="flow-step">1.数据采集</span><span class="flow-arrow">→</span>
+    <span class="flow-step">2.指标计算</span><span class="flow-arrow">→</span>
+    <span class="flow-step">3.多维评分</span><span class="flow-arrow">→</span>
+    <span class="flow-step">4.排序筛选</span><span class="flow-arrow">→</span>
+    <span class="flow-step">5.理由生成</span>
+  </p>
+
+  <h2>四、评分模型详解</h2>
+  <p>每只候选股票通过6个维度进行综合评分，基础分50分，最终得分范围10~99分。</p>
+  <table>
+    <tr><th>维度</th><th>权重</th><th>评分规则</th><th>分值范围</th></tr>
+    <tr><td>估值评分(PE/PB)</td><td>30%</td><td>PE&lt;10:+15, PE&lt;15:+12, PE&lt;20:+8; PB&lt;1:+8</td><td>-8~+23</td></tr>
+    <tr><td>股息率评分</td><td>15%</td><td>≥5%:+10, ≥4%:+8, ≥3%:+6, ≥2%:+4</td><td>0~+10</td></tr>
+    <tr><td>资金流向评分</td><td>15%</td><td>净流入&gt;5亿:+8, &gt;2亿:+5; 净流出&gt;5亿:-5</td><td>-5~+8</td></tr>
+    <tr><td>技术面评分</td><td>20%</td><td>价格&gt;MA20:+5; RSI超卖:+6, 正常:+4</td><td>-7~+11</td></tr>
+    <tr><td>动量评分</td><td>10%</td><td>涨幅&gt;3%:+5, &gt;1%:+3; 跌幅&gt;3%:-3</td><td>-3~+5</td></tr>
+    <tr><td>52周位置评分</td><td>10%</td><td>接近低点(&lt;30%):+5; 接近高点(&gt;90%):-2</td><td>-2~+5</td></tr>
+  </table>
+
+  <h2>五、信号系统</h2>
+  <table>
+    <tr><th>信号</th><th>条件</th><th>含义</th></tr>
+    <tr><td style="color:#00a854;font-weight:bold">买入</td><td>评分≥80 且 涨幅&gt;0</td><td>综合评分极高，趋势向好</td></tr>
+    <tr><td style="color:#0088cc;font-weight:bold">加仓</td><td>评分≥65 且 跌幅&lt;1%</td><td>评分较高，适合逐步建仓</td></tr>
+    <tr><td style="color:#d4a017;font-weight:bold">持有</td><td>评分≥45</td><td>评分中等，维持现有仓位</td></tr>
+    <tr><td style="color:#cc0000;font-weight:bold">减仓</td><td>评分&lt;45</td><td>评分偏低，建议降低仓位</td></tr>
+  </table>
+
+  <h2>六、策略标签体系</h2>
+  <table>
+    <tr><th>标签</th><th>触发条件</th><th>含义</th></tr>
+    <tr><td>低估值</td><td>PE &lt; 15</td><td>市盈率低于市场平均</td></tr>
+    <tr><td>破净</td><td>PB &lt; 1.5</td><td>股价低于或接近净资产</td></tr>
+    <tr><td>高股息</td><td>股息率 ≥ 4%</td><td>分红收益率高于平均</td></tr>
+    <tr><td>稳定分红</td><td>股息率 ≥ 2%</td><td>有稳定分红记录</td></tr>
+    <tr><td>主力流入</td><td>资金净流入 &gt; 3亿</td><td>近期大量资金流入</td></tr>
+    <tr><td>超卖反弹</td><td>RSI &lt; 30</td><td>超卖区间可能反弹</td></tr>
+    <tr><td>多头排列</td><td>价格&gt;MA20 且 MA5&gt;MA20</td><td>均线多头排列趋势向上</td></tr>
+    <tr><td>创新高</td><td>价格 ≥ 52周高点×95%</td><td>接近或突破52周新高</td></tr>
+    <tr><td>底部区域</td><td>价格 ≤ 52周低点×110%</td><td>接近52周低点</td></tr>
+  </table>
+
+  <h2>七、市场覆盖范围</h2>
+  <table>
+    <tr><th>市场</th><th>候选数</th><th>代表标的</th><th>覆盖行业</th></tr>
+    <tr><td>🇨🇳 A股</td><td>20只</td><td>招商银行、贵州茅台、宁德时代等</td><td>银行、白酒、新能源、医药</td></tr>
+    <tr><td>🇭🇰 港股</td><td>15只</td><td>腾讯、阿里巴巴、美团等</td><td>互联网、金融、消费</td></tr>
+    <tr><td>🇺🇸 美股</td><td>20只</td><td>Apple、Microsoft、NVIDIA等</td><td>科技、半导体、支付</td></tr>
+    <tr><td>₿ 加密</td><td>12只</td><td>BTC、ETH、BNB、SOL等</td><td>主流币、DeFi、Layer2</td></tr>
+  </table>
+
+  <h2>八、风险提示</h2>
+  <div class="warning">
+    <p>• 本平台所有数据、分析和推荐仅供参考，不构成任何投资建议</p>
+    <p>• 策略引擎基于历史数据和技术指标，无法预测未来市场走势</p>
+    <p>• 投资有风险，入市需谨慎，请根据自身风险承受能力做出投资决策</p>
+    <p>• 数据来源于第三方API，可能存在延迟或误差，请以交易所官方数据为准</p>
+    <p>• 过往业绩不代表未来表现，任何投资都可能导致本金损失</p>
+  </div>
+
+  <div class="footer">
+    <p>HUNTER ALPHA v1.0 — AI选股指南 · 数据模型说明文档</p>
+    <p>生成时间: ${new Date().toLocaleDateString('zh-CN')} | 数据仅供参考，不构成投资建议</p>
+  </div>
+</body>
+</html>`;
+}
+
+export default function About() {
+  return (
+    <AppProvider>
+      <AboutContent />
+    </AppProvider>
+  );
+}

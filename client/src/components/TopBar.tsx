@@ -102,14 +102,14 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                 <button
                   key={c.market}
                   onClick={() => setMarket(c.market)}
-                  className={`flex items-center gap-1.5 transition-opacity ${isActive ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+                  className={`flex items-center gap-1.5 transition-opacity ${isActive ? 'opacity-100' : 'opacity-60 hover:opacity-85'}`}
                 >
                   <div className="relative shrink-0">
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                     {cfg.pulse && <div className="absolute inset-0 w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: cfg.color, opacity: 0.4 }} />}
                   </div>
-                  <span className="text-xs text-red-500 font-mono tabular-nums">{c.localTime}</span>
-                  <span className="text-xs px-1 py-0.5 rounded" style={{ color: cfg.color, backgroundColor: `${cfg.color}15` }}>
+                  <span className="text-sm text-white font-mono tabular-nums font-bold">{c.localTime}</span>
+                  <span className="text-sm px-1.5 py-0.5 rounded font-semibold" style={{ color: cfg.color, backgroundColor: `${cfg.color}25` }}>
                     {t(`status.${c.status}`, lang)}
                   </span>
                 </button>
@@ -184,6 +184,15 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                         </button>
                       </Link>
                     )}
+                    <a href="/about">
+                      <button
+                        onClick={() => setUserOpen(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-[rgba(239,68,68,0.08)] transition-colors border-b border-[rgba(0,212,255,0.08)]"
+                      >
+                        <span className="text-sm">📖</span>
+                        <span>{lang === 'zh' ? '数据模型说明' : 'Data Model'}</span>
+                      </button>
+                    </a>
                     <button
                       onClick={() => { logout(); setUserOpen(false); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#ff4466] hover:bg-[rgba(255,68,102,0.08)] transition-colors"
@@ -214,12 +223,12 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
               <button
                 key={c.market}
                 onClick={() => setMarket(c.market)}
-                className={`flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded transition-all ${isActive ? 'opacity-100 bg-[rgba(0,212,255,0.05)]' : 'opacity-35 hover:opacity-60'}`}
+                className={`flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded transition-all ${isActive ? 'opacity-100 bg-[rgba(0,212,255,0.08)]' : 'opacity-55 hover:opacity-75'}`}
               >
                 <div className="w-1 h-1 rounded-full" style={{ backgroundColor: cfg.color }} />
-                <span className="text-xs text-red-500 font-mono">{t(`market.${c.market}`, lang)}</span>
-                <span className="text-xs text-red-500/60 font-mono tabular-nums">{c.localTime}</span>
-                <span className="text-xs" style={{ color: cfg.color }}>{t(`status.${c.status}`, lang)}</span>
+                <span className="text-sm text-white font-mono font-semibold">{t(`market.${c.market}`, lang)}</span>
+                <span className="text-sm text-white/90 font-mono tabular-nums font-bold">{c.localTime}</span>
+                <span className="text-sm font-semibold" style={{ color: cfg.color }}>{t(`status.${c.status}`, lang)}</span>
               </button>
             );
           })}

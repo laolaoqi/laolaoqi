@@ -72,7 +72,7 @@ function getCurrencySymbol(market: string) {
 function StockDetailModal({ stock, market, lang, onClose }: { stock: StockRecommendation; market: string; lang: Lang; onClose: () => void }) {
   const currency = getCurrencySymbol(market);
   const isUp = stock.changePercent >= 0;
-  const color = isUp ? '#00e676' : '#ff3b3b';
+  const color = isUp ? '#ff3b3b' : '#00e676';
   const c = SIGNAL_CONFIG[stock.signal] || SIGNAL_CONFIG['hold'];
   const tags: string[] = (stock as any).tags || [];
   const reasonDetail: string = (stock as any).reasonDetail || stock.reason || '';
@@ -138,7 +138,7 @@ function StockDetailModal({ stock, market, lang, onClose }: { stock: StockRecomm
             )}
             <div className="text-center p-2 rounded bg-[rgba(0,212,255,0.05)] border border-[rgba(0,212,255,0.1)]">
               <div className="text-xs text-red-400 mb-1">资金流</div>
-              <div className="text-lg font-bold" style={{ color: stock.capitalFlow >= 0 ? '#00e676' : '#ff3b3b' }}>
+              <div className="text-lg font-bold" style={{ color: stock.capitalFlow >= 0 ? '#ff3b3b' : '#00e676' }}>
                 {stock.capitalFlow >= 0 ? '+' : ''}{stock.capitalFlow.toFixed(1)}亿
               </div>
             </div>
@@ -186,9 +186,9 @@ export default function TopRecommendations({ recommendations }: Props) {
   return (
     <HudPanel title={t('panel.topRec', lang)} scan>
       <div className="overflow-x-auto -mx-1">
-        <table className="w-full text-sm" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+        <table className="w-full text-base" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
           <thead>
-            <tr className="text-red-400 text-sm tracking-wider border-b border-[rgba(0,212,255,0.12)]">
+            <tr className="text-red-400 text-base tracking-wider border-b border-[rgba(0,212,255,0.12)]">
               <th className="text-left py-2.5 px-1.5 font-semibold">#</th>
               <th className="text-left py-2.5 px-1.5 font-semibold">{t('table.name', lang)}</th>
               <th className="text-left py-2.5 px-1.5 font-semibold hidden sm:table-cell">{t('table.code', lang)}</th>
@@ -205,8 +205,8 @@ export default function TopRecommendations({ recommendations }: Props) {
           <tbody>
             {recommendations.map(stock => {
               const isUp = stock.changePercent >= 0;
-              const color = isUp ? '#00e676' : '#ff3b3b';
-              const flowColor = stock.capitalFlow >= 0 ? '#00e676' : '#ff3b3b';
+              const color = isUp ? '#ff3b3b' : '#00e676';
+              const flowColor = stock.capitalFlow >= 0 ? '#ff3b3b' : '#00e676';
               const displayName = getName(stock as any, lang) || stock.name;
               const stockSymbol = stock.symbol || stock.code;
               const tags: string[] = (stock as any).tags || [];

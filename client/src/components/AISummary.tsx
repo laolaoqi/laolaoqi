@@ -37,7 +37,7 @@ export default function AISummary() {
             <div className="h-4 w-5/6 bg-[rgba(0,212,255,0.06)] rounded" />
             <div className="flex items-center gap-2 pt-2">
               <Brain size={14} className="text-[#00d4ff] animate-pulse" />
-              <span className="text-xs text-red-400/80">
+              <span className="text-sm text-red-400/80">
                 {lang === 'zh' ? 'AI 正在分析市场数据...' : 'AI analyzing market data...'}
               </span>
             </div>
@@ -51,7 +51,7 @@ export default function AISummary() {
             </div>
 
             {/* Overview */}
-            <p className="text-xs text-red-500 leading-relaxed pl-6">{summary.overview}</p>
+            <p className="text-sm text-red-500 leading-relaxed pl-6">{summary.overview}</p>
 
             {/* Key Points */}
             <div className="pl-6 space-y-1.5">
@@ -72,13 +72,13 @@ export default function AISummary() {
             {/* Risk Warning */}
             <div className="flex items-start gap-2 mt-2 p-2 rounded bg-[rgba(255,68,102,0.05)] border border-[rgba(255,68,102,0.1)]">
               <AlertTriangle size={12} className="text-[#ff4466] shrink-0 mt-0.5" />
-              <span className="text-xs text-[#ff6677]">{summary.riskWarning}</span>
+              <span className="text-sm text-[#ff6677]">{summary.riskWarning}</span>
             </div>
 
             {/* AI badge */}
             <div className="flex items-center justify-end gap-1.5 pt-1">
               <div className="w-1 h-1 rounded-full bg-[#00d4ff] animate-pulse" />
-              <span className="text-xs text-red-400/80 font-mono">
+              <span className="text-sm text-red-400/80 font-mono">
                 AI Generated · {data?.generatedAt ? new Date(data.generatedAt).toLocaleTimeString() : ''}
               </span>
             </div>

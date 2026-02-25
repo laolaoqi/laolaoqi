@@ -26,7 +26,7 @@ function MiniChart({ data, isUp }: { data: { time: number; value: number }[]; is
     const y = height - pad - ((d.value - min) / range) * (height - pad * 2);
     return `${x},${y}`;
   });
-  const color = isUp ? '#00e676' : '#ff3b3b';
+  const color = isUp ? '#ff3b3b' : '#00e676';
   const areaPath = `M${points[0]} ${points.join(' L')} L${width - pad},${height} L${pad},${height} Z`;
   return (
     <svg width={width} height={height} className="w-full opacity-80">
@@ -57,7 +57,7 @@ function formatVolume(v: number) {
 
 function IndexCard({ data, lang }: { data: IndexData; lang: Lang }) {
   const isUp = data.change >= 0;
-  const color = isUp ? '#00e676' : '#ff3b3b';
+  const color = isUp ? '#ff3b3b' : '#00e676';
   const displayName = getName(data, lang) || data.name;
 
   return (
@@ -69,15 +69,15 @@ function IndexCard({ data, lang }: { data: IndexData; lang: Lang }) {
 
       <div className="flex items-start justify-between mb-3">
         <div>
-          <div className="text-base text-foreground font-semibold mb-0.5">{displayName}</div>
+          <div className="text-lg text-foreground font-bold mb-0.5">{displayName}</div>
           <div className="text-xs text-red-400 font-mono">{data.symbol}</div>
         </div>
         <div className="text-right">
-          <div className="text-xl font-bold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color }}>
+          <div className="text-2xl font-bold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color }}>
             {formatPrice(data.price)}
           </div>
           <div className="flex items-center gap-2 justify-end">
-            <span className="text-sm tabular-nums font-medium" style={{ color }}>
+            <span className="text-base tabular-nums font-bold" style={{ color }}>
               {isUp ? '▲' : '▼'} {isUp ? '+' : ''}{data.changePercent.toFixed(2)}%
             </span>
           </div>
@@ -90,7 +90,7 @@ function IndexCard({ data, lang }: { data: IndexData; lang: Lang }) {
       </div>
 
       {/* Stats row */}
-      <div className="flex items-center justify-between text-xs text-red-400 font-mono tabular-nums">
+      <div className="flex items-center justify-between text-sm text-red-400 font-mono tabular-nums">
         <span>H: {formatPrice(data.high)}</span>
         <span>L: {formatPrice(data.low)}</span>
         {data.volume > 0 && <span>Vol: {formatVolume(data.volume)}</span>}

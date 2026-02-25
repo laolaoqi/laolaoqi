@@ -81,23 +81,23 @@ function Dashboard() {
           animate="visible"
           key={market} // Re-animate when market changes
         >
-          {/* Row 1: Mode Scores + Fear/Greed + Announcements | Market Overview */}
+          {/* Row 1: Mode Scores | Market Overview */}
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
-            <div className="space-y-4">
-              <motion.div variants={itemVariants}>
-                <ModeScores scores={modeScores} />
-              </motion.div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
-                <motion.div variants={itemVariants}>
-                  <FearGreedGauge value={fearGreed} />
-                </motion.div>
-                <motion.div variants={itemVariants}>
-                  <AnnouncementBoard />
-                </motion.div>
-              </div>
-            </div>
+            <motion.div variants={itemVariants}>
+              <ModeScores scores={modeScores} />
+            </motion.div>
             <motion.div variants={itemVariants}>
               <MarketOverview indices={indices} loading={loading} />
+            </motion.div>
+          </div>
+
+          {/* Row 1.5: Fear & Greed + Announcements — PC端并列 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <motion.div variants={itemVariants}>
+              <FearGreedGauge value={fearGreed} />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <AnnouncementBoard />
             </motion.div>
           </div>
 
@@ -137,13 +137,16 @@ function Dashboard() {
           {/* Footer */}
           <motion.div variants={itemVariants}>
             <div className="flex items-center justify-between py-3 border-t border-[rgba(0,212,255,0.08)]">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <div className="w-1 h-1 rounded-full bg-[#00d4ff] opacity-40" />
-                <span className="text-[10px] text-red-400/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <span className="text-sm text-red-400/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   {t('brand.version', lang)}
                 </span>
+                <a href="/about" className="text-sm text-[#00d4ff]/70 hover:text-[#00d4ff] transition-colors font-medium">
+                  {lang === 'zh' ? '网站介绍 & 数据模型说明' : 'About & Data Model'}
+                </a>
               </div>
-              <span className="text-[10px] text-red-400/60">
+              <span className="text-sm text-red-400/60">
                 {t('footer.disclaimer', lang)}
               </span>
             </div>

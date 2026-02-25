@@ -13,7 +13,7 @@ function WeightBar({ label, value, color, icon }: { label: string; value: number
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-red-500 flex items-center gap-1.5">
+        <span className="text-sm text-red-500 flex items-center gap-1.5">
           <span className="text-sm">{icon}</span>{label}
         </span>
         <span className="text-sm font-bold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color }}>{value}%</span>
@@ -40,7 +40,7 @@ export default function WeightAllocationPanel({ weights }: Props) {
         <WeightBar label={t('weight.technical', lang)} value={weights.technical} color="#a855f7" icon="📈" />
       </div>
       <div className="mt-3 pt-2 border-t border-[rgba(0,212,255,0.08)]">
-        <span className="text-xs text-red-400/70">{t('weight.autoAdjust', lang)}</span>
+        <span className="text-sm text-red-400/70">{t('weight.autoAdjust', lang)}</span>
       </div>
     </HudPanel>
   );

@@ -25,7 +25,7 @@ export default function ModeScores({ scores }: Props) {
     <HudPanel title={t('panel.modeScores', lang)} glow>
       {/* Dominant mode indicator */}
       <div className="text-center mb-4 pb-3 border-b border-[rgba(0,212,255,0.08)]">
-        <span className="text-xs text-red-400 tracking-wider font-medium">{t('mode.dominant', lang)}</span>
+        <span className="text-sm text-red-400 tracking-wider font-medium">{t('mode.dominant', lang)}</span>
         <div
           className="text-xl font-bold mt-1 tracking-wider"
           style={{ fontFamily: "'Orbitron', sans-serif", color: dominantMode.color, textShadow: `0 0 15px ${dominantMode.color}30` }}
@@ -43,7 +43,7 @@ export default function ModeScores({ scores }: Props) {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-red-400 font-medium">{mode.icon} {t(mode.labelKey, lang)}</span>
                 <span className="text-base font-bold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color: mode.color }}>
-                  {val}<span className="text-xs text-red-400 ml-0.5">{t('mode.score', lang)}</span>
+                  {val}<span className="text-sm text-red-400 ml-0.5">{t('mode.score', lang)}</span>
                 </span>
               </div>
               <div className="h-2 bg-[rgba(255,255,255,0.05)] rounded-sm overflow-hidden">
