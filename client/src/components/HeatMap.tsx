@@ -67,7 +67,7 @@ function SectorTile({ sector, lang }: { sector: SectorBlock; lang: Lang }) {
         <div className="text-[10px] text-[#00d4ff] font-bold mb-1">{name}</div>
         {sector.stocks.map(s => (
           <div key={s.symbol} className="flex justify-between text-[9px] py-0.5">
-            <span className="text-[#8899aa] font-mono">{s.symbol.replace('.SS', '').replace('.SZ', '').replace('.HK', '').replace('-USD', '')}</span>
+            <span className="text-red-500 font-mono">{s.symbol.replace('.SS', '').replace('.SZ', '').replace('.HK', '').replace('-USD', '')}</span>
             <span className={s.changePercent >= 0 ? 'text-[#00e676]' : 'text-[#ff3b3b]'} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {s.changePercent >= 0 ? '+' : ''}{s.changePercent.toFixed(2)}%
             </span>
@@ -103,7 +103,7 @@ export default function HeatMap() {
       {isLoading && sectors.length === 0 ? (
         <HeatMapSkeleton />
       ) : sectors.length === 0 ? (
-        <div className="text-center py-6 text-[#556677] text-sm">
+        <div className="text-center py-6 text-red-500/60 text-sm">
           {lang === 'zh' ? '暂无热力图数据' : 'No heatmap data available'}
         </div>
       ) : (
@@ -125,7 +125,7 @@ export default function HeatMap() {
         ].map(item => (
           <div key={item.label} className="flex items-center gap-1">
             <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
-            <span className="text-[8px] text-[#667788] font-mono">{item.label}</span>
+            <span className="text-[8px] text-red-500/70 font-mono">{item.label}</span>
           </div>
         ))}
       </div>

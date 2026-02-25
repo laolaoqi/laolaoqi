@@ -7,7 +7,8 @@ import { useApp, type MarketId, type TradingStatus } from '@/contexts/AppContext
 import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
 import { t, LANGS, type Lang } from '@/lib/i18n';
-import { RefreshCw, Wifi, WifiOff, Globe, ChevronDown, LogIn, LogOut, User } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff, Globe, ChevronDown, LogIn, LogOut, User, ShieldCheck } from 'lucide-react';
+import { Link } from 'wouter';
 import { useState, useRef, useEffect } from 'react';
 
 interface TopBarProps {
@@ -51,7 +52,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[rgba(0,212,255,0.12)] bg-[rgba(8,12,20,0.95)] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--theme-panel-border)] backdrop-blur-xl" style={{ backgroundColor: 'var(--theme-header-bg)' }}>
       {/* Glow line */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent opacity-60" />
 
@@ -80,11 +81,11 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                 className={`px-2 sm:px-2.5 py-1 rounded text-[10px] sm:text-xs font-medium transition-all duration-200 ${
                   market === m.id
                     ? 'bg-[rgba(0,212,255,0.15)] text-[#00d4ff] border border-[rgba(0,212,255,0.3)] shadow-[0_0_8px_rgba(0,212,255,0.15)]'
-                    : 'text-[#667788] hover:text-[#aabbcc] hover:bg-[rgba(255,255,255,0.03)] border border-transparent'
+                    : 'text-red-500 hover:text-red-400 hover:bg-[rgba(255,255,255,0.03)] border border-transparent'
                 }`}
               >
                 <span className="mr-0.5 sm:mr-1">{m.icon}</span>
-                <span className="hidden sm:inline">{t(`market.${m.id}`, lang)}</span>
+                <span>{t(`market.${m.id}`, lang)}</span>
               </button>
             ))}
           </div>
@@ -107,7 +108,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                     {cfg.pulse && <div className="absolute inset-0 w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: cfg.color, opacity: 0.4 }} />}
                   </div>
-                  <span className="text-[10px] text-[#8899aa] font-mono tabular-nums">{c.localTime}</span>
+                  <span className="text-[10px] text-red-500 font-mono tabular-nums">{c.localTime}</span>
                   <span className="text-[9px] px-1 py-0.5 rounded" style={{ color: cfg.color, backgroundColor: `${cfg.color}15` }}>
                     {t(`status.${c.status}`, lang)}
                   </span>
@@ -129,24 +130,24 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
           </div>
 
           {/* Refresh */}
-          <button onClick={onRefresh} className="p-1.5 rounded hover:bg-[rgba(0,212,255,0.08)] text-[#667788] hover:text-[#00d4ff] transition-colors" title={t('topbar.refresh', lang)}>
+          <button onClick={onRefresh} className="p-1.5 rounded hover:bg-[rgba(0,212,255,0.08)] text-red-500/70 hover:text-[#00d4ff] transition-colors" title={t('topbar.refresh', lang)}>
             <RefreshCw size={13} />
           </button>
 
           {/* Language Switcher */}
           <div ref={langRef} className="relative">
-            <button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-[rgba(0,212,255,0.08)] text-[#667788] hover:text-[#aabbcc] transition-colors">
+            <button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-[rgba(0,212,255,0.08)] text-red-500/70 hover:text-[#aabbcc] transition-colors">
               <Globe size={13} />
               <span className="text-[10px]">{LANGS.find(l => l.id === lang)?.flag}</span>
               <ChevronDown size={9} className={`transition-transform ${langOpen ? 'rotate-180' : ''}`} />
             </button>
             {langOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-[#0d1117] border border-[rgba(0,212,255,0.15)] rounded-lg shadow-2xl overflow-hidden z-50 min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1 bg-popover border border-[var(--theme-panel-border)] rounded-lg shadow-2xl overflow-hidden z-50 min-w-[140px]">
                 {LANGS.map(l => (
                   <button
                     key={l.id}
                     onClick={() => { setLang(l.id); setLangOpen(false); }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[rgba(0,212,255,0.08)] transition-colors ${lang === l.id ? 'text-[#00d4ff] bg-[rgba(0,212,255,0.05)]' : 'text-[#8899aa]'}`}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-accent transition-colors ${lang === l.id ? 'text-primary bg-accent' : 'text-red-500'}`}
                   >
                     <span>{l.flag}</span>
                     <span>{l.label}</span>
@@ -160,18 +161,29 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
           <div ref={userRef} className="relative">
             {isAuthenticated ? (
               <>
-                <button onClick={() => setUserOpen(!userOpen)} className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[rgba(0,212,255,0.08)] text-[#8899aa] transition-colors">
+                <button onClick={() => setUserOpen(!userOpen)} className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[rgba(0,212,255,0.08)] text-red-500 transition-colors">
                   <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#00d4ff] to-[#0066ff] flex items-center justify-center">
                     <User size={10} className="text-white" />
                   </div>
-                  <span className="text-[10px] hidden sm:inline max-w-[60px] truncate">{user?.name || 'User'}</span>
+                  <span className="text-[10px] hidden sm:inline max-w-[60px] truncate text-red-400">{user?.name || 'User'}</span>
                 </button>
                 {userOpen && (
-                  <div className="absolute right-0 top-full mt-1 bg-[#0d1117] border border-[rgba(0,212,255,0.15)] rounded-lg shadow-2xl overflow-hidden z-50 min-w-[120px]">
-                    <div className="px-3 py-2 border-b border-[rgba(0,212,255,0.08)]">
-                      <div className="text-xs text-[#aabbcc]">{user?.name}</div>
-                      <div className="text-[10px] text-[#556677]">{user?.email}</div>
+                  <div className="absolute right-0 top-full mt-1 bg-popover border border-[var(--theme-panel-border)] rounded-lg shadow-2xl overflow-hidden z-50 min-w-[120px]">
+                    <div className="px-3 py-2 border-b border-border">
+                      <div className="text-xs text-red-400">{user?.name}</div>
+                      <div className="text-[10px] text-red-500/60">{user?.email}</div>
                     </div>
+                    {user?.role === 'admin' && (
+                      <Link href="/admin">
+                        <button
+                          onClick={() => setUserOpen(false)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-[rgba(239,68,68,0.08)] transition-colors border-b border-[rgba(0,212,255,0.08)]"
+                        >
+                          <ShieldCheck size={12} />
+                          <span>{lang === 'zh' ? '管理后台' : 'Admin Panel'}</span>
+                        </button>
+                      </Link>
+                    )}
                     <button
                       onClick={() => { logout(); setUserOpen(false); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#ff4466] hover:bg-[rgba(255,68,102,0.08)] transition-colors"
@@ -205,8 +217,8 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                 className={`flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded transition-all ${isActive ? 'opacity-100 bg-[rgba(0,212,255,0.05)]' : 'opacity-35 hover:opacity-60'}`}
               >
                 <div className="w-1 h-1 rounded-full" style={{ backgroundColor: cfg.color }} />
-                <span className="text-[9px] text-[#8899aa] font-mono">{t(`market.${c.market}`, lang)}</span>
-                <span className="text-[9px] text-[#556677] font-mono tabular-nums">{c.localTime}</span>
+                <span className="text-[9px] text-red-500 font-mono">{t(`market.${c.market}`, lang)}</span>
+                <span className="text-[9px] text-red-500/60 font-mono tabular-nums">{c.localTime}</span>
                 <span className="text-[8px]" style={{ color: cfg.color }}>{t(`status.${c.status}`, lang)}</span>
               </button>
             );

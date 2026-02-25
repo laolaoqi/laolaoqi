@@ -20,7 +20,7 @@ export default function MarketSentimentPanel({ sentiment }: Props) {
       {/* Rise/Fall ratio bar */}
       <div className="space-y-2 mb-4">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[#8899aa]">{t('sentiment.risefall', lang)}</span>
+          <span className="text-red-500">{t('sentiment.risefall', lang)}</span>
           <span className="font-bold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color: riseRatio > 50 ? '#00e676' : '#ff3b3b' }}>
             {riseRatio.toFixed(1)}%
           </span>
@@ -39,8 +39,8 @@ export default function MarketSentimentPanel({ sentiment }: Props) {
           <div className="text-sm font-bold text-[#00e676] tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{sentiment.riseCount}</div>
         </div>
         <div className="text-center p-2 bg-[rgba(136,153,170,0.05)] rounded-sm border border-[rgba(136,153,170,0.1)]">
-          <div className="text-[10px] text-[#8899aa]/60 mb-0.5">{t('sentiment.flat', lang)}</div>
-          <div className="text-sm font-bold text-[#8899aa] tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{sentiment.flatCount}</div>
+          <div className="text-[10px] text-red-500/60 mb-0.5">{t('sentiment.flat', lang)}</div>
+          <div className="text-sm font-bold text-red-500 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{sentiment.flatCount}</div>
         </div>
         <div className="text-center p-2 bg-[rgba(255,59,59,0.05)] rounded-sm border border-[rgba(255,59,59,0.1)]">
           <div className="text-[10px] text-[#ff3b3b]/60 mb-0.5">{t('sentiment.fall', lang)}</div>
@@ -51,11 +51,11 @@ export default function MarketSentimentPanel({ sentiment }: Props) {
       {/* Limit up/down */}
       <div className="flex items-center gap-3">
         <div className="flex-1 flex items-center justify-between p-2 bg-[rgba(0,230,118,0.03)] rounded-sm">
-          <span className="text-[10px] text-[#8899aa]">{t('sentiment.limitUp', lang)}</span>
+          <span className="text-[10px] text-red-500">{t('sentiment.limitUp', lang)}</span>
           <span className="text-sm font-bold text-[#00e676] tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{sentiment.limitUp}</span>
         </div>
         <div className="flex-1 flex items-center justify-between p-2 bg-[rgba(255,59,59,0.03)] rounded-sm">
-          <span className="text-[10px] text-[#8899aa]">{t('sentiment.limitDown', lang)}</span>
+          <span className="text-[10px] text-red-500">{t('sentiment.limitDown', lang)}</span>
           <span className="text-sm font-bold text-[#ff3b3b] tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{sentiment.limitDown}</span>
         </div>
       </div>

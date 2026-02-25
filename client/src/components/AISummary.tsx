@@ -25,7 +25,7 @@ export default function AISummary() {
         <button
           onClick={() => refetch()}
           disabled={isFetching}
-          className="absolute top-0 right-0 p-1 rounded hover:bg-[rgba(0,212,255,0.1)] text-[#556677] hover:text-[#00d4ff] transition-colors disabled:opacity-30"
+          className="absolute top-0 right-0 p-1 rounded hover:bg-[rgba(0,212,255,0.1)] text-red-500/60 hover:text-[#00d4ff] transition-colors disabled:opacity-30"
         >
           <RefreshCw size={12} className={isFetching ? 'animate-spin' : ''} />
         </button>
@@ -37,7 +37,7 @@ export default function AISummary() {
             <div className="h-4 w-5/6 bg-[rgba(0,212,255,0.06)] rounded" />
             <div className="flex items-center gap-2 pt-2">
               <Brain size={14} className="text-[#00d4ff] animate-pulse" />
-              <span className="text-xs text-[#556677]">
+              <span className="text-xs text-red-500/60">
                 {lang === 'zh' ? 'AI 正在分析市场数据...' : 'AI analyzing market data...'}
               </span>
             </div>
@@ -51,7 +51,7 @@ export default function AISummary() {
             </div>
 
             {/* Overview */}
-            <p className="text-xs text-[#8899aa] leading-relaxed pl-6">{summary.overview}</p>
+            <p className="text-xs text-red-500 leading-relaxed pl-6">{summary.overview}</p>
 
             {/* Key Points */}
             <div className="pl-6 space-y-1.5">
@@ -78,7 +78,7 @@ export default function AISummary() {
             {/* AI badge */}
             <div className="flex items-center justify-end gap-1.5 pt-1">
               <div className="w-1 h-1 rounded-full bg-[#00d4ff] animate-pulse" />
-              <span className="text-[9px] text-[#556677] font-mono">
+              <span className="text-[9px] text-red-500/60 font-mono">
                 AI Generated · {data?.generatedAt ? new Date(data.generatedAt).toLocaleTimeString() : ''}
               </span>
             </div>

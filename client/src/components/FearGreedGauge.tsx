@@ -60,9 +60,9 @@ export default function FearGreedGauge({ value }: Props) {
             <circle cx="100" cy="100" r="2.5" fill="#0a0e17" />
           </g>
           {/* Labels */}
-          <text x="18" y="115" fill="#667788" fontSize="8" textAnchor="start">0</text>
-          <text x="100" y="22" fill="#667788" fontSize="8" textAnchor="middle">50</text>
-          <text x="182" y="115" fill="#667788" fontSize="8" textAnchor="end">100</text>
+          <text x="18" y="115" fill="#ef4444" fontSize="8" textAnchor="start">0</text>
+          <text x="100" y="22" fill="#ef4444" fontSize="8" textAnchor="middle">50</text>
+          <text x="182" y="115" fill="#ef4444" fontSize="8" textAnchor="end">100</text>
         </svg>
 
         {/* Value */}

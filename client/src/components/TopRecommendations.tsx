@@ -5,9 +5,11 @@
 import { StockRecommendation } from '@/lib/marketData';
 import HudPanel from './HudPanel';
 import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/_core/hooks/useAuth';
+import { getLoginUrl } from '@/const';
 import { t, getName, getReason } from '@/lib/i18n';
 import { Link } from 'wouter';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Lock } from 'lucide-react';
 
 interface Props { recommendations: StockRecommendation[]; }
 
@@ -40,14 +42,16 @@ function getCurrencySymbol(market: string) {
 
 export default function TopRecommendations({ recommendations }: Props) {
   const { lang, market } = useApp();
+  const { isAuthenticated } = useAuth();
   const currency = getCurrencySymbol(market);
+  const isGuest = !isAuthenticated;
 
   return (
     <HudPanel title={t('panel.topRec', lang)} scan>
       <div className="overflow-x-auto -mx-1">
         <table className="w-full text-xs" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
           <thead>
-            <tr className="text-[#8899aa]/60 text-[10px] tracking-wider border-b border-[rgba(0,212,255,0.08)]">
+            <tr className="text-red-500/60 text-[10px] tracking-wider border-b border-[rgba(0,212,255,0.08)]">
               <th className="text-left py-2 px-1 font-normal">#</th>
               <th className="text-left py-2 px-1 font-normal">{t('table.name', lang)}</th>
               <th className="text-left py-2 px-1 font-normal hidden sm:table-cell">{t('table.code', lang)}</th>
@@ -77,28 +81,36 @@ export default function TopRecommendations({ recommendations }: Props) {
                     </span>
                   </td>
                   <td className="py-2 px-1">
-                    <Link
-                      href={`/stock/${encodeURIComponent(stockSymbol)}`}
-                      className="text-[#e0e8f0] font-medium hover:text-[#00d4ff] transition-colors inline-flex items-center gap-1 group"
-                    >
-                      {displayName}
-                      <ExternalLink size={10} className="opacity-0 group-hover:opacity-60 transition-opacity" />
-                    </Link>
+                    {isGuest ? (
+                      <span className="text-red-500/60 font-medium">{'★'.repeat(Math.min(stock.rank, 3))} ***</span>
+                    ) : (
+                      <Link
+                        href={`/stock/${encodeURIComponent(stockSymbol)}`}
+                        className="text-[#e0e8f0] font-medium hover:text-[#00d4ff] transition-colors inline-flex items-center gap-1 group"
+                      >
+                        {displayName}
+                        <ExternalLink size={10} className="opacity-0 group-hover:opacity-60 transition-opacity" />
+                      </Link>
+                    )}
                   </td>
-                  <td className="py-2 px-1 text-[#8899aa] hidden sm:table-cell">{stock.code}</td>
-                  <td className="py-2 px-1 text-[#8899aa] hidden md:table-cell">{stock.industry}</td>
-                  <td className="py-2 px-1 text-right tabular-nums" style={{ color }}>{currency}{stock.price.toFixed(2)}</td>
-                  <td className="py-2 px-1 text-right tabular-nums" style={{ color }}>{isUp ? '+' : ''}{stock.changePercent.toFixed(2)}%</td>
+                  <td className="py-2 px-1 text-red-500 hidden sm:table-cell">{isGuest ? '***' : stock.code}</td>
+                  <td className="py-2 px-1 text-red-500 hidden md:table-cell">{isGuest ? '***' : stock.industry}</td>
+                  <td className="py-2 px-1 text-right tabular-nums" style={{ color: isGuest ? '#ef4444' : color }}>{isGuest ? '***' : `${currency}${stock.price.toFixed(2)}`}</td>
+                  <td className="py-2 px-1 text-right tabular-nums" style={{ color: isGuest ? '#ef4444' : color }}>{isGuest ? '***' : `${isUp ? '+' : ''}${stock.changePercent.toFixed(2)}%`}</td>
                   <td className="py-2 px-1 text-center hidden sm:table-cell">
-                    <span className="inline-flex items-center justify-center w-8 h-5 text-[10px] font-bold rounded-sm" style={{ backgroundColor: `rgba(0,212,255,${stock.score / 300})`, color: stock.score >= 85 ? '#00d4ff' : '#8899aa', border: stock.score >= 85 ? '1px solid rgba(0,212,255,0.3)' : 'none' }}>
-                      {stock.score}
-                    </span>
+                    {isGuest ? (
+                      <span className="text-red-500/50 text-[10px]">***</span>
+                    ) : (
+                      <span className="inline-flex items-center justify-center w-8 h-5 text-[10px] font-bold rounded-sm" style={{ backgroundColor: `rgba(0,212,255,${stock.score / 300})`, color: stock.score >= 85 ? '#00d4ff' : '#8899aa', border: stock.score >= 85 ? '1px solid rgba(0,212,255,0.3)' : 'none' }}>
+                        {stock.score}
+                      </span>
+                    )}
                   </td>
-                  <td className="py-2 px-1 text-center"><SignalBadge signal={stock.signal} lang={lang} /></td>
-                  <td className="py-2 px-1 text-right tabular-nums hidden lg:table-cell" style={{ color: flowColor }}>
-                    {stock.capitalFlow >= 0 ? '+' : ''}{stock.capitalFlow.toFixed(2)}{t('table.flowUnit', lang)}
+                  <td className="py-2 px-1 text-center">{isGuest ? <span className="text-red-500/50 text-[10px]">***</span> : <SignalBadge signal={stock.signal} lang={lang} />}</td>
+                  <td className="py-2 px-1 text-right tabular-nums hidden lg:table-cell" style={{ color: isGuest ? '#ef4444' : flowColor }}>
+                    {isGuest ? '***' : `${stock.capitalFlow >= 0 ? '+' : ''}${stock.capitalFlow.toFixed(2)}${t('table.flowUnit', lang)}`}
                   </td>
-                  <td className="py-2 px-1 text-[#8899aa]/70 hidden xl:table-cell text-[10px]">{displayReason}</td>
+                  <td className="py-2 px-1 text-red-500/70 hidden xl:table-cell text-[10px]">{isGuest ? '***' : displayReason}</td>
                 </tr>
               );
             })}
@@ -106,9 +118,25 @@ export default function TopRecommendations({ recommendations }: Props) {
         </table>
       </div>
 
+      {/* Guest login prompt */}
+      {isGuest && (
+        <div className="flex items-center justify-center gap-2 mt-3 py-3 border border-red-500/20 rounded bg-red-500/5">
+          <Lock size={14} className="text-red-500" />
+          <span className="text-xs text-red-500">
+            {lang === 'zh' ? '登录后查看完整推荐数据' : 'Login to view full recommendation data'}
+          </span>
+          <a
+            href={getLoginUrl()}
+            className="ml-2 px-3 py-1 text-[10px] font-medium bg-red-500/20 border border-red-500/30 text-red-400 rounded hover:bg-red-500/30 transition-colors"
+          >
+            {lang === 'zh' ? '立即登录' : 'Login Now'}
+          </a>
+        </div>
+      )}
+
       {/* Next update hint */}
       <div className="flex items-center justify-end mt-2 pt-2 border-t border-[rgba(0,212,255,0.06)]">
-        <span className="text-[9px] text-[#556677] font-mono">
+        <span className="text-[9px] text-red-500/50 font-mono">
           {t('rec.nextUpdate', lang)}: 30 min · {t('market.' + market, lang)}
         </span>
       </div>

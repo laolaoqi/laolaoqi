@@ -70,7 +70,7 @@ function IndexCard({ data, lang }: { data: IndexData; lang: Lang }) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="text-sm text-[#ccddeeff] font-medium mb-0.5">{displayName}</div>
-          <div className="text-[10px] text-[#556677] font-mono">{data.symbol}</div>
+          <div className="text-[10px] text-red-500/60 font-mono">{data.symbol}</div>
         </div>
         <div className="text-right">
           <div className="text-lg font-bold tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color }}>
@@ -90,7 +90,7 @@ function IndexCard({ data, lang }: { data: IndexData; lang: Lang }) {
       </div>
 
       {/* Stats row */}
-      <div className="flex items-center justify-between text-[10px] text-[#667788] font-mono tabular-nums">
+      <div className="flex items-center justify-between text-[10px] text-red-500/70 font-mono tabular-nums">
         <span>H: {formatPrice(data.high)}</span>
         <span>L: {formatPrice(data.low)}</span>
         {data.volume > 0 && <span>Vol: {formatVolume(data.volume)}</span>}
@@ -144,9 +144,9 @@ export default function MarketOverview({ indices, loading }: Props) {
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-[rgba(0,212,255,0.08)]">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-[#00e676] animate-pulse" />
-          <span className="text-[10px] text-[#8899aa]">{t('overview.realtime', lang)}</span>
+          <span className="text-[10px] text-red-500">{t('overview.realtime', lang)}</span>
         </div>
-        <span className="text-[10px] text-[#8899aa]/50 font-mono">
+        <span className="text-[10px] text-red-500/50 font-mono">
           {t('market.' + market, lang)} · {t('overview.autoRefresh', lang)}
         </span>
       </div>

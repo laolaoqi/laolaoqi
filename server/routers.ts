@@ -1,9 +1,12 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
+import { storagePut } from "./storage";
+import { listUsers, updateUserRole, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement } from "./db";
 import { z } from "zod";
+import { nanoid } from "nanoid";
 
 // ===================================================================
 // 缓存系统
@@ -270,6 +273,96 @@ export const appRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
+    }),
+  }),
+
+  // ===================================================================
+  // 管理员路由
+  // ===================================================================
+  admin: router({
+    // 用户列表
+    listUsers: adminProcedure.query(async () => {
+      return await listUsers();
+    }),
+
+    // 更新用户角色
+    updateUserRole: adminProcedure
+      .input(z.object({ userId: z.number(), role: z.enum(['user', 'admin']) }))
+      .mutation(async ({ input }) => {
+        await updateUserRole(input.userId, input.role);
+        return { success: true };
+      }),
+
+    // 公告列表（管理员看所有）
+    listAnnouncements: adminProcedure.query(async () => {
+      return await getAllAnnouncements();
+    }),
+
+    // 创建公告
+    createAnnouncement: adminProcedure
+      .input(z.object({
+        title: z.string().min(1).max(256),
+        content: z.string().min(1),
+        imageUrl: z.string().optional(),
+        imageCaption: z.string().max(512).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const result = await createAnnouncement({
+          title: input.title,
+          content: input.content,
+          imageUrl: input.imageUrl,
+          imageCaption: input.imageCaption,
+          authorId: ctx.user.id,
+        });
+        return result;
+      }),
+
+    // 更新公告
+    updateAnnouncement: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().min(1).max(256).optional(),
+        content: z.string().min(1).optional(),
+        imageUrl: z.string().optional(),
+        imageCaption: z.string().max(512).optional(),
+        isActive: z.number().min(0).max(1).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await updateAnnouncement(id, data);
+        return { success: true };
+      }),
+
+    // 删除公告
+    deleteAnnouncement: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteAnnouncement(input.id);
+        return { success: true };
+      }),
+
+    // 上传图片
+    uploadImage: adminProcedure
+      .input(z.object({
+        base64: z.string(),
+        filename: z.string(),
+        contentType: z.string().default('image/png'),
+      }))
+      .mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.base64, 'base64');
+        const ext = input.filename.split('.').pop() || 'png';
+        const fileKey = `announcements/${nanoid()}.${ext}`;
+        const { url } = await storagePut(fileKey, buffer, input.contentType);
+        return { url };
+      }),
+  }),
+
+  // ===================================================================
+  // 公告（公开读取）
+  // ===================================================================
+  announcements: router({
+    active: publicProcedure.query(async () => {
+      return await getActiveAnnouncements();
     }),
   }),
 

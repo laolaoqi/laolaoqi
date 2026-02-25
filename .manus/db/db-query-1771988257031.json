@@ -1,0 +1,26 @@
+{
+  "query": "SELECT id, openId, name, email, role, createdAt FROM users ORDER BY id ASC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT id, openId, name, email, role, createdAt FROM users ORDER BY id ASC LIMIT 20;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "PxrFeSiRYawPqzFDXe7JsC",
+      "name": "立齐 刘",
+      "email": "llqlovelhq@gmail.com",
+      "role": "admin",
+      "createdAt": "2026-02-24 17:18:07"
+    },
+    {
+      "id": "90045",
+      "openId": "4ksmdmNHncxQwvz3EebpXk",
+      "name": "41655535",
+      "email": "41655535@qq.com",
+      "role": "user",
+      "createdAt": "2026-02-25 02:25:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\trole\tcreatedAt\n1\tPxrFeSiRYawPqzFDXe7JsC\t立齐 刘\tllqlovelhq@gmail.com\tadmin\t2026-02-24 17:18:07\n90045\t4ksmdmNHncxQwvz3EebpXk\t41655535\t41655535@qq.com\tuser\t2026-02-25 02:25:00\n",
+  "stderr": "",
+  "execution_time_ms": 1517
+}
