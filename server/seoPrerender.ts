@@ -213,7 +213,7 @@ function renderPrerenderedHTML(meta: PageMeta): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
   <title>${meta.title}</title>
   <meta name="description" content="${meta.description}">
-  <meta name="keywords" content="AI选股,智能选股,股票推荐,A股分析,港股分析,美股分析,数字货币,实时行情,策略分析,风控建议,猎手阿尔法,Hunter Alpha">
+  <meta name="keywords" content="AI智能选股,猎手阿尔法,A股港股美股分析,数字货币投资,策略推荐,Hunter Alpha">
   <meta name="author" content="猎手阿尔法 Hunter Alpha">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <link rel="canonical" href="${meta.canonical}">

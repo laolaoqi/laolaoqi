@@ -209,3 +209,7 @@
 - [x] 准备百度站长平台验证文件占位
 - [x] 添加安全响应头（X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy）
 - [x] 添加16个预渲染单元测试，74个vitest测试全部通过
+
+## v7.7.1 - 修复首页SEO关键词过多
+- [x] 将首页keywords从16个精简为6个核心关键词：AI智能选股,猎手阿尔法,A股港股美股分析,数字货币投资,策略推荐,Hunter Alpha
+- [x] 同步更新预渲染中间件(seoPrerender.ts)中的keywords
