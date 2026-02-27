@@ -284,7 +284,7 @@ export default function CryptoInvestment() {
         {/* === 风险提示 === */}
         <div className="text-center py-4 border-t border-[rgba(0,212,255,0.06)]">
           <p className="text-xs text-[#556677]">
-            数据来源：CoinGecko + Binance Futures · 每小时自动更新 · 仅供参考，不构成投资建议
+            数据来源：CoinGecko · 每小时自动更新 · 仅供参考，不构成投资建议
           </p>
           <p className="text-xs text-[#445566] mt-1">
             永续合约风险极高，请严格控制仓位和止损 · HUNTER ALPHA v7.0
