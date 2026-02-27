@@ -9,6 +9,7 @@ import { t } from '@/lib/i18n';
 import { trpc } from '@/lib/trpc';
 import HudPanel from '@/components/HudPanel';
 import { ArrowLeft, TrendingUp, TrendingDown, BarChart3, Activity, Target } from 'lucide-react';
+import { useSEO } from '@/hooks/useSEO';
 
 const HERO_BG = 'https://private-us-east-1.manuscdn.com/sessionFile/5mBhgnjK6Lia4j3MfXGMvH/sandbox/NOT8bhL1LfjHxBx0AyI0wR-img-1_1771952361000_na1fn_aGVyby1iZw.jpg?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvNW1CaGduaks2TGlhNGozTWZYR012SC9zYW5kYm94L05PVDhiaEwxTGZqSHhCeDBBeUkwd1ItaW1nLTFfMTc3MTk1MjM2MTAwMF9uYTFmbl9hR1Z5YnkxaVp3LmpwZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSx3XzE5MjAsaF8xOTIwL2Zvcm1hdCx3ZWJwL3F1YWxpdHkscV84MCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5ODc2MTYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=qoHWe24bvuKdu1D0CP0~Vo-ld~CZQXa3jXk0IiQJFKBFgJ-ki-pQeVDSG9egdIdB4QgdYPwar8lPX0qmOLzFFmRAqIpaAaqAoJwDTRdxpUyjlKzR3de6JM0UuobYAVFRxh66RsF6-u7X80gdnKSZ~SOM3yMuFqeW9nsFDTJusALH6v9YyPpYKX2aGo3K~gyjrm9Ld5dhbrhEsdrikS78hPazjngkmrHg5ZVwlZgPHq06syWOlC7aqVfzdroxBLDmXF9SJAFkJNJiIQs120ykZ5lIM7FAM-~4LPBzQHBv7jH8zPfHy1OqnMPYZt2198dhB-TRX-QFN3UuhU9ejSxTaA__';
 
@@ -180,6 +181,15 @@ function StockDetailContent() {
     { symbol },
     { enabled: !!symbol, refetchInterval: 60000 }
   );
+
+  const stockName = data?.name || symbol;
+  useSEO({
+    title: `${stockName} (${symbol}) - 猎手阿尔法 | 个股详情与技术分析`,
+    description: `查看${stockName}的实时行情、K线图、技术指标与基本面数据分析。猎手阿尔法AI智能选股平台。`,
+    canonical: `https://www.llq555.com/stock/${encodeURIComponent(symbol)}`,
+    ogTitle: `${stockName} (${symbol}) - 个股详情 | 猎手阿尔法`,
+    ogDescription: `${stockName}实时行情、K线图、技术指标与基本面数据分析`,
+  });
 
   if (!symbol) return <div className="text-center py-20 text-[#556677]">No symbol provided</div>;
 

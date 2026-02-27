@@ -1,0 +1,18 @@
+# robots.txt for 猎手阿尔法 HUNTER ALPHA
+# https://www.llq555.com/
+
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /crypto-investment
+
+# Disallow admin and API routes
+Disallow: /admin
+Disallow: /api/
+Disallow: /404
+
+# Sitemap
+Sitemap: https://www.llq555.com/sitemap.xml
+
+# Crawl-delay (optional, for polite crawlers)
+Crawl-delay: 1

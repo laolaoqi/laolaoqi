@@ -18,6 +18,7 @@ import {
   Zap, AlertTriangle, BookOpen, Bitcoin, Users, Clock
 } from 'lucide-react';
 import { useState } from 'react';
+import { useSEO } from '@/hooks/useSEO';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,6 +33,18 @@ function AboutContent() {
   const { isAuthenticated } = useAuth();
   const { lang } = useApp();
   const [downloading, setDownloading] = useState(false);
+
+  useSEO({
+    title: lang === 'zh' ? '关于我们 - 猎手阿尔法 HUNTER ALPHA | 数据模型说明' : 'About - Hunter Alpha | Data Model Guide',
+    description: lang === 'zh'
+      ? '了解猎手阿尔法的AI多因子选股模型、数据来源、策略算法、风控体系与权限系统设计。'
+      : 'Learn about Hunter Alpha\'s AI multi-factor stock selection model, data sources, strategy algorithms, and risk control system.',
+    canonical: 'https://www.llq555.com/about',
+    ogTitle: lang === 'zh' ? '关于猎手阿尔法 - 数据模型与策略说明' : 'About Hunter Alpha - Data Model & Strategy Guide',
+    ogDescription: lang === 'zh'
+      ? 'AI多因子选股模型、数据来源、策略算法与风控体系设计详解'
+      : 'AI multi-factor model, data sources, strategy algorithms & risk control system explained',
+  });
 
   const handleDownloadPDF = async () => {
     if (!isAuthenticated) return;

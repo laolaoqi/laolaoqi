@@ -180,3 +180,20 @@
 - [x] 新增getRegisterUrl()函数（type=signUp）支持直接跳转注册页
 - [x] 其他权限保持不变（CryptoBoard等仍需管理员授权）
 - [x] 58个vitest测试全部通过
+
+## v7.6 - 全面SEO优化
+- [x] 审计当前SEO状态（meta标签、OG、结构化数据、robots.txt等）
+- [x] 优化index.html的meta标签（title、description、keywords、viewport、author、robots指令等）
+- [x] 添加Open Graph标签（og:title、og:description、og:image、og:site_name、og:locale等）
+- [x] 添加Twitter Card标签（summary_large_image）
+- [x] 添加JSON-LD结构化数据（WebSite、WebApplication、Organization、BreadcrumbList）
+- [x] 创建robots.txt（允许公开页面，禁止admin和API路由）
+- [x] 创建sitemap.xml（首页hourly、投资看板hourly、关于weekly）
+- [x] 添加canonical链接（静态+动态每页更新）
+- [x] 创建useSEO hook用于动态更新每个页面的meta标签
+- [x] 各页面动态SEO：Home按市场切换、About、CryptoInvestment、StockDetail按股票名称
+- [x] 添加hreflang多语言标签（zh-CN、en、x-default）
+- [x] 添加noscript降级内容（给不支持JS的爬虫提供基本内容）
+- [x] 添加theme-color、apple-mobile-web-app、dns-prefetch等性能优化标签
+- [x] 生成OG社交分享图片（1200x630）并上传CDN
+- [x] 58个vitest测试全部通过

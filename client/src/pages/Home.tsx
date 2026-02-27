@@ -22,8 +22,8 @@ import AISummary from '@/components/AISummary';
 import AnnouncementBoard from '@/components/AnnouncementBoard';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
 import { UserPlus, LogIn, Sparkles } from 'lucide-react';
+import { useSEO } from '@/hooks/useSEO';
 
 const HERO_BG = 'https://private-us-east-1.manuscdn.com/sessionFile/5mBhgnjK6Lia4j3MfXGMvH/sandbox/NOT8bhL1LfjHxBx0AyI0wR-img-1_1771952361000_na1fn_aGVyby1iZw.jpg?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvNW1CaGduaks2TGlhNGozTWZYR012SC9zYW5kYm94L05PVDhiaEwxTGZqSHhCeDBBeUkwd1ItaW1nLTFfMTc3MTk1MjM2MTAwMF9uYTFmbl9hR1Z5YnkxaVp3LmpwZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSx3XzE5MjAsaF8xOTIwL2Zvcm1hdCx3ZWJwL3F1YWxpdHkscV84MCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5ODc2MTYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=qoHWe24bvuKdu1D0CP0~Vo-ld~CZQXa3jXk0IiQJFKBFgJ-ki-pQeVDSG9egdIdB4QgdYPwar8lPX0qmOLzFFmRAqIpaAaqAoJwDTRdxpUyjlKzR3de6JM0UuobYAVFRxh66RsF6-u7X80gdnKSZ~SOM3yMuFqeW9nsFDTJusALH6v9YyPpYKX2aGo3K~gyjrm9Ld5dhbrhEsdrikS78hPazjngkmrHg5ZVwlZgPHq06syWOlC7aqVfzdroxBLDmXF9SJAFkJNJiIQs120ykZ5lIM7FAM-~4LPBzQHBv7jH8zPfHy1OqnMPYZt2198dhB-TRX-QFN3UuhU9ejSxTaA__';
 
@@ -40,11 +40,16 @@ function Dashboard() {
   const { lang, market } = useApp();
   const { isAuthenticated } = useAuth();
 
-  // SEO: Set document.title dynamically (30-60 chars)
-  useEffect(() => {
-    const marketLabel = market === 'cn' ? 'A股' : market === 'hk' ? '港股' : market === 'us' ? '美股' : '加密货币';
-    document.title = `猎手阿尔法 HUNTER ALPHA - AI智能选股 | ${marketLabel}实时行情与策略`;
-  }, [market]);
+  // SEO: Dynamic meta tags per market
+  const marketLabel = market === 'cn' ? 'A股' : market === 'hk' ? '港股' : market === 'us' ? '美股' : '加密货币';
+  const marketLabelEn = market === 'cn' ? 'A-Share' : market === 'hk' ? 'HK Stock' : market === 'us' ? 'US Stock' : 'Crypto';
+  useSEO({
+    title: `猎手阿尔法 HUNTER ALPHA - AI智能选股 | ${marketLabel}实时行情与策略`,
+    description: `猎手阿尔法（Hunter Alpha）AI驱动的${marketLabel}智能选股平台，提供多因子策略分析、恐惧贪婪指数、行业热力图、AI核心推荐TOP10与风控建议。`,
+    canonical: 'https://www.llq555.com/',
+    ogTitle: `猎手阿尔法 - ${marketLabel}AI智能选股平台`,
+    ogDescription: `AI驱动的${marketLabel}多因子策略分析、行业热力图、TOP10推荐与风控建议 | ${marketLabelEn} Real-time Analysis`,
+  });
   const {
     indices, recommendations, modeScores, weights,
     sentiment, newsDigest, riskControl, loading, lastUpdate, isLive, refresh,
