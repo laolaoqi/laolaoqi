@@ -147,3 +147,17 @@
 - [x] 前端模拟投资面板：总资产/盈亏率/现金/持仓数摘要卡 + 持仓表格 + 交易记录
 - [x] 前端：涨红跌绿，主流/空气分类标签，与Crypto Board风格一致
 - [x] 58个vitest测试全部通过（含5个新增SimInvestment测试）
+
+## v7.4 - 管理员权限增强 + 网站介绍/数据模型更新
+- [x] 数据库：user表添加cryptoBoardAccess（布尔）和accessExpiresAt（时间戳）字段
+- [x] 后端：checkCryptoBoardAccess权限检查函数（检查权限+到期时间+管理员豁免）
+- [x] 后端：管理员API - setCryptoBoardAccess（设置单用户权限+到期日期）
+- [x] 后端：管理员API - batchSetCryptoBoardAccess（批量设置权限）
+- [x] 后端：管理员API - userStats（用户统计：总数/管理员/有权限/已过期）
+- [x] 后端：cryptoBoard.checkAccess + simInvestment.checkAccess 权限端点
+- [x] 前端：管理员后台4Tab（统计概览+权限管理+用户管理+公告管理）
+- [x] 前端：权限管理面板（用户列表+权限开关+到期日期+批量操作+搜索筛选）
+- [x] 前端：统计概览卡片（总用户/管理员/有权限/已过期，彩色图标）
+- [x] 前端：投资看板页面权限检查（未登录→登录提示，无权限→联系管理员，已过期→续期提示）
+- [x] 更新About页面（v2.0介绍+9大核心功能卡片+完整数据模型+评分体系+BTC主导率模型）
+- [x] 58个vitest测试全部通过，管理员后台+权限控制+About页面效果确认正常

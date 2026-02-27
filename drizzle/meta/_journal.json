@@ -29,6 +29,13 @@
       "when": 1772160283326,
       "tag": "0003_complex_tyger_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1772162193101,
+      "tag": "0004_modern_swordsman",
+      "breakpoints": true
     }
   ]
 }

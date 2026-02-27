@@ -10,6 +10,11 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  // Crypto Board access control
+  cryptoBoardAccess: int("cryptoBoardAccess").default(0).notNull(), // 0=no access, 1=has access
+  accessExpiresAt: timestamp("accessExpiresAt"),  // null = no expiry (if access=1, permanent)
+  accessGrantedAt: timestamp("accessGrantedAt"),  // when access was granted
+  accessNote: text("accessNote"),                  // admin note about this grant
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

@@ -1,25 +1,27 @@
 // ===================================================================
 // Admin — 管理员看板
-// 用户管理 + 公告管理（含图片上传）
+// 用户管理 + 公告管理 + 投资看板权限管理 + 用户统计概览
 // ===================================================================
 
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Link } from 'wouter';
 import {
   ArrowLeft, Users, Megaphone, Shield, ShieldCheck,
-  Plus, Trash2, Edit, Eye, EyeOff, Upload, Image as ImageIcon,
-  Save, X
+  Plus, Trash2, Edit, Eye, EyeOff, Upload,
+  Save, X, Key, BarChart3, Clock, CheckCircle2,
+  XCircle, Calendar, AlertTriangle, UserCheck, UserX,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-type Tab = 'users' | 'announcements';
+type Tab = 'overview' | 'users' | 'permissions' | 'announcements';
 
 export default function AdminPage() {
   const { user, isAuthenticated, loading } = useAuth({ redirectOnUnauthenticated: true });
-  const [tab, setTab] = useState<Tab>('announcements');
+  const [tab, setTab] = useState<Tab>('overview');
 
   if (loading) {
     return (
@@ -46,6 +48,13 @@ export default function AdminPage() {
     );
   }
 
+  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: 'overview', label: '统计概览', icon: <BarChart3 size={14} /> },
+    { key: 'permissions', label: '权限管理', icon: <Key size={14} /> },
+    { key: 'users', label: '用户管理', icon: <Users size={14} /> },
+    { key: 'announcements', label: '公告管理', icon: <Megaphone size={14} /> },
+  ];
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
@@ -71,46 +80,425 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="max-w-6xl mx-auto px-4 pt-4">
-        <div className="flex gap-2 border-b border-red-500/10 pb-2">
-          <button
-            onClick={() => setTab('announcements')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-t text-sm font-medium transition-colors ${
-              tab === 'announcements'
-                ? 'bg-red-500/10 text-red-500 border-b-2 border-red-500'
-                : 'text-red-500/50 hover:text-red-500/70'
-            }`}
-          >
-            <Megaphone size={14} /> 公告管理
-          </button>
-          <button
-            onClick={() => setTab('users')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-t text-sm font-medium transition-colors ${
-              tab === 'users'
-                ? 'bg-red-500/10 text-red-500 border-b-2 border-red-500'
-                : 'text-red-500/50 hover:text-red-500/70'
-            }`}
-          >
-            <Users size={14} /> 用户管理
-          </button>
+        <div className="flex gap-1 border-b border-red-500/10 pb-2 overflow-x-auto">
+          {tabs.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-t text-sm font-medium transition-colors whitespace-nowrap ${
+                tab === t.key
+                  ? 'bg-red-500/10 text-red-500 border-b-2 border-red-500'
+                  : 'text-red-500/50 hover:text-red-500/70'
+              }`}
+            >
+              {t.icon} {t.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-6">
-        {tab === 'users' ? <UserManagement /> : <AnnouncementManagement />}
+        {tab === 'overview' && <OverviewPanel />}
+        {tab === 'permissions' && <PermissionManagement />}
+        {tab === 'users' && <UserManagement />}
+        {tab === 'announcements' && <AnnouncementManagement />}
       </div>
     </div>
   );
 }
 
 // ===================================================================
-// User Management
+// Overview Panel — 统计概览
+// ===================================================================
+function OverviewPanel() {
+  const { data: stats, isLoading } = trpc.admin.userStats.useQuery();
+  const { data: users } = trpc.admin.listUsers.useQuery();
+
+  if (isLoading) return <LoadingSpinner />;
+
+  const recentUsers = users?.slice(-5).reverse() || [];
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-lg font-bold text-red-500">系统概览</h2>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: '总用户', value: stats?.total ?? 0, icon: <Users size={20} />, color: 'text-blue-400' },
+          { label: '管理员', value: stats?.admins ?? 0, icon: <ShieldCheck size={20} />, color: 'text-red-400' },
+          { label: '有看板权限', value: stats?.withAccess ?? 0, icon: <CheckCircle2 size={20} />, color: 'text-green-400' },
+          { label: '已过期', value: stats?.expired ?? 0, icon: <AlertTriangle size={20} />, color: 'text-yellow-400' },
+          { label: '无权限', value: stats?.noAccess ?? 0, icon: <XCircle size={20} />, color: 'text-red-500/60' },
+        ].map((s, i) => (
+          <div key={i} className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
+            <div className={`mb-2 ${s.color}`}>{s.icon}</div>
+            <div className="text-2xl font-bold text-foreground">{s.value}</div>
+            <div className="text-xs text-red-500/60">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Users */}
+      <div className="border border-red-500/10 rounded-lg p-4">
+        <h3 className="text-sm font-bold text-red-500 mb-3">最近注册用户</h3>
+        <div className="space-y-2">
+          {recentUsers.map(u => (
+            <div key={u.id} className="flex items-center justify-between py-2 border-b border-red-500/5 last:border-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-xs font-bold text-red-400">
+                  {(u.name || '?')[0].toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-sm text-foreground">{u.name || '未命名'}</div>
+                  <div className="text-[10px] text-red-500/40">{u.email || '-'}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                  u.cryptoBoardAccess ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-500/60'
+                }`}>
+                  {u.cryptoBoardAccess ? '有看板权限' : '无权限'}
+                </span>
+                <span className="text-[10px] text-red-500/40 font-mono">
+                  {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===================================================================
+// Permission Management — 投资看板权限管理
+// ===================================================================
+function PermissionManagement() {
+  const { data: users, isLoading, refetch } = trpc.admin.listUsers.useQuery();
+  const setAccess = trpc.admin.setCryptoBoardAccess.useMutation({
+    onSuccess: () => { refetch(); toast.success('权限已更新'); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const batchAccess = trpc.admin.batchSetCryptoBoardAccess.useMutation({
+    onSuccess: (data: any) => { refetch(); setSelectedIds([]); toast.success(`已批量更新 ${data.count} 个用户`); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [batchAccess_, setBatchAccess_] = useState(true);
+  const [batchExpiry, setBatchExpiry] = useState('');
+  const [batchNote, setBatchNote] = useState('');
+  const [editingUser, setEditingUser] = useState<number | null>(null);
+  const [editExpiry, setEditExpiry] = useState('');
+  const [editNote, setEditNote] = useState('');
+  const [filter, setFilter] = useState<'all' | 'active' | 'expired' | 'none'>('all');
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    const now = new Date();
+    return users.filter(u => {
+      if (u.role === 'admin') return filter === 'all' || filter === 'active';
+      if (filter === 'active') {
+        return u.cryptoBoardAccess && (!u.accessExpiresAt || new Date(u.accessExpiresAt) > now);
+      }
+      if (filter === 'expired') {
+        return u.cryptoBoardAccess && u.accessExpiresAt && new Date(u.accessExpiresAt) <= now;
+      }
+      if (filter === 'none') {
+        return !u.cryptoBoardAccess;
+      }
+      return true;
+    });
+  }, [users, filter]);
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const selectAll = () => {
+    const nonAdminIds = filteredUsers.filter(u => u.role !== 'admin').map(u => u.id);
+    setSelectedIds(prev => prev.length === nonAdminIds.length ? [] : nonAdminIds);
+  };
+
+  const handleBatchSubmit = () => {
+    if (selectedIds.length === 0) return;
+    batchAccess.mutate({
+      userIds: selectedIds,
+      access: batchAccess_,
+      expiresAt: batchExpiry ? new Date(batchExpiry).toISOString() : null,
+      note: batchNote || undefined,
+    });
+    setShowBatchDialog(false);
+  };
+
+  const handleSingleAccess = (userId: number, access: boolean) => {
+    if (access && editingUser === userId) {
+      setAccess.mutate({
+        userId,
+        access: true,
+        expiresAt: editExpiry ? new Date(editExpiry).toISOString() : null,
+        note: editNote || undefined,
+      });
+      setEditingUser(null);
+    } else if (access) {
+      setEditingUser(userId);
+      setEditExpiry('');
+      setEditNote('');
+    } else {
+      setAccess.mutate({ userId, access: false });
+    }
+  };
+
+  const getAccessStatus = (u: any) => {
+    if (u.role === 'admin') return { label: '管理员(永久)', color: 'text-red-400 bg-red-500/10' };
+    if (!u.cryptoBoardAccess) return { label: '无权限', color: 'text-red-500/50 bg-red-500/5' };
+    if (u.accessExpiresAt && new Date(u.accessExpiresAt) <= new Date()) {
+      return { label: '已过期', color: 'text-yellow-400 bg-yellow-500/10' };
+    }
+    if (u.accessExpiresAt) {
+      const days = Math.ceil((new Date(u.accessExpiresAt).getTime() - Date.now()) / 86400000);
+      return { label: `有效(剩${days}天)`, color: 'text-green-400 bg-green-500/10' };
+    }
+    return { label: '永久有效', color: 'text-green-400 bg-green-500/10' };
+  };
+
+  if (isLoading) return <LoadingSpinner />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-red-500">投资看板权限管理</h2>
+        <div className="flex items-center gap-2">
+          {/* Filter */}
+          <div className="relative">
+            <select
+              value={filter}
+              onChange={e => setFilter(e.target.value as any)}
+              className="appearance-none bg-background border border-red-500/20 text-red-500 text-xs rounded px-3 py-1.5 pr-7 focus:outline-none focus:border-red-500/50"
+            >
+              <option value="all">全部用户</option>
+              <option value="active">有权限</option>
+              <option value="expired">已过期</option>
+              <option value="none">无权限</option>
+            </select>
+            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-red-500/50 pointer-events-none" />
+          </div>
+          {/* Batch Actions */}
+          {selectedIds.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-red-500/60">已选 {selectedIds.length} 人</span>
+              <Button
+                size="sm"
+                className="h-7 text-[10px] bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25"
+                onClick={() => { setBatchAccess_(true); setShowBatchDialog(true); }}
+              >
+                <UserCheck size={12} className="mr-1" /> 批量授权
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25"
+                onClick={() => { setBatchAccess_(false); setShowBatchDialog(true); }}
+              >
+                <UserX size={12} className="mr-1" /> 批量撤销
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Batch Dialog */}
+      {showBatchDialog && (
+        <div className="border border-red-500/20 rounded-lg p-4 bg-red-500/5 space-y-3">
+          <h3 className="text-sm font-bold text-red-500">
+            {batchAccess_ ? '批量授权投资看板' : '批量撤销投资看板权限'}
+          </h3>
+          {batchAccess_ && (
+            <>
+              <div>
+                <label className="text-xs text-red-500/60 block mb-1">到期时间（留空为永久）</label>
+                <input
+                  type="datetime-local"
+                  value={batchExpiry}
+                  onChange={e => setBatchExpiry(e.target.value)}
+                  className="w-full px-3 py-2 rounded bg-background border border-red-500/20 text-foreground text-sm focus:outline-none focus:border-red-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-red-500/60 block mb-1">备注</label>
+                <input
+                  type="text"
+                  value={batchNote}
+                  onChange={e => setBatchNote(e.target.value)}
+                  placeholder="如：试用期30天"
+                  className="w-full px-3 py-2 rounded bg-background border border-red-500/20 text-foreground text-sm focus:outline-none focus:border-red-500/50"
+                />
+              </div>
+            </>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowBatchDialog(false)} className="border-red-500/20 text-red-500">取消</Button>
+            <Button
+              size="sm"
+              onClick={handleBatchSubmit}
+              disabled={batchAccess.isPending}
+              className={batchAccess_ ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-500 text-white hover:bg-red-600'}
+            >
+              确认{batchAccess_ ? '授权' : '撤销'} ({selectedIds.length}人)
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* User Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-red-500/60 text-xs border-b border-red-500/10">
+              <th className="text-left py-2 px-2 w-8">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.length > 0 && selectedIds.length === filteredUsers.filter(u => u.role !== 'admin').length}
+                  onChange={selectAll}
+                  className="accent-red-500"
+                />
+              </th>
+              <th className="text-left py-2 px-2">用户</th>
+              <th className="text-left py-2 px-2">权限状态</th>
+              <th className="text-left py-2 px-2">到期时间</th>
+              <th className="text-left py-2 px-2">备注</th>
+              <th className="text-left py-2 px-2">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredUsers.map(u => {
+              const status = getAccessStatus(u);
+              const isEditing = editingUser === u.id;
+              return (
+                <tr key={u.id} className="border-b border-red-500/5 hover:bg-red-500/3">
+                  <td className="py-2 px-2">
+                    {u.role !== 'admin' && (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(u.id)}
+                        onChange={() => toggleSelect(u.id)}
+                        className="accent-red-500"
+                      />
+                    )}
+                  </td>
+                  <td className="py-2 px-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-red-500/10 flex items-center justify-center text-[10px] font-bold text-red-400">
+                        {(u.name || '?')[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="text-sm text-foreground">{u.name || '未命名'}</div>
+                        <div className="text-[10px] text-red-500/40">{u.email || '-'}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-2 px-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${status.color}`}>
+                      {u.cryptoBoardAccess || u.role === 'admin' ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+                      {status.label}
+                    </span>
+                  </td>
+                  <td className="py-2 px-2 text-xs text-red-500/50 font-mono">
+                    {u.role === 'admin' ? '—' : u.accessExpiresAt ? new Date(u.accessExpiresAt).toLocaleDateString() : (u.cryptoBoardAccess ? '永久' : '—')}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-red-500/50 max-w-[120px] truncate">
+                    {u.accessNote || '—'}
+                  </td>
+                  <td className="py-2 px-2">
+                    {u.role === 'admin' ? (
+                      <span className="text-[10px] text-red-500/40">管理员</span>
+                    ) : isEditing ? (
+                      <div className="space-y-1.5 min-w-[200px]">
+                        <input
+                          type="datetime-local"
+                          value={editExpiry}
+                          onChange={e => setEditExpiry(e.target.value)}
+                          className="w-full px-2 py-1 rounded bg-background border border-red-500/20 text-foreground text-[11px] focus:outline-none focus:border-red-500/50"
+                          placeholder="留空为永久"
+                        />
+                        <input
+                          type="text"
+                          value={editNote}
+                          onChange={e => setEditNote(e.target.value)}
+                          placeholder="备注（可选）"
+                          className="w-full px-2 py-1 rounded bg-background border border-red-500/20 text-foreground text-[11px] focus:outline-none focus:border-red-500/50"
+                        />
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            className="h-6 text-[10px] bg-green-500/15 text-green-400 border border-green-500/30"
+                            onClick={() => handleSingleAccess(u.id, true)}
+                            disabled={setAccess.isPending}
+                          >
+                            <CheckCircle2 size={10} className="mr-0.5" /> 确认授权
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-6 text-[10px] border-red-500/20 text-red-500"
+                            variant="outline"
+                            onClick={() => setEditingUser(null)}
+                          >
+                            取消
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        {u.cryptoBoardAccess ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-[10px] border-red-500/20 text-red-400"
+                            onClick={() => handleSingleAccess(u.id, false)}
+                            disabled={setAccess.isPending}
+                          >
+                            <XCircle size={10} className="mr-0.5" /> 撤销
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-[10px] border-green-500/20 text-green-400"
+                            onClick={() => handleSingleAccess(u.id, true)}
+                          >
+                            <CheckCircle2 size={10} className="mr-0.5" /> 授权
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {filteredUsers.length === 0 && (
+        <div className="text-center py-12 text-red-500/40">
+          <Users size={32} className="mx-auto mb-2" />
+          <p className="text-sm">暂无匹配用户</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===================================================================
+// User Management — 用户管理（角色管理）
 // ===================================================================
 function UserManagement() {
   const { data: users, isLoading, refetch } = trpc.admin.listUsers.useQuery();
   const updateRole = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => { refetch(); toast.success('角色已更新'); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   if (isLoading) return <LoadingSpinner />;
@@ -126,7 +514,9 @@ function UserManagement() {
               <th className="text-left py-2 px-3">用户名</th>
               <th className="text-left py-2 px-3">邮箱</th>
               <th className="text-left py-2 px-3">角色</th>
+              <th className="text-left py-2 px-3">看板权限</th>
               <th className="text-left py-2 px-3">注册时间</th>
+              <th className="text-left py-2 px-3">最后登录</th>
               <th className="text-left py-2 px-3">操作</th>
             </tr>
           </thead>
@@ -146,8 +536,19 @@ function UserManagement() {
                     {u.role === 'admin' ? '管理员' : '普通用户'}
                   </span>
                 </td>
+                <td className="py-2 px-3">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    u.role === 'admin' ? 'bg-red-500/10 text-red-400' :
+                    u.cryptoBoardAccess ? 'bg-green-500/10 text-green-400' : 'bg-red-500/5 text-red-500/50'
+                  }`}>
+                    {u.role === 'admin' ? '管理员' : u.cryptoBoardAccess ? '已授权' : '未授权'}
+                  </span>
+                </td>
                 <td className="py-2 px-3 text-red-500/50 text-xs font-mono">
                   {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}
+                </td>
+                <td className="py-2 px-3 text-red-500/50 text-xs font-mono">
+                  {u.lastSignedIn ? new Date(u.lastSignedIn).toLocaleDateString() : '-'}
                 </td>
                 <td className="py-2 px-3">
                   <Button
@@ -176,18 +577,18 @@ function AnnouncementManagement() {
   const { data: announcements, isLoading, refetch } = trpc.admin.listAnnouncements.useQuery();
   const createMut = trpc.admin.createAnnouncement.useMutation({
     onSuccess: () => { refetch(); setEditing(null); toast.success('公告已发布'); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
   const updateMut = trpc.admin.updateAnnouncement.useMutation({
     onSuccess: () => { refetch(); setEditing(null); toast.success('公告已更新'); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
   const deleteMut = trpc.admin.deleteAnnouncement.useMutation({
     onSuccess: () => { refetch(); toast.success('公告已删除'); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
   const uploadMut = trpc.admin.uploadImage.useMutation({
-    onError: (e) => toast.error('图片上传失败: ' + e.message),
+    onError: (e: any) => toast.error('图片上传失败: ' + e.message),
   });
 
   const [editing, setEditing] = useState<'new' | number | null>(null);

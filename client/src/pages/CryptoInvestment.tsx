@@ -5,9 +5,12 @@
 // ===================================================================
 
 import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/_core/hooks/useAuth';
+import { getLoginUrl } from '@/const';
 import { Link } from 'wouter';
 import SimPortfolioPanel from '@/components/SimPortfolioPanel';
-import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Zap, Shield, Globe, Clock } from 'lucide-react';
+import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Zap, Shield, Globe, Clock, Lock, AlertTriangle, LogIn } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useState, useEffect, useMemo } from 'react';
 
 // ===================================================================
@@ -142,10 +145,109 @@ function CategoryBadge({ symbol }: { symbol: string }) {
 // ===================================================================
 // Main Page Component
 // ===================================================================
+// ===================================================================
+// Access Denied / Login Required Screen
+// ===================================================================
+function AccessDeniedScreen({ isLoggedIn, isExpired, expiresAt }: {
+  isLoggedIn: boolean;
+  isExpired: boolean;
+  expiresAt: string | null;
+}) {
+  return (
+    <div className="min-h-screen bg-[#0a0e17] flex flex-col" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
+      {/* Scan line effect */}
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.1) 2px, rgba(0,212,255,0.1) 4px)',
+      }} />
+
+      {/* Header */}
+      <header className="border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl bg-[rgba(10,14,23,0.9)]">
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent opacity-60" />
+        <div className="max-w-[1400px] mx-auto px-4 lg:px-6">
+          <div className="flex items-center h-14 gap-3">
+            <Link href="/">
+              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[#00d4ff] hover:bg-[rgba(0,212,255,0.08)] transition-colors text-sm font-medium">
+                <ArrowLeft size={16} />
+                <span className="hidden sm:inline">返回首页</span>
+              </button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-gradient-to-br from-[#ff6b00] to-[#ff3366] flex items-center justify-center shadow-[0_0_12px_rgba(255,107,0,0.3)]">
+                <Zap size={16} className="text-white" />
+              </div>
+              <div>
+                <h1 className="text-sm font-bold text-white tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>CRYPTO BOARD</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Access Denied Content */}
+      <div className="flex-1 flex items-center justify-center relative z-10">
+        <div className="max-w-md w-full mx-4 text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[rgba(255,107,0,0.15)] to-[rgba(255,51,102,0.15)] border border-[rgba(255,107,0,0.2)] flex items-center justify-center">
+            {!isLoggedIn ? (
+              <LogIn size={36} className="text-[#ff6b00]" />
+            ) : isExpired ? (
+              <AlertTriangle size={36} className="text-[#ffd700]" />
+            ) : (
+              <Lock size={36} className="text-[#ff6b00]" />
+            )}
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+              {!isLoggedIn ? 'LOGIN REQUIRED' : isExpired ? 'ACCESS EXPIRED' : 'ACCESS RESTRICTED'}
+            </h2>
+            <p className="text-[#8899aa] text-sm leading-relaxed">
+              {!isLoggedIn ? (
+                '请先登录账号以访问投资看板。登录后，管理员将为您开通访问权限。'
+              ) : isExpired ? (
+                <>您的投资看板访问权限已于 <span className="text-[#ffd700] font-mono">{expiresAt ? new Date(expiresAt).toLocaleDateString('zh-CN') : ''}</span> 过期。请联系管理员续期。</>
+              ) : (
+                '您的账号尚未获得投资看板的访问权限。请联系管理员开通权限。'
+              )}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {!isLoggedIn ? (
+              <a href={getLoginUrl()}>
+                <Button className="w-full bg-gradient-to-r from-[#ff6b00] to-[#ff3366] text-white font-bold py-3 hover:opacity-90 transition-opacity">
+                  <LogIn size={16} className="mr-2" /> 登录账号
+                </Button>
+              </a>
+            ) : (
+              <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-[rgba(0,212,255,0.04)] p-4">
+                <p className="text-xs text-[#8899aa] mb-1">如需开通或续期，请联系管理员</p>
+                <p className="text-sm text-[#00d4ff] font-medium">管理员可在 Admin Panel → 权限管理 中设置</p>
+              </div>
+            )}
+            <Link href="/">
+              <Button variant="outline" className="w-full border-[rgba(0,212,255,0.2)] text-[#00d4ff] hover:bg-[rgba(0,212,255,0.08)] mt-2">
+                <ArrowLeft size={14} className="mr-2" /> 返回首页
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CryptoInvestment() {
-  const { data, isLoading, refetch, isFetching } = trpc.cryptoBoard.getData.useQuery(undefined, {
+  // Check access permission first
+  const { data: accessData, isLoading: accessLoading } = trpc.cryptoBoard.checkAccess.useQuery(undefined, {
+    staleTime: 60 * 1000,
+    retry: false,
+  });
+
+  const { data, isLoading, refetch, isFetching, error } = trpc.cryptoBoard.getData.useQuery(undefined, {
     refetchInterval: 30 * 60 * 1000,
     staleTime: 5 * 60 * 1000,
+    enabled: !!accessData?.hasAccess, // Only fetch data if user has access
+    retry: false,
   });
 
   const [now, setNow] = useState(new Date());
@@ -153,6 +255,32 @@ export default function CryptoInvestment() {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Show loading while checking access
+  if (accessLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-[#8899aa]">正在验证访问权限...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied screen
+  if (accessData && !accessData.hasAccess) {
+    return <AccessDeniedScreen
+      isLoggedIn={accessData.isLoggedIn}
+      isExpired={accessData.isExpired}
+      expiresAt={accessData.expiresAt ? String(accessData.expiresAt) : null}
+    />;
+  }
+
+  // If getData returned an error (e.g., permission denied), show access denied
+  if (error) {
+    return <AccessDeniedScreen isLoggedIn={true} isExpired={error.message.includes('过期')} expiresAt={null} />;
+  }
 
   const lastUpdate = data?.timestamp ? new Date(data.timestamp) : null;
 

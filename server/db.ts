@@ -108,6 +108,10 @@ export async function listUsers() {
     name: users.name,
     email: users.email,
     role: users.role,
+    cryptoBoardAccess: users.cryptoBoardAccess,
+    accessExpiresAt: users.accessExpiresAt,
+    accessGrantedAt: users.accessGrantedAt,
+    accessNote: users.accessNote,
     createdAt: users.createdAt,
     lastSignedIn: users.lastSignedIn,
   }).from(users).orderBy(asc(users.id));
@@ -118,6 +122,90 @@ export async function updateUserRole(userId: number, role: 'user' | 'admin') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ role }).where(eq(users.id, userId));
+}
+
+// Update crypto board access for a user
+export async function updateCryptoBoardAccess(
+  userId: number,
+  access: boolean,
+  expiresAt?: Date | null,
+  note?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({
+    cryptoBoardAccess: access ? 1 : 0,
+    accessExpiresAt: expiresAt ?? null,
+    accessGrantedAt: access ? new Date() : null,
+    accessNote: note ?? null,
+  }).where(eq(users.id, userId));
+}
+
+// Batch update crypto board access
+export async function batchUpdateCryptoBoardAccess(
+  userIds: number[],
+  access: boolean,
+  expiresAt?: Date | null,
+  note?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  for (const userId of userIds) {
+    await db.update(users).set({
+      cryptoBoardAccess: access ? 1 : 0,
+      accessExpiresAt: expiresAt ?? null,
+      accessGrantedAt: access ? new Date() : null,
+      accessNote: note ?? null,
+    }).where(eq(users.id, userId));
+  }
+}
+
+// Check if a user has valid crypto board access
+export async function checkCryptoBoardAccess(userId: number): Promise<{ hasAccess: boolean; expiresAt: Date | null; isExpired: boolean }> {
+  const db = await getDb();
+  if (!db) return { hasAccess: false, expiresAt: null, isExpired: false };
+  const [user] = await db.select({
+    role: users.role,
+    cryptoBoardAccess: users.cryptoBoardAccess,
+    accessExpiresAt: users.accessExpiresAt,
+  }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) return { hasAccess: false, expiresAt: null, isExpired: false };
+  // Admin always has access
+  if (user.role === 'admin') return { hasAccess: true, expiresAt: null, isExpired: false };
+  if (!user.cryptoBoardAccess) return { hasAccess: false, expiresAt: null, isExpired: false };
+  // Check expiry
+  if (user.accessExpiresAt) {
+    const now = new Date();
+    if (now > user.accessExpiresAt) {
+      return { hasAccess: false, expiresAt: user.accessExpiresAt, isExpired: true };
+    }
+    return { hasAccess: true, expiresAt: user.accessExpiresAt, isExpired: false };
+  }
+  // No expiry = permanent access
+  return { hasAccess: true, expiresAt: null, isExpired: false };
+}
+
+// Get user statistics for admin dashboard
+export async function getUserStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, admins: 0, withAccess: 0, expired: 0, noAccess: 0 };
+  const allUsers = await db.select({
+    role: users.role,
+    cryptoBoardAccess: users.cryptoBoardAccess,
+    accessExpiresAt: users.accessExpiresAt,
+  }).from(users);
+  const now = new Date();
+  const total = allUsers.length;
+  const admins = allUsers.filter(u => u.role === 'admin').length;
+  const withAccess = allUsers.filter(u => {
+    if (u.role === 'admin') return true;
+    if (!u.cryptoBoardAccess) return false;
+    if (u.accessExpiresAt && now > u.accessExpiresAt) return false;
+    return true;
+  }).length;
+  const expired = allUsers.filter(u => u.cryptoBoardAccess && u.accessExpiresAt && now > u.accessExpiresAt).length;
+  const noAccess = total - withAccess;
+  return { total, admins, withAccess, expired, noAccess };
 }
 
 // ===================================================================

@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM sim_trades WHERE id NOT IN (SELECT id FROM (SELECT id FROM sim_trades ORDER BY `createdAt` DESC LIMIT 6) AS latest); DELETE FROM sim_snapshots WHERE id NOT IN (SELECT id FROM (SELECT id FROM sim_snapshots ORDER BY `createdAt` DESC LIMIT 1) AS latest);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute DELETE FROM sim_trades WHERE id NOT IN (SELECT id FROM (SELECT id FROM sim_trades ORDER BY `createdAt` DESC LIMIT 6) AS latest); DELETE FROM sim_snapshots WHERE id NOT IN (SELECT id FROM (SELECT id FROM sim_snapshots ORDER BY `createdAt` DESC LIMIT 1) AS latest);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1818
+}

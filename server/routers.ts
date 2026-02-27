@@ -4,7 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
-import { listUsers, updateUserRole, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement, saveStrategyResults, getLatestRecommendations, getLatestSentiment, cleanOldStrategyData } from "./db";
+import { listUsers, updateUserRole, updateCryptoBoardAccess, batchUpdateCryptoBoardAccess, checkCryptoBoardAccess, getUserStats, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement, saveStrategyResults, getLatestRecommendations, getLatestSentiment, cleanOldStrategyData } from "./db";
 import { runAllStrategies, runStrategyForMarket } from "./strategyEngine";
 import { getCryptoBoardData, runCryptoBoardJob, startCryptoBoardScheduler } from "./cryptoBoard";
 import { getSimPortfolioData, runSimRebalance, startSimInvestmentScheduler } from "./simInvestment";
@@ -365,6 +365,50 @@ export const appRouter = router({
         const { url } = await storagePut(fileKey, buffer, input.contentType);
         return { url };
       }),
+
+    // ===== 投资看板权限管理 =====
+
+    // 用户统计概览
+    userStats: adminProcedure.query(async () => {
+      return await getUserStats();
+    }),
+
+    // 设置单个用户投资看板权限
+    setCryptoBoardAccess: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        access: z.boolean(),
+        expiresAt: z.string().nullable().optional(), // ISO date string or null
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+        await updateCryptoBoardAccess(input.userId, input.access, expiresAt, input.note);
+        return { success: true };
+      }),
+
+    // 批量设置用户投资看板权限
+    batchSetCryptoBoardAccess: adminProcedure
+      .input(z.object({
+        userIds: z.array(z.number()).min(1),
+        access: z.boolean(),
+        expiresAt: z.string().nullable().optional(),
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
+        await batchUpdateCryptoBoardAccess(input.userIds, input.access, expiresAt, input.note);
+        return { success: true, count: input.userIds.length };
+      }),
+  }),
+
+  // ===================================================================
+  // 投资看板权限检查（用户端）
+  // ===================================================================
+  cryptoAccess: router({
+    check: protectedProcedure.query(async ({ ctx }) => {
+      return await checkCryptoBoardAccess(ctx.user.id);
+    }),
   }),
 
   // ===================================================================
@@ -820,8 +864,21 @@ export const appRouter = router({
   // 数字货币投资看板
   // ===================================================================
   cryptoBoard: router({
-    // 获取投资看板数据（公开接口，无需登录）
-    getData: publicProcedure.query(async () => {
+    // 检查当前用户的投资看板访问权限
+    checkAccess: publicProcedure.query(async ({ ctx }) => {
+      const userId = (ctx as any).user?.id;
+      if (!userId) return { hasAccess: false, expiresAt: null, isExpired: false, isLoggedIn: false };
+      const result = await checkCryptoBoardAccess(userId);
+      return { ...result, isLoggedIn: true };
+    }),
+
+    // 获取投资看板数据（需要权限）
+    getData: protectedProcedure.query(async ({ ctx }) => {
+      // Check access permission
+      const access = await checkCryptoBoardAccess(ctx.user.id);
+      if (!access.hasAccess) {
+        throw new Error(access.isExpired ? '您的投资看板权限已过期，请联系管理员续期' : '您暂无投资看板访问权限，请联系管理员开通');
+      }
       const data = getCryptoBoardData();
       if (data) return data;
       // First request — trigger immediate fetch
@@ -848,8 +905,12 @@ export const appRouter = router({
   // 模拟投资看板
   // ===================================================================
   simInvestment: router({
-    // 获取模拟投资数据（公开接口）
-    getData: publicProcedure.query(async () => {
+    // 获取模拟投资数据（需要权限）
+    getData: protectedProcedure.query(async ({ ctx }) => {
+      const access = await checkCryptoBoardAccess(ctx.user.id);
+      if (!access.hasAccess) {
+        throw new Error(access.isExpired ? '权限已过期' : '无访问权限');
+      }
       return await getSimPortfolioData();
     }),
 
