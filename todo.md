@@ -213,3 +213,6 @@
 ## v7.7.1 - 修复首页SEO关键词过多
 - [x] 将首页keywords从16个精简为6个核心关键词：AI智能选股,猎手阿尔法,A股港股美股分析,数字货币投资,策略推荐,Hunter Alpha
 - [x] 同步更新预渲染中间件(seoPrerender.ts)中的keywords
+
+## v7.7.2 - 首页底部添加管理员邮箱
+- [x] 在首页底部footer区域添加联系方式：laolaoqi@126.com（含 mailto 链接）

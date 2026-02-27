@@ -255,23 +255,37 @@ function Dashboard() {
 
           {/* Footer */}
           <motion.div variants={itemVariants}>
-            <div className="flex items-center justify-between py-3 border-t border-[rgba(0,212,255,0.08)]">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-1 rounded-full bg-[#00d4ff] opacity-40" />
-                <span className="text-sm text-red-400/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  {t('brand.version', lang)}
+            <div className="flex flex-col gap-2 py-3 border-t border-[rgba(0,212,255,0.08)]">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="w-1 h-1 rounded-full bg-[#00d4ff] opacity-40" />
+                  <span className="text-sm text-red-400/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    {t('brand.version', lang)}
+                  </span>
+                  <a href="/crypto-investment" className="text-sm text-[#ff6b00]/80 hover:text-[#ff6b00] transition-colors font-medium">
+                    {lang === 'zh' ? '₿ 投资看板' : '₿ Crypto Board'}
+                  </a>
+                  <span className="text-red-400/30">·</span>
+                  <a href="/about" className="text-sm text-[#00d4ff]/70 hover:text-[#00d4ff] transition-colors font-medium">
+                    {lang === 'zh' ? '网站介绍 & 数据模型说明' : 'About & Data Model'}
+                  </a>
+                </div>
+                <span className="text-sm text-red-400/60">
+                  {t('footer.disclaimer', lang)}
                 </span>
-                <a href="/crypto-investment" className="text-sm text-[#ff6b00]/80 hover:text-[#ff6b00] transition-colors font-medium">
-                  {lang === 'zh' ? '₿ 投资看板' : '₿ Crypto Board'}
-                </a>
-                <span className="text-red-400/30">·</span>
-                <a href="/about" className="text-sm text-[#00d4ff]/70 hover:text-[#00d4ff] transition-colors font-medium">
-                  {lang === 'zh' ? '网站介绍 & 数据模型说明' : 'About & Data Model'}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-[#00d4ff] opacity-40" />
+                <span className="text-xs text-[#8899aa]/60">
+                  {lang === 'zh' ? '联系方式：' : 'Contact: '}
+                </span>
+                <a
+                  href="mailto:laolaoqi@126.com"
+                  className="text-xs text-[#00d4ff]/70 hover:text-[#00d4ff] transition-colors"
+                >
+                  laolaoqi@126.com
                 </a>
               </div>
-              <span className="text-sm text-red-400/60">
-                {t('footer.disclaimer', lang)}
-              </span>
             </div>
           </motion.div>
         </motion.div>
