@@ -118,3 +118,14 @@
 - [x] 改用CoinGecko统一获取主流币+空气币数据，Binance作为备用
 - [x] 添加请求间隔2s延迟避免CoinGecko 429限流
 - [x] 主流币10个 + 空气币10个全部正常显示，51个测试全部通过
+
+## v7.1 - 币种Logo + 迷你K线 + 空气币列表调整
+- [x] 调研所有指定币种的CoinGecko ID和Logo来源
+- [x] 后端：空气币列表替换为用户指定13只（10永续+2 Alpha+1 TRON）
+- [x] 后端：CoinGecko sparkline=true获取Logo URL + 7日价格历史
+- [x] 后端：降采样sparkline到28点，限流失败时自动生成占位符条目
+- [x] 前端：CoinLogo组件（图片加载失败自动显示彩色字母占位符）
+- [x] 前端：MiniSparkline SVG组件（28点折线+渐变填充，涨红跌绿）
+- [x] 前端：CategoryBadge分类标签（Alpha金色/TRON粉色/永续橙色）
+- [x] 前端：主流币+空气币表格同步增加Logo和K线列
+- [x] 53个vitest测试全部通过，页面效果确认正常

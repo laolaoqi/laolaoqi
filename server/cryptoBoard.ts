@@ -1,6 +1,7 @@
 // ===================================================================
-// Crypto Investment Board — 主流币 vs 空气币永续合约 投资看板
-// 后端定时任务：CoinGecko（主）+ Binance（备用）数据抓取 → JSON缓存
+// Crypto Investment Board — 主流币 vs 空气币/永续合约 投资看板
+// 后端定时任务：CoinGecko 数据抓取 → JSON缓存
+// 包含Logo图标 + 7日迷你K线数据
 // 零AI token消耗，纯API数据驱动
 // ===================================================================
 
@@ -17,6 +18,8 @@ export interface CryptoCoin {
   marketCap?: number;
   volume24h?: number;
   rank?: number;
+  logo?: string;           // Logo URL from CoinGecko
+  sparkline7d?: number[];  // 7-day price history for mini chart
 }
 
 export interface CryptoBoardData {
@@ -30,7 +33,7 @@ export interface CryptoBoardData {
 }
 
 // ===================================================================
-// In-memory cache (no file system dependency)
+// In-memory cache
 // ===================================================================
 let cachedBoard: CryptoBoardData | null = null;
 
@@ -39,147 +42,167 @@ export function getCryptoBoardData(): CryptoBoardData | null {
 }
 
 // ===================================================================
-// CoinGecko API — 主流币前10
+// Coin definitions — CoinGecko ID + display info
 // ===================================================================
-const MAINSTREAM_IDS = [
-  'bitcoin', 'ethereum', 'solana', 'binancecoin', 'ripple',
-  'cardano', 'avalanche-2', 'tron', 'dogecoin', 'chainlink',
-];
-
-// ===================================================================
-// CoinGecko API — 空气币/Meme币 ID列表
-// ===================================================================
-const MEME_IDS = [
-  'official-trump', 'worldcoin-wld', 'hyperliquid',
-  'shiba-inu', 'pepe', 'floki',
-  'dogwifcoin', 'sui', 'aptos',
-  'arbitrum', 'optimism', 'injective-protocol',
-  'artificial-superintelligence-alliance', 'near', 'bonk',
-];
-
-// Map CoinGecko IDs to display symbols for meme coins
-const MEME_SYMBOL_MAP: Record<string, string> = {
-  'official-trump': 'TRUMP',
-  'worldcoin-wld': 'WLD',
-  'hyperliquid': 'HYPE',
-  'shiba-inu': 'SHIB',
-  'pepe': 'PEPE',
-  'floki': 'FLOKI',
-  'dogwifcoin': 'WIF',
-  'sui': 'SUI',
-  'aptos': 'APT',
-  'arbitrum': 'ARB',
-  'optimism': 'OP',
-  'injective-protocol': 'INJ',
-  'artificial-superintelligence-alliance': 'FET',
-  'near': 'NEAR',
-  'bonk': 'BONK',
-};
-
-// Binance futures symbols (used as fallback)
-const MEME_BINANCE_SYMBOLS = [
-  'TRUMPUSDT', 'WLDUSDT', 'HYPEUSDT', 'DOGEUSDT',
-  'SHIBUSDT', 'PEPEUSDT', 'FLOKIUSDT', 'WIFUSDT',
-  'SUIUSDT', 'APTUSDT', 'ARBUSDT', 'OPUSDT',
-  'INJUSDT', 'FETUSDT', 'NEARUSDT',
-];
-
-// ===================================================================
-// CoinGecko unified fetch — works for both mainstream and meme
-// ===================================================================
-async function fetchCoinsFromCoinGecko(ids: string[]): Promise<CryptoCoin[]> {
-  try {
-    const idsParam = ids.join(',');
-    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${idsParam}&order=market_cap_desc&per_page=50&page=1&sparkline=false`;
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': UA, 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) throw new Error(`CoinGecko HTTP ${resp.status}`);
-    const coins: any[] = await resp.json();
-
-    return coins.map((c, i) => ({
-      name: c.name,
-      symbol: c.symbol.toUpperCase(),
-      price: c.current_price || 0,
-      change24h: c.price_change_percentage_24h || 0,
-      marketCap: c.market_cap || 0,
-      volume24h: c.total_volume || 0,
-      rank: i + 1,
-    }));
-  } catch (err: any) {
-    console.error('[CryptoBoard] CoinGecko fetch failed:', err?.message);
-    return [];
-  }
+interface CoinDef {
+  id: string;          // CoinGecko API ID
+  symbol: string;      // Display symbol (e.g. TRUMP)
+  name: string;        // Display name
+  category?: string;   // 'binance-alpha' | 'tron-chain' | 'perp'
 }
 
-async function fetchMainstreamCoins(): Promise<CryptoCoin[]> {
-  const coins = await fetchCoinsFromCoinGecko(MAINSTREAM_IDS);
-  return coins.slice(0, 10).map((c, i) => ({ ...c, rank: i + 1 }));
-}
+// 主流币前10
+const MAINSTREAM_DEFS: CoinDef[] = [
+  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' },
+  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
+  { id: 'solana', symbol: 'SOL', name: 'Solana' },
+  { id: 'binancecoin', symbol: 'BNB', name: 'BNB' },
+  { id: 'ripple', symbol: 'XRP', name: 'XRP' },
+  { id: 'cardano', symbol: 'ADA', name: 'Cardano' },
+  { id: 'avalanche-2', symbol: 'AVAX', name: 'Avalanche' },
+  { id: 'tron', symbol: 'TRX', name: 'TRON' },
+  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin' },
+  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink' },
+];
+
+// 空气币/永续合约 — 用户指定列表
+const MEME_DEFS: CoinDef[] = [
+  // 永续合约
+  { id: 'official-trump', symbol: 'TRUMP', name: 'Official Trump', category: 'perp' },
+  { id: 'worldcoin-wld', symbol: 'WLD', name: 'Worldcoin', category: 'perp' },
+  { id: 'hyperliquid', symbol: 'HYPE', name: 'Hyperliquid', category: 'perp' },
+  { id: 'aster-2', symbol: 'ASTER', name: 'Aster', category: 'perp' },
+  { id: 'myx-finance', symbol: 'MYX', name: 'MYX Finance', category: 'perp' },
+  { id: 'chainopera-ai', symbol: 'COAI', name: 'ChainOpera AI', category: 'perp' },
+  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', category: 'perp' },
+  { id: 'callisto-network', symbol: 'CLO', name: 'Callisto', category: 'perp' },
+  { id: 'pump-fun', symbol: 'PUMP', name: 'Pump.fun', category: 'perp' },
+  { id: 'sun-token', symbol: 'SUN', name: 'Sun Token', category: 'perp' },
+  // Binance Alpha
+  { id: 'dexlab-2', symbol: 'XLAB', name: 'Dexlab', category: 'binance-alpha' },
+  { id: 'rwa-inc', symbol: 'RWA', name: 'RWA Inc.', category: 'binance-alpha' },
+  // 波场链上
+  { id: '', symbol: 'TRONLIFE', name: '波场人生', category: 'tron-chain' },
+];
 
 // ===================================================================
-// Meme/空气币 — CoinGecko优先，Binance Futures备用
+// CoinGecko fetch with sparkline + logo
 // ===================================================================
-async function fetchMemeCoins(): Promise<CryptoCoin[]> {
-  // Strategy 1: CoinGecko (works everywhere, no geo-blocking)
-  const cgCoins = await fetchCoinsFromCoinGecko(MEME_IDS);
-  if (cgCoins.length >= 5) {
-    console.log(`[CryptoBoard] Meme coins from CoinGecko: ${cgCoins.length}`);
-    // Override symbol with our display names
-    const mapped = cgCoins.map(c => {
-      const cgId = MEME_IDS.find(id => {
-        const sym = MEME_SYMBOL_MAP[id];
-        return sym && sym === c.symbol;
+async function fetchCoinsWithDetails(defs: CoinDef[]): Promise<CryptoCoin[]> {
+  // Filter out coins without CoinGecko IDs
+  const cgDefs = defs.filter(d => d.id);
+  const nonCgDefs = defs.filter(d => !d.id);
+
+  const coins: CryptoCoin[] = [];
+
+  if (cgDefs.length > 0) {
+    try {
+      const idsParam = cgDefs.map(d => d.id).join(',');
+      // sparkline=true gives us 7-day price data
+      const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${idsParam}&order=market_cap_desc&per_page=50&page=1&sparkline=true`;
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': UA, 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(20000),
       });
-      const displaySym = cgId ? (MEME_SYMBOL_MAP[cgId] + 'USDT') : (c.symbol + 'USDT');
-      return { ...c, symbol: displaySym };
-    });
-    // Sort by volume, take top 10
-    mapped.sort((a, b) => (b.volume24h || 0) - (a.volume24h || 0));
-    return mapped.slice(0, 10).map((c, i) => ({ ...c, rank: i + 1 }));
-  }
+      if (!resp.ok) throw new Error(`CoinGecko HTTP ${resp.status}`);
+      const data: any[] = await resp.json();
 
-  // Strategy 2: Binance Futures (fallback, may be geo-blocked)
-  console.log('[CryptoBoard] CoinGecko meme failed, trying Binance Futures...');
-  return fetchMemeFromBinance();
-}
+      // Build a map from CoinGecko ID to data
+      const dataMap = new Map<string, any>();
+      for (const d of data) {
+        dataMap.set(d.id, d);
+      }
 
-async function fetchMemeFromBinance(): Promise<CryptoCoin[]> {
-  const results: CryptoCoin[] = [];
-  try {
-    const url = 'https://fapi.binance.com/fapi/v1/ticker/24hr';
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': UA },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) throw new Error(`Binance Futures HTTP ${resp.status}`);
-    const allTickers: any[] = await resp.json();
+      // Map in the order of our definitions
+      for (const def of cgDefs) {
+        const d = dataMap.get(def.id);
+        if (d) {
+          const rawSparkline = d.sparkline_in_7d?.price || [];
+          const sparkline = downsampleSparkline(rawSparkline, 28);
 
-    const tickerMap = new Map<string, any>();
-    for (const t of allTickers) {
-      tickerMap.set(t.symbol, t);
-    }
-
-    for (const sym of MEME_BINANCE_SYMBOLS) {
-      const data = tickerMap.get(sym);
-      if (data) {
-        results.push({
-          name: sym.replace('USDT', ''),
-          symbol: sym,
-          price: parseFloat(data.lastPrice) || 0,
-          change24h: parseFloat(data.priceChangePercent) || 0,
-          volume24h: parseFloat(data.quoteVolume) || 0,
-          rank: results.length + 1,
+          coins.push({
+            name: def.name,
+            symbol: def.symbol,
+            price: d.current_price || 0,
+            change24h: d.price_change_percentage_24h || 0,
+            marketCap: d.market_cap || 0,
+            volume24h: d.total_volume || 0,
+            logo: d.image || '',
+            sparkline7d: sparkline,
+            rank: 0,
+          });
+        } else {
+          // CoinGecko returned data but this coin wasn't in it
+          coins.push({
+            name: def.name,
+            symbol: def.symbol,
+            price: 0, change24h: 0, marketCap: 0, volume24h: 0,
+            logo: '', sparkline7d: [], rank: 0,
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error('[CryptoBoard] CoinGecko detailed fetch failed:', err?.message);
+      // On total failure, add all cgDefs as empty placeholders
+      for (const def of cgDefs) {
+        coins.push({
+          name: def.name,
+          symbol: def.symbol,
+          price: 0, change24h: 0, marketCap: 0, volume24h: 0,
+          logo: '', sparkline7d: [], rank: 0,
         });
       }
     }
-  } catch (err: any) {
-    console.error('[CryptoBoard] Binance Futures also failed:', err?.message);
   }
 
-  results.sort((a, b) => (b.volume24h || 0) - (a.volume24h || 0));
-  return results.slice(0, 10).map((c, i) => ({ ...c, rank: i + 1 }));
+  // Add non-CoinGecko coins as placeholders
+  for (const def of nonCgDefs) {
+    coins.push({
+      name: def.name,
+      symbol: def.symbol,
+      price: 0,
+      change24h: 0,
+      marketCap: 0,
+      volume24h: 0,
+      logo: '',
+      sparkline7d: [],
+      rank: 0,
+    });
+  }
+
+  return coins;
+}
+
+// Downsample a large array to target size by picking evenly spaced points
+function downsampleSparkline(data: number[], targetSize: number): number[] {
+  if (!data || data.length === 0) return [];
+  if (data.length <= targetSize) return data;
+  const step = data.length / targetSize;
+  const result: number[] = [];
+  for (let i = 0; i < targetSize; i++) {
+    result.push(data[Math.floor(i * step)]);
+  }
+  // Always include the last point
+  result.push(data[data.length - 1]);
+  return result;
+}
+
+// ===================================================================
+// Fetch mainstream coins
+// ===================================================================
+async function fetchMainstreamCoins(): Promise<CryptoCoin[]> {
+  const coins = await fetchCoinsWithDetails(MAINSTREAM_DEFS);
+  return coins.map((c, i) => ({ ...c, rank: i + 1 }));
+}
+
+// ===================================================================
+// Fetch meme/空气币
+// ===================================================================
+async function fetchMemeCoins(): Promise<CryptoCoin[]> {
+  const coins = await fetchCoinsWithDetails(MEME_DEFS);
+  console.log(`[CryptoBoard] Meme coins fetched: ${coins.filter(c => c.price > 0).length}/${MEME_DEFS.length}`);
+  // Assign ranks in definition order (user's preferred order)
+  return coins.map((c, i) => ({ ...c, rank: i + 1 }));
 }
 
 // ===================================================================
@@ -199,7 +222,6 @@ async function fetchGlobalData(): Promise<{ btcDominance: number; totalMarketCap
     };
   } catch (err: any) {
     console.error('[CryptoBoard] Failed to fetch global data:', err?.message);
-    // Use cached value if available
     return {
       btcDominance: cachedBoard?.btcDominance || 57.9,
       totalMarketCap: cachedBoard?.totalMarketCap || 0,
@@ -224,8 +246,8 @@ function generateAdvice(btcDominance: number): { zh: string; en: string } {
     zh = `🔥 山寨季临近：BTC主导率${btcDominance.toFixed(1)}%下降，资金开始流向山寨。可适当加仓空气永续合约，但控制总仓位不超过30%。`;
     en = `🔥 Alt season approaching: BTC dominance ${btcDominance.toFixed(1)}% declining. Increase meme perp positions, but keep total under 30%.`;
   } else {
-    zh = `🚀 空气季：BTC主导率${btcDominance.toFixed(1)}%低位，山寨币全面爆发。追永续合约故事（TRUMP/HYPE/PEPE等），但别全仓！风险极高！`;
-    en = `🚀 Meme season: BTC dominance ${btcDominance.toFixed(1)}% low. Chase meme perp narratives (TRUMP/HYPE/PEPE), but NEVER go all-in! Extreme risk!`;
+    zh = `🚀 空气季：BTC主导率${btcDominance.toFixed(1)}%低位，山寨币全面爆发。追永续合约故事（TRUMP/HYPE等），但别全仓！风险极高！`;
+    en = `🚀 Meme season: BTC dominance ${btcDominance.toFixed(1)}% low. Chase meme perp narratives (TRUMP/HYPE), but NEVER go all-in! Extreme risk!`;
   }
 
   return { zh, en };
@@ -244,15 +266,14 @@ export async function runCryptoBoardJob(): Promise<CryptoBoardData | null> {
   isRunning = true;
 
   try {
-    console.log('[CryptoBoard] Starting data fetch...');
+    console.log('[CryptoBoard] Starting data fetch (with logos + sparklines)...');
 
     // Stagger CoinGecko requests to avoid 429 rate limit
-    // CoinGecko free tier: ~10-30 requests/minute
     const globalData = await fetchGlobalData();
-    await sleep(2000); // 2s gap between CoinGecko calls
+    await sleep(2500);
 
     const mainstream = await fetchMainstreamCoins();
-    await sleep(2000); // 2s gap
+    await sleep(2500);
 
     const memeCoins = await fetchMemeCoins();
 
@@ -269,7 +290,7 @@ export async function runCryptoBoardJob(): Promise<CryptoBoardData | null> {
     };
 
     cachedBoard = board;
-    console.log(`[CryptoBoard] Updated: ${mainstream.length} mainstream, ${memeCoins.length} meme coins, BTC dom=${globalData.btcDominance.toFixed(1)}%`);
+    console.log(`[CryptoBoard] Updated: ${mainstream.length} mainstream, ${memeCoins.length} meme, BTC dom=${globalData.btcDominance.toFixed(1)}%`);
     return board;
   } catch (err: any) {
     console.error('[CryptoBoard] Job failed:', err?.message);
@@ -289,13 +310,11 @@ function sleep(ms: number) {
 const CRYPTO_BOARD_INTERVAL = 60 * 60 * 1000; // 1 hour
 
 export function startCryptoBoardScheduler() {
-  // Initial run after 15s (let other services start first)
   setTimeout(() => {
     console.log('[CryptoBoard] Initial run starting...');
     runCryptoBoardJob();
   }, 15_000);
 
-  // Hourly updates
   setInterval(() => {
     runCryptoBoardJob();
   }, CRYPTO_BOARD_INTERVAL);
