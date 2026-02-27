@@ -20,6 +20,7 @@ import AISummary from '@/components/AISummary';
 import AnnouncementBoard from '@/components/AnnouncementBoard';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 
 const HERO_BG = 'https://private-us-east-1.manuscdn.com/sessionFile/5mBhgnjK6Lia4j3MfXGMvH/sandbox/NOT8bhL1LfjHxBx0AyI0wR-img-1_1771952361000_na1fn_aGVyby1iZw.jpg?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvNW1CaGduaks2TGlhNGozTWZYR012SC9zYW5kYm94L05PVDhiaEwxTGZqSHhCeDBBeUkwd1ItaW1nLTFfMTc3MTk1MjM2MTAwMF9uYTFmbl9hR1Z5YnkxaVp3LmpwZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSx3XzE5MjAsaF8xOTIwL2Zvcm1hdCx3ZWJwL3F1YWxpdHkscV84MCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5ODc2MTYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=qoHWe24bvuKdu1D0CP0~Vo-ld~CZQXa3jXk0IiQJFKBFgJ-ki-pQeVDSG9egdIdB4QgdYPwar8lPX0qmOLzFFmRAqIpaAaqAoJwDTRdxpUyjlKzR3de6JM0UuobYAVFRxh66RsF6-u7X80gdnKSZ~SOM3yMuFqeW9nsFDTJusALH6v9YyPpYKX2aGo3K~gyjrm9Ld5dhbrhEsdrikS78hPazjngkmrHg5ZVwlZgPHq06syWOlC7aqVfzdroxBLDmXF9SJAFkJNJiIQs120ykZ5lIM7FAM-~4LPBzQHBv7jH8zPfHy1OqnMPYZt2198dhB-TRX-QFN3UuhU9ejSxTaA__';
 
@@ -34,6 +35,12 @@ const itemVariants = {
 
 function Dashboard() {
   const { lang, market } = useApp();
+
+  // SEO: Set document.title dynamically (30-60 chars)
+  useEffect(() => {
+    const marketLabel = market === 'cn' ? 'A股' : market === 'hk' ? '港股' : market === 'us' ? '美股' : '加密货币';
+    document.title = `猎手阿尔法 HUNTER ALPHA - AI智能选股 | ${marketLabel}实时行情与策略`;
+  }, [market]);
   const {
     indices, recommendations, modeScores, weights,
     sentiment, newsDigest, riskControl, loading, lastUpdate, isLive, refresh,
@@ -59,18 +66,20 @@ function Dashboard() {
       {/* Theme Switcher - top left corner */}
       <ThemeSwitcher />
 
-      {/* Welcome Banner - PC only */}
+      {/* SEO: H1 title - visually styled as welcome banner on PC */}
       <div className="hidden lg:block max-w-[1600px] mx-auto px-3 lg:px-5 pt-3">
         <div className="flex items-center justify-center gap-3 py-2 px-4 rounded border border-red-500/20 bg-red-500/5">
-          <span className="text-red-500 text-lg font-bold tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+          <h1 className="text-red-500 text-lg font-bold tracking-wider m-0" style={{ fontFamily: "'Orbitron', sans-serif" }}>
             AI选股指南
-          </span>
+          </h1>
           <span className="text-red-400/80 text-sm">|</span>
           <span className="text-red-400 text-sm font-medium">
             {t('brand.subtitle', lang)} · {t('market.' + market, lang)}
           </span>
         </div>
       </div>
+      {/* SEO: H1 for mobile (sr-only so it doesn't break layout) */}
+      <h1 className="sr-only lg:hidden">猎手阿尔法 - AI智能选股平台</h1>
 
       {/* Main content */}
       <main className="flex-1 relative z-10">
@@ -81,6 +90,9 @@ function Dashboard() {
           animate="visible"
           key={market} // Re-animate when market changes
         >
+          {/* SEO: H2 for market overview section */}
+          <h2 className="sr-only">{lang === 'zh' ? '实时市场行情与模式评分' : 'Real-time Market Data & Mode Scores'}</h2>
+
           {/* Row 1: Mode Scores | Market Overview */}
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
             <motion.div variants={itemVariants}>
@@ -123,6 +135,9 @@ function Dashboard() {
           <motion.div variants={itemVariants}>
             <NewsDigestPanel digest={newsDigest} />
           </motion.div>
+
+          {/* SEO: H2 for recommendations section */}
+          <h2 className="sr-only">{lang === 'zh' ? 'AI策略推荐TOP10核心标的' : 'AI Strategy TOP10 Recommendations'}</h2>
 
           {/* Row 5: Top Recommendations (current market only) */}
           <motion.div variants={itemVariants}>

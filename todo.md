@@ -129,3 +129,10 @@
 - [x] 前端：CategoryBadge分类标签（Alpha金色/TRON粉色/永续橙色）
 - [x] 前端：主流币+空气币表格同步增加Logo和K线列
 - [x] 53个vitest测试全部通过，页面效果确认正常
+
+## v7.2 - 首页SEO优化
+- [x] 添加页面关键词 meta keywords（12个关键词：AI选股/智能选股/股票推荐/A股分析等）
+- [x] 添加 H1 标题（PC端“AI选股指南” + 移动端sr-only“猎手阿尔法 - AI智能选股平台”）
+- [x] 添加 H2 标题（“实时市场行情与模式评分” + “AI策略推荐TOP10核心标的”）
+- [x] 优化 document.title 到39字符（动态按市场切换：猎手阿尔法 HUNTER ALPHA - AI智能选股 | A股实时行情与策略）
+- [x] 添加 meta description 75字符 + Open Graph标签 + robots指令
