@@ -216,3 +216,8 @@
 
 ## v7.7.2 - 首页底部添加管理员邮箱
 - [x] 在首页底部footer区域添加联系方式：laolaoqi@126.com（含 mailto 链接）
+
+## v7.7.3 - 添加Telegram联系二维码
+- [x] 上传Telegram二维码图片到CDN
+- [x] 在首页footer添加Telegram二维码（小图+hover放大）和@LAOLAOQI888链接
+- [x] 在关于页面新增“联系我们”HudPanel，含Telegram二维码+邮箱
