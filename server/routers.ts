@@ -6,6 +6,7 @@ import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { listUsers, updateUserRole, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement, saveStrategyResults, getLatestRecommendations, getLatestSentiment, cleanOldStrategyData } from "./db";
 import { runAllStrategies, runStrategyForMarket } from "./strategyEngine";
+import { getCryptoBoardData, runCryptoBoardJob, startCryptoBoardScheduler } from "./cryptoBoard";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 
@@ -813,6 +814,34 @@ export const appRouter = router({
       };
     }),
   }),
+
+  // ===================================================================
+  // 数字货币投资看板
+  // ===================================================================
+  cryptoBoard: router({
+    // 获取投资看板数据（公开接口，无需登录）
+    getData: publicProcedure.query(async () => {
+      const data = getCryptoBoardData();
+      if (data) return data;
+      // First request — trigger immediate fetch
+      const fresh = await runCryptoBoardJob();
+      return fresh || {
+        mainstream: [],
+        meme: [],
+        btcDominance: 57.9,
+        totalMarketCap: 0,
+        advice: '数据加载中，请稍后刷新...',
+        adviceEn: 'Loading data, please refresh later...',
+        timestamp: Date.now(),
+      };
+    }),
+
+    // 手动刷新（管理员）
+    refresh: adminProcedure.mutation(async () => {
+      const data = await runCryptoBoardJob();
+      return { success: !!data, timestamp: Date.now() };
+    }),
+  }),
 });
 
 // ===================================================================
@@ -863,6 +892,9 @@ setTimeout(() => {
 setInterval(() => {
   runStrategyJob();
 }, STRATEGY_INTERVAL_MINUTES * 60 * 1000);
+
+// Start crypto board scheduler
+startCryptoBoardScheduler();
 
 // ===================================================================
 // 技术指标计算

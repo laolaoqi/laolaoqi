@@ -142,6 +142,10 @@ function Dashboard() {
                 <span className="text-sm text-red-400/60" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   {t('brand.version', lang)}
                 </span>
+                <a href="/crypto-investment" className="text-sm text-[#ff6b00]/80 hover:text-[#ff6b00] transition-colors font-medium">
+                  {lang === 'zh' ? '₿ 投资看板' : '₿ Crypto Board'}
+                </a>
+                <span className="text-red-400/30">·</span>
                 <a href="/about" className="text-sm text-[#00d4ff]/70 hover:text-[#00d4ff] transition-colors font-medium">
                   {lang === 'zh' ? '网站介绍 & 数据模型说明' : 'About & Data Model'}
                 </a>
