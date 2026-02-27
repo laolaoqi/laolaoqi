@@ -214,44 +214,10 @@
 - [x] 将首页keywords从16个精简为6个核心关键词：AI智能选股,猎手阿尔法,A股港股美股分析,数字货币投资,策略推荐,Hunter Alpha
 - [x] 同步更新预渲染中间件(seoPrerender.ts)中的keywords
 
-## v7.7.2 - 首页底部添加管理员邮箱
-- [x] 在首页底部footer区域添加联系方式：laolaoqi@126.com（含 mailto 链接）
-
-## v7.7.3 - 添加Telegram联系二维码
-- [x] 上传Telegram二维码图片到CDN
-- [x] 在首页footer添加Telegram二维码（小图+hover放大）和@LAOLAOQI888链接
-- [x] 在关于页面新增“联系我们”HudPanel，含Telegram二维码+邮箱
-
-## v7.8 - 数字货币投资看板游客试用机制
-- [x] 游客可免费访问投资看板2次（localStorage记录访问次数）
-- [x] 2次用完后显示TRIAL ENDED屏幕（含注册/登录按钮+管理员联系方式）
-- [x] 游客试用期间显示顶部Banner（剩余次数+注册/登录快捷链接）
-- [x] 注册用户仍需管理员授权才能继续使用（现有权限不变）
-- [x] 后端新增cryptoBoard.getDataPublic公开接口供游客试用
-- [x] checkAccess返回isGuestTrial和maxTrials字段支持前端判断
+## v7.10.2 - 修复数字货币看板再次数据为空
+- [x] 诊断CoinGecko API限流导致内存缓存为空且未从DB加载缓存
+- [x] 修复getData降级链：内存→DB缓存→API获取→DB重试→空占位
+- [x] 新增getDataPublic公开接口供游客试用（同样的降级链）
+- [x] 导出loadCacheFromDB供routers.ts直接调用
+- [x] 前端游客试用完整实现：localStorage计数+GuestTrialEndedScreen+试用Banner
 - [x] 74个vitest测试全部通过
-
-## v7.9 - 模拟投资每日调仓 + 收益统计
-- [x] 本金从$10,000升级为$100,000，每日8:00北京时间自动清零重建
-- [x] 新增sim_daily_pnl数据库表记录每日结算收益
-- [x] 新增getPnlStats()收益统计API（单日/当月/一年 + 胜率/最佳最差日）
-- [x] 前端SimPortfolioPanel新增“收益统计”区域（3张卡片 + 胜率/最佳最差日）
-- [x] 每日8:00重置前自动保存当日结算收益到历史表
-- [x] 新增resetRebalance管理员接口支持手动触发每日重置
-- [x] 调度器更新：08:00重置+调仓、14:00/20:00更新持仓
-- [x] 75个vitest测试全部通过
-
-## v7.10 - 模拟投资24小时持续交易优化
-- [x] 修复旧数据残留导致显示-87%亏损的问题（清空旧持仓重新建仓）
-- [x] 改为24小时持续交易：每30分钟更新价格，每2小时调仓检查
-- [x] 保持每日08:00北京时间清零从$100,000重新开始
-- [x] 新增updatePositionPrices()独立价格更新函数，不触发买卖
-- [x] 调度器改为15分钟检查循环，根据北京时间决定操作类型
-- [x] 前端刷新频率从60s提高到30s
-- [x] 前端显示更新为“24小时持续交易”标识
-- [x] 重置后成功建仓：$100,000本金、6个持仓、25%现金储备
-- [x] 75个vitest测试全部通过
-
-## v7.10.1 - Google Search Console 验证文件
-- [x] 上传 googled6b313b61f8b5412.html 到 public 目录
-- [x] 删除旧的占位验证文件

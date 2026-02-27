@@ -9,38 +9,25 @@ import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl, getRegisterUrl } from '@/const';
 import { Link } from 'wouter';
 import SimPortfolioPanel from '@/components/SimPortfolioPanel';
-import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Zap, Shield, Globe, Clock, Lock, AlertTriangle, LogIn, Eye, UserPlus } from 'lucide-react';
+import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Zap, Shield, Globe, Clock, Lock, AlertTriangle, LogIn, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSEO } from '@/hooks/useSEO';
 
-// ===================================================================
-// Guest Trial Manager (localStorage-based)
-// ===================================================================
-const GUEST_TRIAL_KEY = 'ha_crypto_board_visits';
+// Guest trial constants
+const GUEST_TRIAL_KEY = 'ha_crypto_trial_count';
 const MAX_GUEST_TRIALS = 2;
 
-function getGuestVisitCount(): number {
+function getGuestTrialCount(): number {
   try {
-    const val = localStorage.getItem(GUEST_TRIAL_KEY);
-    return val ? parseInt(val, 10) : 0;
-  } catch {
-    return 0;
-  }
+    return parseInt(localStorage.getItem(GUEST_TRIAL_KEY) || '0', 10);
+  } catch { return 0; }
 }
 
-function incrementGuestVisit(): number {
-  try {
-    const count = getGuestVisitCount() + 1;
-    localStorage.setItem(GUEST_TRIAL_KEY, String(count));
-    return count;
-  } catch {
-    return MAX_GUEST_TRIALS + 1;
-  }
-}
-
-function hasGuestTrialsRemaining(): boolean {
-  return getGuestVisitCount() < MAX_GUEST_TRIALS;
+function incrementGuestTrial(): number {
+  const count = getGuestTrialCount() + 1;
+  try { localStorage.setItem(GUEST_TRIAL_KEY, String(count)); } catch {}
+  return count;
 }
 
 // ===================================================================
@@ -178,81 +165,6 @@ function CategoryBadge({ symbol }: { symbol: string }) {
 // ===================================================================
 // Access Denied / Login Required Screen
 // ===================================================================
-function GuestTrialExpiredScreen() {
-  return (
-    <div className="min-h-screen bg-[#0a0e17] flex flex-col" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
-      <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]" style={{
-        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.1) 2px, rgba(0,212,255,0.1) 4px)',
-      }} />
-      <header className="border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl bg-[rgba(10,14,23,0.9)]">
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent opacity-60" />
-        <div className="max-w-[1400px] mx-auto px-4 lg:px-6">
-          <div className="flex items-center h-14 gap-3">
-            <Link href="/">
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[#00d4ff] hover:bg-[rgba(0,212,255,0.08)] transition-colors text-sm font-medium">
-                <ArrowLeft size={16} />
-                <span className="hidden sm:inline">返回首页</span>
-              </button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded bg-gradient-to-br from-[#ff6b00] to-[#ff3366] flex items-center justify-center shadow-[0_0_12px_rgba(255,107,0,0.3)]">
-                <Zap size={16} className="text-white" />
-              </div>
-              <h1 className="text-sm font-bold text-white tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>CRYPTO BOARD</h1>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex-1 flex items-center justify-center relative z-10">
-        <div className="max-w-md w-full mx-4 text-center space-y-6">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[rgba(0,212,255,0.15)] to-[rgba(0,212,255,0.05)] border border-[rgba(0,212,255,0.2)] flex items-center justify-center">
-            <Eye size={36} className="text-[#00d4ff]" />
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "'Orbitron', sans-serif" }}>
-              TRIAL ENDED
-            </h2>
-            <p className="text-[#8899aa] text-sm leading-relaxed">
-              您的 <span className="text-[#00d4ff] font-bold">2 次免费试用</span>已用完。注册账号并联系管理员开通权限，即可无限次访问数字货币投资看板。
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <a href={getRegisterUrl()}>
-              <Button className="w-full bg-gradient-to-r from-[#00d4ff] to-[#0088ff] text-white font-bold py-3 hover:opacity-90 transition-opacity">
-                <UserPlus size={16} className="mr-2" /> 免费注册账号
-              </Button>
-            </a>
-            <a href={getLoginUrl()}>
-              <Button variant="outline" className="w-full border-[rgba(255,107,0,0.3)] text-[#ff6b00] hover:bg-[rgba(255,107,0,0.08)] mt-2">
-                <LogIn size={14} className="mr-2" /> 已有账号？登录
-              </Button>
-            </a>
-            <Link href="/">
-              <Button variant="outline" className="w-full border-[rgba(0,212,255,0.2)] text-[#00d4ff] hover:bg-[rgba(0,212,255,0.08)] mt-2">
-                <ArrowLeft size={14} className="mr-2" /> 返回首页
-              </Button>
-            </Link>
-          </div>
-
-          <div className="rounded-xl border border-[rgba(0,212,255,0.12)] bg-[rgba(0,212,255,0.03)] p-4">
-            <p className="text-xs text-[#8899aa]">
-              注册后请联系管理员开通投资看板访问权限
-            </p>
-            <p className="text-xs text-[#00d4ff] mt-1">
-              Telegram: <a href="https://t.me/LAOLAOQI888" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#00d4ff]/80">@LAOLAOQI888</a>
-              {' '}·{' '}
-              Email: <a href="mailto:laolaoqi@126.com" className="underline hover:text-[#00d4ff]/80">laolaoqi@126.com</a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AccessDeniedScreen({ isLoggedIn, isExpired, expiresAt }: {
   isLoggedIn: boolean;
   isExpired: boolean;
@@ -341,6 +253,80 @@ function AccessDeniedScreen({ isLoggedIn, isExpired, expiresAt }: {
   );
 }
 
+// ===================================================================
+// Guest Trial Ended Screen
+// ===================================================================
+function GuestTrialEndedScreen() {
+  return (
+    <div className="min-h-screen bg-[#0a0e17] flex flex-col" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.1) 2px, rgba(0,212,255,0.1) 4px)',
+      }} />
+
+      <header className="border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl bg-[rgba(10,14,23,0.9)]">
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent opacity-60" />
+        <div className="max-w-[1400px] mx-auto px-4 lg:px-6">
+          <div className="flex items-center h-14 gap-3">
+            <Link href="/">
+              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[#00d4ff] hover:bg-[rgba(0,212,255,0.08)] transition-colors text-sm font-medium">
+                <ArrowLeft size={16} />
+                <span className="hidden sm:inline">返回首页</span>
+              </button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-gradient-to-br from-[#ff6b00] to-[#ff3366] flex items-center justify-center shadow-[0_0_12px_rgba(255,107,0,0.3)]">
+                <Zap size={16} className="text-white" />
+              </div>
+              <h1 className="text-sm font-bold text-white tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>CRYPTO BOARD</h1>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex-1 flex items-center justify-center relative z-10">
+        <div className="max-w-md w-full mx-4 text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[rgba(0,212,255,0.15)] to-[rgba(0,100,200,0.15)] border border-[rgba(0,212,255,0.2)] flex items-center justify-center">
+            <Shield size={36} className="text-[#00d4ff]" />
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "'Orbitron', sans-serif" }}>TRIAL ENDED</h2>
+            <p className="text-[#8899aa] text-sm leading-relaxed">
+              您的免费试用已结束。注册账号并联系管理员开通权限，即可解锁完整的数字货币投资看板功能。
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <a href={getRegisterUrl()}>
+              <Button className="w-full bg-gradient-to-r from-[#00d4ff] to-[#0088cc] text-white font-bold py-3 hover:opacity-90 transition-opacity">
+                <UserPlus size={16} className="mr-2" /> 免费注册
+              </Button>
+            </a>
+            <a href={getLoginUrl()}>
+              <Button variant="outline" className="w-full border-[rgba(0,212,255,0.2)] text-[#00d4ff] hover:bg-[rgba(0,212,255,0.08)]">
+                <LogIn size={16} className="mr-2" /> 已有账号？登录
+              </Button>
+            </a>
+            <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-[rgba(0,212,255,0.04)] p-4 mt-2">
+              <p className="text-xs text-[#8899aa] mb-1">如需开通权限，请联系管理员</p>
+              <div className="flex items-center justify-center gap-3 text-xs">
+                <a href="https://t.me/LAOLAOQI888" target="_blank" rel="noopener noreferrer" className="text-[#00d4ff] hover:underline">Telegram: @LAOLAOQI888</a>
+                <span className="text-[#8899aa]/30">|</span>
+                <a href="mailto:laolaoqi@126.com" className="text-[#00d4ff] hover:underline">laolaoqi@126.com</a>
+              </div>
+            </div>
+            <Link href="/">
+              <Button variant="outline" className="w-full border-[rgba(0,212,255,0.2)] text-[#00d4ff] hover:bg-[rgba(0,212,255,0.08)] mt-2">
+                <ArrowLeft size={14} className="mr-2" /> 返回首页
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CryptoInvestment() {
   useSEO({
     title: '数字货币投资看板 - 猎手阿尔法 | 主流币 vs 空气币永续合约',
@@ -350,54 +336,51 @@ export default function CryptoInvestment() {
     ogDescription: '实时跟踪BTC、ETH等主流币与Meme币永续合约行情，AI投资建议与模拟投资实盘',
   });
 
+  const { user, isAuthenticated } = useAuth();
+
   // Check access permission first
   const { data: accessData, isLoading: accessLoading } = trpc.cryptoBoard.checkAccess.useQuery(undefined, {
     staleTime: 60 * 1000,
     retry: false,
   });
 
-  // Determine if this is a guest trial visit
-  const [guestTrialAllowed, setGuestTrialAllowed] = useState<boolean | null>(null);
-  const [guestVisitRecorded, setGuestVisitRecorded] = useState(false);
+  // Determine access mode: authorized user, guest trial, or denied
+  const [guestTrialCount] = useState(() => getGuestTrialCount());
+  const isAuthorizedUser = !!accessData?.hasAccess;
+  const isGuestMode = !isAuthenticated && !accessLoading;
+  const guestTrialRemaining = MAX_GUEST_TRIALS - guestTrialCount;
+  const guestTrialExpired = isGuestMode && guestTrialRemaining <= 0;
 
+  // Increment guest trial on first mount (only for guests with remaining trials)
+  const [trialIncremented, setTrialIncremented] = useState(false);
   useEffect(() => {
-    if (!accessData) return;
-    // Guest trial logic: only for non-logged-in users with isGuestTrial flag
-    if (accessData.isGuestTrial && !accessData.isLoggedIn) {
-      const remaining = hasGuestTrialsRemaining();
-      setGuestTrialAllowed(remaining);
-      if (remaining && !guestVisitRecorded) {
-        incrementGuestVisit();
-        setGuestVisitRecorded(true);
-      }
-    } else {
-      setGuestTrialAllowed(null); // Not a guest, use normal access logic
+    if (isGuestMode && !guestTrialExpired && !trialIncremented) {
+      incrementGuestTrial();
+      setTrialIncremented(true);
     }
-  }, [accessData, guestVisitRecorded]);
+  }, [isGuestMode, guestTrialExpired, trialIncremented]);
 
-  // For authorized users, use the protected getData endpoint
+  // Fetch data: authorized users use protected endpoint, guests use public endpoint
   const { data: authData, isLoading: authDataLoading, refetch: authRefetch, isFetching: authFetching, error: authError } = trpc.cryptoBoard.getData.useQuery(undefined, {
     refetchInterval: 30 * 60 * 1000,
     staleTime: 5 * 60 * 1000,
-    enabled: !!accessData?.hasAccess && !!accessData?.isLoggedIn,
-    retry: false,
+    enabled: isAuthorizedUser,
+    retry: 1,
   });
 
-  // For guest trial users, use the public getDataPublic endpoint
-  const { data: guestData, isLoading: guestDataLoading, refetch: guestRefetch, isFetching: guestFetching } = trpc.cryptoBoard.getDataPublic.useQuery(undefined, {
+  const { data: publicData, isLoading: publicDataLoading, refetch: publicRefetch, isFetching: publicFetching } = trpc.cryptoBoard.getDataPublic.useQuery(undefined, {
     refetchInterval: 30 * 60 * 1000,
     staleTime: 5 * 60 * 1000,
-    enabled: guestTrialAllowed === true,
-    retry: false,
+    enabled: isGuestMode && !guestTrialExpired,
+    retry: 1,
   });
 
-  // Unified data/loading/refetch based on mode
-  const isGuestMode = guestTrialAllowed === true;
-  const data = isGuestMode ? guestData : authData;
-  const isLoading = isGuestMode ? guestDataLoading : authDataLoading;
-  const refetch = isGuestMode ? guestRefetch : authRefetch;
-  const isFetching = isGuestMode ? guestFetching : authFetching;
-  const error = isGuestMode ? null : authError;
+  // Unified data/loading/refetch
+  const data = isAuthorizedUser ? authData : publicData;
+  const isLoading = isAuthorizedUser ? authDataLoading : publicDataLoading;
+  const refetch = isAuthorizedUser ? authRefetch : publicRefetch;
+  const isFetching = isAuthorizedUser ? authFetching : publicFetching;
+  const error = isAuthorizedUser ? authError : null;
 
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -406,7 +389,7 @@ export default function CryptoInvestment() {
   }, []);
 
   // Show loading while checking access
-  if (accessLoading || (accessData?.isGuestTrial && guestTrialAllowed === null)) {
+  if (accessLoading) {
     return (
       <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -417,15 +400,15 @@ export default function CryptoInvestment() {
     );
   }
 
-  // Guest trial expired — show trial ended screen
-  if (accessData?.isGuestTrial && guestTrialAllowed === false) {
-    return <GuestTrialExpiredScreen />;
+  // Guest trial expired — show registration prompt
+  if (guestTrialExpired) {
+    return <GuestTrialEndedScreen />;
   }
 
-  // Show access denied screen for logged-in users without permission
-  if (accessData && !accessData.hasAccess && !accessData.isGuestTrial) {
+  // Logged in but no access — show access denied
+  if (isAuthenticated && accessData && !accessData.hasAccess) {
     return <AccessDeniedScreen
-      isLoggedIn={accessData.isLoggedIn}
+      isLoggedIn={true}
       isExpired={accessData.isExpired}
       expiresAt={accessData.expiresAt ? String(accessData.expiresAt) : null}
     />;
@@ -492,18 +475,19 @@ export default function CryptoInvestment() {
       <main className="relative z-10 max-w-[1400px] mx-auto px-4 lg:px-6 py-6 space-y-6">
 
         {/* Guest Trial Banner */}
-        {isGuestMode && (
-          <div className="flex flex-wrap items-center gap-3 px-5 py-3 rounded-xl bg-gradient-to-r from-[rgba(0,212,255,0.08)] to-[rgba(255,107,0,0.08)] border border-[rgba(0,212,255,0.15)]">
-            <Eye size={16} className="text-[#00d4ff] shrink-0" />
-            <span className="text-sm text-[#ccddeeff]">
-              您正在使用<span className="text-[#00d4ff] font-bold">游客试用</span>模式
-              （剩余 <span className="text-[#ff6b00] font-bold font-mono">{MAX_GUEST_TRIALS - getGuestVisitCount()}</span> 次）
-            </span>
-            <div className="flex items-center gap-2 ml-auto">
-              <a href={getRegisterUrl()} className="text-xs px-3 py-1.5 rounded-lg bg-[rgba(0,212,255,0.12)] border border-[rgba(0,212,255,0.25)] text-[#00d4ff] hover:bg-[rgba(0,212,255,0.2)] transition-colors font-medium">
+        {isGuestMode && !guestTrialExpired && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[rgba(0,212,255,0.08)] to-[rgba(0,100,200,0.08)] border border-[rgba(0,212,255,0.2)]">
+            <div className="flex items-center gap-2">
+              <Shield size={14} className="text-[#00d4ff]" />
+              <span className="text-xs text-[#00d4ff]">
+                游客试用中 · 剩余 <span className="font-bold text-white">{Math.max(0, guestTrialRemaining - (trialIncremented ? 1 : 0))}</span> 次免费访问
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a href={getRegisterUrl()} className="text-xs px-3 py-1 rounded-lg bg-gradient-to-r from-[#00d4ff] to-[#0088cc] text-white font-medium hover:opacity-90 transition-opacity">
                 免费注册
               </a>
-              <a href={getLoginUrl()} className="text-xs px-3 py-1.5 rounded-lg bg-[rgba(255,107,0,0.08)] border border-[rgba(255,107,0,0.2)] text-[#ff6b00] hover:bg-[rgba(255,107,0,0.15)] transition-colors font-medium">
+              <a href={getLoginUrl()} className="text-xs px-3 py-1 rounded-lg border border-[rgba(0,212,255,0.2)] text-[#00d4ff] hover:bg-[rgba(0,212,255,0.08)] transition-colors">
                 登录
               </a>
             </div>

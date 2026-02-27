@@ -64,7 +64,7 @@ async function saveCacheToDB(data: CryptoBoardData): Promise<void> {
   }
 }
 
-async function loadCacheFromDB(): Promise<CryptoBoardData | null> {
+export async function loadCacheFromDB(): Promise<CryptoBoardData | null> {
   try {
     const db = await getDb();
     if (!db) return null;

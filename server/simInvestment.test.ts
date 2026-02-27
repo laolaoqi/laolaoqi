@@ -7,7 +7,6 @@ describe('SimInvestment Module', () => {
     expect(typeof mod.runSimRebalance).toBe('function');
     expect(typeof mod.getSimPortfolioData).toBe('function');
     expect(typeof mod.startSimInvestmentScheduler).toBe('function');
-    expect(typeof mod.getPnlStats).toBe('function');
   });
 
   it('getSimPortfolioData should return valid structure', async () => {
@@ -16,7 +15,7 @@ describe('SimInvestment Module', () => {
 
     expect(data).toBeDefined();
     expect(data.config).toBeDefined();
-    expect(data.config.initialCapital).toBe(100_000);
+    expect(data.config.initialCapital).toBe(100000);
     expect(typeof data.config.isActive).toBe('boolean');
     expect(typeof data.config.startDate).toBe('string');
 
@@ -31,47 +30,6 @@ describe('SimInvestment Module', () => {
     expect(Array.isArray(data.positions)).toBe(true);
     expect(Array.isArray(data.trades)).toBe(true);
     expect(Array.isArray(data.snapshots)).toBe(true);
-
-    // New: pnlStats should be present
-    expect(data.pnlStats).toBeDefined();
-    expect(typeof data.pnlStats.todayPnl).toBe('number');
-    expect(typeof data.pnlStats.todayPnlPercent).toBe('number');
-    expect(typeof data.pnlStats.monthPnl).toBe('number');
-    expect(typeof data.pnlStats.monthPnlPercent).toBe('number');
-    expect(typeof data.pnlStats.yearPnl).toBe('number');
-    expect(typeof data.pnlStats.yearPnlPercent).toBe('number');
-    expect(typeof data.pnlStats.totalDays).toBe('number');
-    expect(typeof data.pnlStats.profitDays).toBe('number');
-    expect(typeof data.pnlStats.lossDays).toBe('number');
-    expect(typeof data.pnlStats.winRate).toBe('number');
-  });
-
-  it('getPnlStats should return valid structure', async () => {
-    const { getPnlStats } = await import('./simInvestment');
-    const stats = await getPnlStats();
-
-    expect(stats).toBeDefined();
-    expect(typeof stats.todayPnl).toBe('number');
-    expect(typeof stats.todayPnlPercent).toBe('number');
-    expect(typeof stats.monthPnl).toBe('number');
-    expect(typeof stats.monthPnlPercent).toBe('number');
-    expect(typeof stats.yearPnl).toBe('number');
-    expect(typeof stats.yearPnlPercent).toBe('number');
-    expect(typeof stats.totalDays).toBe('number');
-    expect(typeof stats.profitDays).toBe('number');
-    expect(typeof stats.lossDays).toBe('number');
-    expect(typeof stats.winRate).toBe('number');
-    // bestDay and worstDay can be null or object
-    if (stats.bestDay) {
-      expect(typeof stats.bestDay.date).toBe('string');
-      expect(typeof stats.bestDay.pnl).toBe('number');
-      expect(typeof stats.bestDay.pnlPercent).toBe('number');
-    }
-    if (stats.worstDay) {
-      expect(typeof stats.worstDay.date).toBe('string');
-      expect(typeof stats.worstDay.pnl).toBe('number');
-      expect(typeof stats.worstDay.pnlPercent).toBe('number');
-    }
   });
 
   it('positions should have correct field types when present', async () => {

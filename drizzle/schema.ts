@@ -160,24 +160,6 @@ export const simConfig = mysqlTable("sim_config", {
 export type SimConfig = typeof simConfig.$inferSelect;
 
 /**
- * Simulated daily P&L history — records daily settlement results
- * Used for calculating daily, monthly, and yearly returns
- */
-export const simDailyPnl = mysqlTable("sim_daily_pnl", {
-  id: int("id").autoincrement().primaryKey(),
-  date: varchar("date", { length: 10 }).notNull(),             // YYYY-MM-DD (Beijing time)
-  initialCapital: float("initialCapital").notNull(),            // starting capital for the day
-  finalValue: float("finalValue").notNull(),                    // portfolio value at settlement
-  dailyPnl: float("dailyPnl").default(0).notNull(),             // daily P&L in USD
-  dailyPnlPercent: float("dailyPnlPercent").default(0).notNull(), // daily P&L %
-  positionCount: int("positionCount").default(0).notNull(),
-  strategy: varchar("strategy", { length: 50 }),                // strategy used that day
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export type SimDailyPnl = typeof simDailyPnl.$inferSelect;
-
-/**
  * Crypto Board cache — persists latest successful data fetch
  * Survives server restarts and API rate limiting
  */

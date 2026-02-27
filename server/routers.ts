@@ -6,7 +6,7 @@ import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { listUsers, updateUserRole, updateCryptoBoardAccess, batchUpdateCryptoBoardAccess, checkCryptoBoardAccess, getUserStats, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement, saveStrategyResults, getLatestRecommendations, getLatestSentiment, cleanOldStrategyData } from "./db";
 import { runAllStrategies, runStrategyForMarket } from "./strategyEngine";
-import { getCryptoBoardData, runCryptoBoardJob, startCryptoBoardScheduler } from "./cryptoBoard";
+import { getCryptoBoardData, runCryptoBoardJob, startCryptoBoardScheduler, loadCacheFromDB } from "./cryptoBoard";
 import { getSimPortfolioData, runSimRebalance, startSimInvestmentScheduler } from "./simInvestment";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -864,21 +864,35 @@ export const appRouter = router({
   // 数字货币投资看板
   // ===================================================================
   cryptoBoard: router({
-    // 检查当前用户的投资看板访问权限（支持游客试用模式）
+    // 检查当前用户的投资看板访问权限
     checkAccess: publicProcedure.query(async ({ ctx }) => {
       const userId = (ctx as any).user?.id;
-      // 未登录用户 — 返回游客试用模式，由前端 localStorage 控制访问次数
-      if (!userId) return { hasAccess: false, expiresAt: null, isExpired: false, isLoggedIn: false, isGuestTrial: true, maxTrials: 2 };
+      if (!userId) return { hasAccess: false, expiresAt: null, isExpired: false, isLoggedIn: false };
       const result = await checkCryptoBoardAccess(userId);
-      return { ...result, isLoggedIn: true, isGuestTrial: false, maxTrials: 0 };
+      return { ...result, isLoggedIn: true };
     }),
 
-    // 获取投资看板数据（游客试用 — 公开接口，前端控制访问次数）
-    getDataPublic: publicProcedure.query(async () => {
-      const data = getCryptoBoardData();
-      if (data) return data;
+    // 获取投资看板数据（需要权限）
+    getData: protectedProcedure.query(async ({ ctx }) => {
+      // Check access permission
+      const access = await checkCryptoBoardAccess(ctx.user.id);
+      if (!access.hasAccess) {
+        throw new Error(access.isExpired ? '您的投资看板权限已过期，请联系管理员续期' : '您暂无投资看板访问权限，请联系管理员开通');
+      }
+      // 1. Try in-memory cache first (fastest)
+      const memData = getCryptoBoardData();
+      if (memData && memData.mainstream.length > 0) return memData;
+      // 2. Try DB cache (survives restarts + rate limits)
+      const dbData = await loadCacheFromDB();
+      if (dbData && dbData.mainstream.length > 0) return dbData;
+      // 3. Last resort: trigger immediate fetch
       const fresh = await runCryptoBoardJob();
-      return fresh || {
+      if (fresh && fresh.mainstream.length > 0) return fresh;
+      // 4. Try DB one more time (runCryptoBoardJob may have saved merged data)
+      const dbRetry = await loadCacheFromDB();
+      if (dbRetry && dbRetry.mainstream.length > 0) return dbRetry;
+      // 5. Return loading placeholder only if absolutely nothing available
+      return {
         mainstream: [],
         meme: [],
         btcDominance: 57.9,
@@ -889,18 +903,22 @@ export const appRouter = router({
       };
     }),
 
-    // 获取投资看板数据（需要权限）
-    getData: protectedProcedure.query(async ({ ctx }) => {
-      // Check access permission
-      const access = await checkCryptoBoardAccess(ctx.user.id);
-      if (!access.hasAccess) {
-        throw new Error(access.isExpired ? '您的投资看板权限已过期，请联系管理员续期' : '您暂无投资看板访问权限，请联系管理员开通');
-      }
-      const data = getCryptoBoardData();
-      if (data) return data;
-      // First request — trigger immediate fetch
+    // 游客试用数据接口（公开，不需要登录）
+    getDataPublic: publicProcedure.query(async () => {
+      // 1. Try in-memory cache first
+      const memData = getCryptoBoardData();
+      if (memData && memData.mainstream.length > 0) return memData;
+      // 2. Try DB cache
+      const dbData = await loadCacheFromDB();
+      if (dbData && dbData.mainstream.length > 0) return dbData;
+      // 3. Trigger fetch
       const fresh = await runCryptoBoardJob();
-      return fresh || {
+      if (fresh && fresh.mainstream.length > 0) return fresh;
+      // 4. DB retry
+      const dbRetry = await loadCacheFromDB();
+      if (dbRetry && dbRetry.mainstream.length > 0) return dbRetry;
+      // 5. Loading placeholder
+      return {
         mainstream: [],
         meme: [],
         btcDominance: 57.9,
@@ -933,13 +951,7 @@ export const appRouter = router({
 
     // 手动触发调仓（管理员）
     rebalance: adminProcedure.mutation(async () => {
-      await runSimRebalance(false);
-      return { success: true, timestamp: Date.now() };
-    }),
-
-    // 手动触发每日重置+调仓（管理员）
-    resetRebalance: adminProcedure.mutation(async () => {
-      await runSimRebalance(true);
+      await runSimRebalance();
       return { success: true, timestamp: Date.now() };
     }),
   }),
