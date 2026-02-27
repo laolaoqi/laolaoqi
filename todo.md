@@ -136,3 +136,14 @@
 - [x] 添加 H2 标题（“实时市场行情与模式评分” + “AI策略推荐TOP10核心标的”）
 - [x] 优化 document.title 到39字符（动态按市场切换：猎手阿尔法 HUNTER ALPHA - AI智能选股 | A股实时行情与策略）
 - [x] 添加 meta description 75字符 + Open Graph标签 + robots指令
+
+## v7.3 - 首页投资看板入口 + 模拟投资面板
+- [x] 首页顶部添加醒目的投资看板入口（金色+青色渐变Banner，Bitcoin图标+LIVE标签+Enter按钮）
+- [x] 数据库表：sim_config + sim_portfolio + sim_trades + sim_snapshots（4张表）
+- [x] 后端定时任务：每天UTC 22:00（北京6:00）和UTC 14:00（北京22:00）自动调仓
+- [x] 后端逻辑：$10,000本金，根据BTC主导率4档策略分配（防御/过渡/山寨季/空气季）
+- [x] 后端安全：API限流时保持现有持仓不动，不清仓
+- [x] 后端tRPC路由：simInvestment.getData（公开）+ simInvestment.forceRebalance（管理员）
+- [x] 前端模拟投资面板：总资产/盈亏率/现金/持仓数摘要卡 + 持仓表格 + 交易记录
+- [x] 前端：涨红跌绿，主流/空气分类标签，与Crypto Board风格一致
+- [x] 58个vitest测试全部通过（含5个新增SimInvestment测试）

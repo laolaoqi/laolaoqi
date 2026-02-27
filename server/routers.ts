@@ -7,6 +7,7 @@ import { storagePut } from "./storage";
 import { listUsers, updateUserRole, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement, saveStrategyResults, getLatestRecommendations, getLatestSentiment, cleanOldStrategyData } from "./db";
 import { runAllStrategies, runStrategyForMarket } from "./strategyEngine";
 import { getCryptoBoardData, runCryptoBoardJob, startCryptoBoardScheduler } from "./cryptoBoard";
+import { getSimPortfolioData, runSimRebalance, startSimInvestmentScheduler } from "./simInvestment";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 
@@ -842,6 +843,22 @@ export const appRouter = router({
       return { success: !!data, timestamp: Date.now() };
     }),
   }),
+
+  // ===================================================================
+  // 模拟投资看板
+  // ===================================================================
+  simInvestment: router({
+    // 获取模拟投资数据（公开接口）
+    getData: publicProcedure.query(async () => {
+      return await getSimPortfolioData();
+    }),
+
+    // 手动触发调仓（管理员）
+    rebalance: adminProcedure.mutation(async () => {
+      await runSimRebalance();
+      return { success: true, timestamp: Date.now() };
+    }),
+  }),
 });
 
 // ===================================================================
@@ -895,6 +912,9 @@ setInterval(() => {
 
 // Start crypto board scheduler
 startCryptoBoardScheduler();
+
+// Start simulated investment scheduler
+startSimInvestmentScheduler();
 
 // ===================================================================
 // 技术指标计算

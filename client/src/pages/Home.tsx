@@ -81,6 +81,53 @@ function Dashboard() {
       {/* SEO: H1 for mobile (sr-only so it doesn't break layout) */}
       <h1 className="sr-only lg:hidden">猎手阿尔法 - AI智能选股平台</h1>
 
+      {/* Crypto Investment Board Entry Banner */}
+      <motion.div
+        className="max-w-[1600px] mx-auto px-3 lg:px-5 pt-3"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <a
+          href="/crypto-investment"
+          className="group block relative overflow-hidden rounded-lg border border-[#f7931a]/30 bg-gradient-to-r from-[#f7931a]/10 via-[#00d4ff]/10 to-[#f7931a]/10 hover:from-[#f7931a]/20 hover:via-[#00d4ff]/20 hover:to-[#f7931a]/20 transition-all duration-500"
+        >
+          {/* Animated scan line */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#f7931a] to-transparent animate-pulse" />
+            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent animate-pulse" />
+          </div>
+
+          <div className="flex items-center justify-between px-4 py-3 lg:px-6 lg:py-4">
+            <div className="flex items-center gap-3 lg:gap-4">
+              {/* Bitcoin icon */}
+              <div className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-[#f7931a]/20 flex items-center justify-center">
+                <span className="text-xl lg:text-2xl">₿</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#f7931a] font-bold text-sm lg:text-base" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+                    CRYPTO BOARD
+                  </span>
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#00d4ff]/20 text-[#00d4ff] rounded">
+                    LIVE
+                  </span>
+                </div>
+                <p className="text-[#8899aa] text-xs lg:text-sm mt-0.5">
+                  {lang === 'zh' ? '数字货币投资看板 — 主流币 vs 空气币永续合约 + 模拟投资实盘' : 'Crypto Investment Board — Mainstream vs Meme Perps + Sim Portfolio'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-[#f7931a] group-hover:translate-x-1 transition-transform">
+              <span className="hidden sm:inline text-sm font-medium">{lang === 'zh' ? '进入看板' : 'Enter'}</span>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </a>
+      </motion.div>
+
       {/* Main content */}
       <main className="flex-1 relative z-10">
         <motion.div

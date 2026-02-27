@@ -6,6 +6,7 @@
 
 import { trpc } from '@/lib/trpc';
 import { Link } from 'wouter';
+import SimPortfolioPanel from '@/components/SimPortfolioPanel';
 import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Zap, Shield, Globe, Clock } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 
@@ -414,13 +415,16 @@ export default function CryptoInvestment() {
           </div>
         )}
 
+        {/* === 模拟投资面板 === */}
+        <SimPortfolioPanel />
+
         {/* === 风险提示 === */}
         <div className="text-center py-4 border-t border-[rgba(0,212,255,0.06)]">
           <p className="text-xs text-[#556677]">
             数据来源：CoinGecko · 每小时自动更新 · 仅供参考，不构成投资建议
           </p>
           <p className="text-xs text-[#445566] mt-1">
-            永续合约风险极高，请严格控制仓位和止损 · HUNTER ALPHA v7.1
+            永续合约风险极高，请严格控制仓位和止损 · HUNTER ALPHA v7.3
           </p>
         </div>
       </main>

@@ -22,6 +22,13 @@
       "when": 1771992519259,
       "tag": "0002_bouncy_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1772160283326,
+      "tag": "0003_complex_tyger_tiger",
+      "breakpoints": true
     }
   ]
 }

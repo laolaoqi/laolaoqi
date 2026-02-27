@@ -84,3 +84,72 @@ export const marketSentiment = mysqlTable("market_sentiment_data", {
 });
 
 export type MarketSentimentData = typeof marketSentiment.$inferSelect;
+
+/**
+ * Simulated portfolio — tracks virtual positions for crypto board
+ * One active portfolio at a time, $10,000 initial capital
+ */
+export const simPortfolio = mysqlTable("sim_portfolio", {
+  id: int("id").autoincrement().primaryKey(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),       // e.g. BTC, ETH, TRUMP
+  name: varchar("name", { length: 100 }).notNull(),
+  category: varchar("category", { length: 20 }).notNull(),   // mainstream / meme
+  entryPrice: float("entryPrice").notNull(),                  // avg entry price USD
+  currentPrice: float("currentPrice").notNull(),              // latest price USD
+  quantity: float("quantity").notNull(),                      // amount of coins
+  costBasis: float("costBasis").notNull(),                    // total cost USD
+  currentValue: float("currentValue").notNull(),              // current value USD
+  pnl: float("pnl").default(0).notNull(),                    // unrealized P&L USD
+  pnlPercent: float("pnlPercent").default(0).notNull(),       // unrealized P&L %
+  weight: float("weight").default(0).notNull(),               // portfolio weight %
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SimPortfolio = typeof simPortfolio.$inferSelect;
+
+/**
+ * Simulated trades — buy/sell history log
+ */
+export const simTrades = mysqlTable("sim_trades", {
+  id: int("id").autoincrement().primaryKey(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  action: varchar("action", { length: 10 }).notNull(),       // BUY / SELL
+  price: float("price").notNull(),                            // execution price
+  quantity: float("quantity").notNull(),                      // amount
+  value: float("value").notNull(),                            // total value USD
+  reason: varchar("reason", { length: 500 }),                 // why this trade
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SimTrade = typeof simTrades.$inferSelect;
+
+/**
+ * Simulated daily snapshots — track portfolio value over time
+ */
+export const simSnapshots = mysqlTable("sim_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  totalValue: float("totalValue").notNull(),                  // total portfolio value
+  cashBalance: float("cashBalance").notNull(),                // remaining cash
+  investedValue: float("investedValue").notNull(),            // value in positions
+  totalPnl: float("totalPnl").default(0).notNull(),           // total P&L USD
+  totalPnlPercent: float("totalPnlPercent").default(0).notNull(), // total P&L %
+  positionCount: int("positionCount").default(0).notNull(),
+  snapshotTime: varchar("snapshotTime", { length: 10 }).notNull(), // "06:00" or "22:00"
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SimSnapshot = typeof simSnapshots.$inferSelect;
+
+/**
+ * Simulated portfolio config — tracks start date and initial capital
+ */
+export const simConfig = mysqlTable("sim_config", {
+  id: int("id").autoincrement().primaryKey(),
+  initialCapital: float("initialCapital").default(10000).notNull(),
+  startDate: timestamp("startDate").defaultNow().notNull(),
+  isActive: int("isActive").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SimConfig = typeof simConfig.$inferSelect;
