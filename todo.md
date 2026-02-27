@@ -197,3 +197,15 @@
 - [x] 添加theme-color、apple-mobile-web-app、dns-prefetch等性能优化标签
 - [x] 生成OG社交分享图片（1200x630）并上传CDN
 - [x] 58个vitest测试全部通过
+
+## v7.7 - SEO深度优化（favicon + 预渲染 + 搜索引擎验证）
+- [x] 生成favicon图标（多尺寸：16x16, 32x32, 180x180, 192x192, 512x512 + .ico）
+- [x] 集成favicon到index.html（link标签 + apple-touch-icon）
+- [x] 创建web app manifest (site.webmanifest)，含应用名称、图标、主题色
+- [x] 实现服务端预渲染中间件（检测20+爬虫UA，返回完整HTML快照）
+- [x] 预渲染包含完整meta/OG/Twitter/canonical/hreflang/JSON-LD + 语义化HTML内容
+- [x] 支持每个页面独立预渲染：首页、数字货币、关于、个股详情、404
+- [x] 准备Google Search Console验证文件占位
+- [x] 准备百度站长平台验证文件占位
+- [x] 添加安全响应头（X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy）
+- [x] 添加16个预渲染单元测试，74个vitest测试全部通过
