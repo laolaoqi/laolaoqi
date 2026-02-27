@@ -226,7 +226,7 @@ function PnlStatsSection({ pnlStats }: { pnlStats: any }) {
 // ===================================================================
 export default function SimPortfolioPanel() {
   const { data, isLoading } = trpc.simInvestment.getData.useQuery(undefined, {
-    refetchInterval: 60_000,
+    refetchInterval: 30_000, // 30s refresh for 24/7 trading
   });
 
   if (isLoading) {
@@ -262,7 +262,7 @@ export default function SimPortfolioPanel() {
             <h3 className="text-lg font-bold text-[#00d4ff]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
               模拟投资
             </h3>
-            <p className="text-xs text-[#8899aa]">$100,000 虚拟本金 · 每日08:00自动调仓</p>
+              <p className="text-xs text-[#8899aa]">$100,000 虚拟本金 · 24小时持续交易 · 每日08:00重置</p>
           </div>
         </div>
         <div className="text-center py-8 text-[#556677]">
@@ -292,7 +292,7 @@ export default function SimPortfolioPanel() {
                 模拟投资
               </h3>
               <p className="text-xs text-[#8899aa]">
-                $100,000 虚拟本金 · 每日08:00重置
+                $100,000 虚拟本金 · 24/7持续交易 · 每日08:00重置
               </p>
             </div>
           </div>
@@ -485,7 +485,7 @@ export default function SimPortfolioPanel() {
       {/* Footer info */}
       <div className="px-5 sm:px-6 py-3 bg-[rgba(0,10,20,0.4)] border-t border-[rgba(0,212,255,0.06)]">
         <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#445566]">
-          <span>⏰ 每日08:00（北京时间）清零重建 · 14:00/20:00更新持仓</span>
+          <span>⏰ 每日08:00（北京时间）清零重建 · 24小时持续交易 · 每30分钟更新价格</span>
           <span>💰 初始本金：$100,000 · 策略：基于BTC主导率自动配置</span>
         </div>
       </div>

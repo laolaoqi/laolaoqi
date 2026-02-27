@@ -1,7 +1,7 @@
 // ===================================================================
 // Simulated Investment Engine — 模拟投资系统
 // 每日$100,000本金，每天8:00（北京时间）清零重建
-// 根据BTC主导率投资建议自动买卖
+// 24小时持续交易：每30分钟更新价格，每2小时调仓检查
 // 记录每日收益历史，支持单日/当月/一年收益统计
 // ===================================================================
 
@@ -81,7 +81,6 @@ export interface SimPortfolioData {
 // ===================================================================
 function getBeijingDateStr(d?: Date): string {
   const now = d || new Date();
-  // Beijing = UTC+8
   const bjTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
   return bjTime.toISOString().slice(0, 10);
 }
@@ -89,6 +88,12 @@ function getBeijingDateStr(d?: Date): string {
 function getBeijingHour(d?: Date): number {
   const now = d || new Date();
   return (now.getUTCHours() + 8) % 24;
+}
+
+function getBeijingTimeStr(): string {
+  const now = new Date();
+  const bjTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  return bjTime.toISOString().slice(11, 16); // HH:MM
 }
 
 // ===================================================================
@@ -99,7 +104,6 @@ async function getOrCreateConfig() {
   if (!db) return null;
   const existing = await db.select().from(simConfig).where(eq(simConfig.isActive, 1)).limit(1);
   if (existing.length > 0) {
-    // Update initial capital if it changed
     if (existing[0].initialCapital !== INITIAL_CAPITAL) {
       await db.update(simConfig).set({ initialCapital: INITIAL_CAPITAL }).where(eq(simConfig.id, existing[0].id));
       return { ...existing[0], initialCapital: INITIAL_CAPITAL };
@@ -107,7 +111,6 @@ async function getOrCreateConfig() {
     return existing[0];
   }
 
-  // Create new config
   await db.insert(simConfig).values({
     initialCapital: INITIAL_CAPITAL,
     isActive: 1,
@@ -163,7 +166,6 @@ async function saveDailySettlement(strategy: string): Promise<void> {
   const lastSnapshot = await db.select().from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(1);
   const cashBalance = lastSnapshot.length > 0 ? lastSnapshot[0].cashBalance : config.initialCapital;
 
-  // Get latest crypto data to update position values
   const boardData = getCryptoBoardData();
   let investedValue = 0;
   for (const pos of positions) {
@@ -178,10 +180,8 @@ async function saveDailySettlement(strategy: string): Promise<void> {
   const dailyPnlPercent = config.initialCapital > 0 ? (dailyPnl / config.initialCapital) * 100 : 0;
   const todayStr = getBeijingDateStr();
 
-  // Check if we already have a record for today
   const existing = await db.select().from(simDailyPnl).where(eq(simDailyPnl.date, todayStr)).limit(1);
   if (existing.length > 0) {
-    // Update existing record
     await db.update(simDailyPnl).set({
       finalValue: totalValue,
       dailyPnl: dailyPnl,
@@ -190,7 +190,6 @@ async function saveDailySettlement(strategy: string): Promise<void> {
       strategy: strategy,
     }).where(eq(simDailyPnl.id, existing[0].id));
   } else {
-    // Insert new record
     await db.insert(simDailyPnl).values({
       date: todayStr,
       initialCapital: config.initialCapital,
@@ -212,24 +211,22 @@ async function resetPortfolio(): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  // Clear all positions
   await db.delete(simPortfolio);
-  // Clear old trades (keep last 200 for history)
+  // Keep last 500 trades for history
   const tradeCount = await db.select({ count: sql<number>`COUNT(*)` }).from(simTrades);
-  if (tradeCount[0]?.count > 200) {
-    const keepFrom = await db.select({ id: simTrades.id }).from(simTrades).orderBy(desc(simTrades.id)).limit(200);
+  if (tradeCount[0]?.count > 500) {
+    const keepFrom = await db.select({ id: simTrades.id }).from(simTrades).orderBy(desc(simTrades.id)).limit(500);
     const minId = keepFrom[keepFrom.length - 1]?.id ?? 0;
     await db.delete(simTrades).where(sql`${simTrades.id} < ${minId}`);
   }
-  // Clear old snapshots (keep last 100)
+  // Keep last 200 snapshots
   const snapCount = await db.select({ count: sql<number>`COUNT(*)` }).from(simSnapshots);
-  if (snapCount[0]?.count > 100) {
-    const keepFrom = await db.select({ id: simSnapshots.id }).from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(100);
+  if (snapCount[0]?.count > 200) {
+    const keepFrom = await db.select({ id: simSnapshots.id }).from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(200);
     const minId = keepFrom[keepFrom.length - 1]?.id ?? 0;
     await db.delete(simSnapshots).where(sql`${simSnapshots.id} < ${minId}`);
   }
 
-  // Update config capital
   const config = await db.select().from(simConfig).where(eq(simConfig.isActive, 1)).limit(1);
   if (config.length > 0) {
     await db.update(simConfig).set({
@@ -242,11 +239,74 @@ async function resetPortfolio(): Promise<void> {
 }
 
 // ===================================================================
-// Main rebalance logic — runs at 8:00 Beijing time (daily reset)
-// Also runs mid-day updates at 14:00 and 20:00 Beijing time
+// Update prices only — refresh current prices from CryptoBoard data
+// Runs every 30 minutes, 24/7
+// ===================================================================
+async function updatePositionPrices(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const positions = await db.select().from(simPortfolio);
+  if (positions.length === 0) return;
+
+  let boardData = getCryptoBoardData();
+  if (!boardData || boardData.mainstream.length === 0) {
+    // Try to fetch fresh data
+    boardData = await runCryptoBoardJob();
+  }
+  if (!boardData) return;
+
+  const allCoins = [...boardData.mainstream, ...boardData.meme];
+  let updatedCount = 0;
+  let totalInvested = 0;
+
+  for (const pos of positions) {
+    const latest = allCoins.find(c => c.symbol === pos.symbol);
+    if (latest && latest.price > 0) {
+      const newValue = pos.quantity * latest.price;
+      const newPnl = newValue - pos.costBasis;
+      const newPnlPct = pos.costBasis > 0 ? (newPnl / pos.costBasis) * 100 : 0;
+      await db.update(simPortfolio).set({
+        currentPrice: latest.price,
+        currentValue: newValue,
+        pnl: newPnl,
+        pnlPercent: newPnlPct,
+      }).where(eq(simPortfolio.id, pos.id));
+      totalInvested += newValue;
+      updatedCount++;
+    } else {
+      totalInvested += pos.currentValue;
+    }
+  }
+
+  // Save a snapshot with updated prices
+  const config = await getOrCreateConfig();
+  const lastSnapshot = await db.select().from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(1);
+  const cashBalance = lastSnapshot.length > 0 ? lastSnapshot[0].cashBalance : (config?.initialCapital ?? INITIAL_CAPITAL);
+  const totalValue = cashBalance + totalInvested;
+  const capital = config?.initialCapital ?? INITIAL_CAPITAL;
+  const totalPnl = totalValue - capital;
+  const totalPnlPercent = capital > 0 ? (totalPnl / capital) * 100 : 0;
+
+  await db.insert(simSnapshots).values({
+    totalValue,
+    cashBalance,
+    investedValue: totalInvested,
+    totalPnl,
+    totalPnlPercent,
+    positionCount: positions.length,
+    snapshotTime: getBeijingTimeStr(),
+  });
+
+  console.log(`[SimInvestment] Price update: ${updatedCount}/${positions.length} positions updated, Total=$${totalValue.toFixed(2)}, P&L=${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)} (${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toFixed(2)}%)`);
+}
+
+// ===================================================================
+// Main rebalance logic — full buy/sell decisions
+// Runs at 8:00 (reset + rebalance) and every 2 hours for adjustments
 // ===================================================================
 export async function runSimRebalance(isReset: boolean = false): Promise<void> {
-  console.log(`[SimInvestment] Starting ${isReset ? 'daily reset + rebalance' : 'rebalance'}...`);
+  console.log(`[SimInvestment] Starting ${isReset ? 'daily reset + rebalance' : 'rebalance'} at Beijing ${getBeijingTimeStr()}...`);
 
   try {
     const db = await getDb();
@@ -291,6 +351,7 @@ export async function runSimRebalance(isReset: boolean = false): Promise<void> {
       const lastSnapshot = await db.select().from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(1);
       cashBalance = lastSnapshot.length > 0 ? lastSnapshot[0].cashBalance : config.initialCapital;
 
+      // Update current prices
       for (const pos of currentPositions) {
         const allCoins = [...boardData.mainstream, ...boardData.meme];
         const latestCoin = allCoins.find(c => c.symbol === pos.symbol);
@@ -324,23 +385,10 @@ export async function runSimRebalance(isReset: boolean = false): Promise<void> {
     const topMainstream = selectCoins(boardData.mainstream, 3);
     const topMeme = selectCoins(boardData.meme, 3);
 
-    // 7.5 Safety: if no coins selected but we have existing positions, keep them
+    // 7.5 Safety: if no coins selected but we have existing positions, just update prices
     if (topMainstream.length === 0 && topMeme.length === 0 && currentPositions.length > 0) {
       console.log('[SimInvestment] No coins selected (API may be limited), keeping existing positions');
-      const updatedPositions = await db.select().from(simPortfolio);
-      const investedVal = updatedPositions.reduce((s: number, p: any) => s + p.currentValue, 0);
-      const totalVal = cashBalance + investedVal;
-      const pnl = totalVal - config.initialCapital;
-      const pnlPct = config.initialCapital > 0 ? (pnl / config.initialCapital) * 100 : 0;
-      await db.insert(simSnapshots).values({
-        totalValue: totalVal,
-        cashBalance: cashBalance,
-        investedValue: investedVal,
-        totalPnl: pnl,
-        totalPnlPercent: pnlPct,
-        positionCount: updatedPositions.length,
-        snapshotTime: `${getBeijingHour().toString().padStart(2, '0')}:00`,
-      });
+      await updatePositionPrices();
       return;
     }
 
@@ -387,7 +435,7 @@ export async function runSimRebalance(isReset: boolean = false): Promise<void> {
 
     for (const coin of topMainstream) {
       if (existingSymbols.includes(coin.symbol)) continue;
-      if (perMainstreamBudget < 100) continue; // Min $100 per position (scaled up)
+      if (perMainstreamBudget < 100) continue;
 
       const buyQty = perMainstreamBudget / coin.price;
       const buyValue = buyQty * coin.price;
@@ -428,7 +476,7 @@ export async function runSimRebalance(isReset: boolean = false): Promise<void> {
 
     for (const coin of topMeme) {
       if (existingSymbols.includes(coin.symbol)) continue;
-      if (perMemeBudget < 50) continue; // Min $50 per meme position (scaled up)
+      if (perMemeBudget < 50) continue;
 
       const buyQty = perMemeBudget / coin.price;
       const buyValue = buyQty * coin.price;
@@ -477,7 +525,6 @@ export async function runSimRebalance(isReset: boolean = false): Promise<void> {
     // 11. Save snapshot
     const totalPnl = finalTotalValue - config.initialCapital;
     const totalPnlPercent = (totalPnl / config.initialCapital) * 100;
-    const bjHour = getBeijingHour();
 
     await db.insert(simSnapshots).values({
       totalValue: finalTotalValue,
@@ -486,10 +533,10 @@ export async function runSimRebalance(isReset: boolean = false): Promise<void> {
       totalPnl: totalPnl,
       totalPnlPercent: totalPnlPercent,
       positionCount: finalPositions.length,
-      snapshotTime: `${bjHour.toString().padStart(2, '0')}:00`,
+      snapshotTime: getBeijingTimeStr(),
     });
 
-    console.log(`[SimInvestment] Rebalance complete: Total=$${finalTotalValue.toFixed(2)}, Cash=$${cashBalance.toFixed(2)}, P&L=${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)} (${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toFixed(2)}%)`);
+    console.log(`[SimInvestment] Rebalance complete: Total=$${finalTotalValue.toFixed(2)}, Cash=$${cashBalance.toFixed(2)}, Positions=${finalPositions.length}, P&L=${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)} (${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toFixed(2)}%)`);
 
   } catch (err: any) {
     console.error('[SimInvestment] Rebalance failed:', err?.message);
@@ -515,86 +562,68 @@ export async function getPnlStats(): Promise<SimPortfolioData['pnlStats']> {
     const todayStr = getBeijingDateStr();
     const now = new Date();
     const bjTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-    const monthStart = bjTime.toISOString().slice(0, 7) + '-01'; // YYYY-MM-01
+    const monthStart = bjTime.toISOString().slice(0, 7) + '-01';
     const yearStart = bjTime.getFullYear() + '-01-01';
 
-    // Get all daily P&L records
     const allRecords = await db.select().from(simDailyPnl).orderBy(desc(simDailyPnl.date));
 
-    if (allRecords.length === 0) {
-      // No history yet — calculate today's live P&L
-      const config = await db.select().from(simConfig).where(eq(simConfig.isActive, 1)).limit(1);
-      const positions = await db.select().from(simPortfolio);
-      const lastSnapshot = await db.select().from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(1);
-      const capital = config[0]?.initialCapital ?? INITIAL_CAPITAL;
-      const cash = lastSnapshot[0]?.cashBalance ?? capital;
-      const invested = positions.reduce((s: number, p: any) => s + p.currentValue, 0);
-      const totalVal = cash + invested;
-      const todayPnl = totalVal - capital;
-      const todayPnlPct = capital > 0 ? (todayPnl / capital) * 100 : 0;
+    // Always calculate live P&L from current positions
+    const config = await db.select().from(simConfig).where(eq(simConfig.isActive, 1)).limit(1);
+    const positions = await db.select().from(simPortfolio);
+    const lastSnapshot = await db.select().from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(1);
+    const capital = config[0]?.initialCapital ?? INITIAL_CAPITAL;
+    const cash = lastSnapshot[0]?.cashBalance ?? capital;
 
+    // Use latest crypto prices for live calculation
+    const boardData = getCryptoBoardData();
+    let invested = 0;
+    for (const pos of positions) {
+      const allCoins = boardData ? [...boardData.mainstream, ...boardData.meme] : [];
+      const latest = allCoins.find(c => c.symbol === pos.symbol);
+      const currentPrice = latest && latest.price > 0 ? latest.price : pos.currentPrice;
+      invested += pos.quantity * currentPrice;
+    }
+    const totalVal = cash + invested;
+    const todayPnl = totalVal - capital;
+    const todayPnlPercent = capital > 0 ? (todayPnl / capital) * 100 : 0;
+
+    if (allRecords.length === 0) {
       return {
         ...defaultStats,
         todayPnl,
-        todayPnlPercent: todayPnlPct,
+        todayPnlPercent,
       };
     }
 
-    // Today's record (may not exist yet if before settlement)
-    const todayRecord = allRecords.find(r => r.date === todayStr);
+    // Monthly P&L (from history, excluding today which is live)
+    const monthRecords = allRecords.filter(r => r.date >= monthStart && r.date !== todayStr);
+    const monthHistoryPnl = monthRecords.reduce((sum, r) => sum + r.dailyPnl, 0);
+    const monthHistoryPnlPct = monthRecords.reduce((sum, r) => sum + r.dailyPnlPercent, 0);
 
-    // Calculate today's live P&L (from current positions)
-    let todayPnl = 0;
-    let todayPnlPercent = 0;
-    if (todayRecord) {
-      todayPnl = todayRecord.dailyPnl;
-      todayPnlPercent = todayRecord.dailyPnlPercent;
-    } else {
-      // Calculate from live positions
-      const config = await db.select().from(simConfig).where(eq(simConfig.isActive, 1)).limit(1);
-      const positions = await db.select().from(simPortfolio);
-      const lastSnapshot = await db.select().from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(1);
-      const capital = config[0]?.initialCapital ?? INITIAL_CAPITAL;
-      const cash = lastSnapshot[0]?.cashBalance ?? capital;
-      const invested = positions.reduce((s: number, p: any) => s + p.currentValue, 0);
-      const totalVal = cash + invested;
-      todayPnl = totalVal - capital;
-      todayPnlPercent = capital > 0 ? (todayPnl / capital) * 100 : 0;
-    }
+    // Yearly P&L (from history, excluding today)
+    const yearRecords = allRecords.filter(r => r.date >= yearStart && r.date !== todayStr);
+    const yearHistoryPnl = yearRecords.reduce((sum, r) => sum + r.dailyPnl, 0);
+    const yearHistoryPnlPct = yearRecords.reduce((sum, r) => sum + r.dailyPnlPercent, 0);
 
-    // Monthly P&L
-    const monthRecords = allRecords.filter(r => r.date >= monthStart);
-    const monthPnl = monthRecords.reduce((sum, r) => sum + r.dailyPnl, 0);
-    // Monthly return = sum of daily returns (since each day starts fresh)
-    const monthPnlPercent = monthRecords.length > 0
-      ? monthRecords.reduce((sum, r) => sum + r.dailyPnlPercent, 0)
-      : 0;
-
-    // Yearly P&L
-    const yearRecords = allRecords.filter(r => r.date >= yearStart);
-    const yearPnl = yearRecords.reduce((sum, r) => sum + r.dailyPnl, 0);
-    const yearPnlPercent = yearRecords.length > 0
-      ? yearRecords.reduce((sum, r) => sum + r.dailyPnlPercent, 0)
-      : 0;
-
-    // Win/loss stats
-    const totalDays = allRecords.length;
-    const profitDays = allRecords.filter(r => r.dailyPnl > 0).length;
-    const lossDays = allRecords.filter(r => r.dailyPnl < 0).length;
+    // Win/loss stats (from settled days only)
+    const settledRecords = allRecords.filter(r => r.date !== todayStr);
+    const totalDays = settledRecords.length;
+    const profitDays = settledRecords.filter(r => r.dailyPnl > 0).length;
+    const lossDays = settledRecords.filter(r => r.dailyPnl < 0).length;
     const winRate = totalDays > 0 ? (profitDays / totalDays) * 100 : 0;
 
     // Best/worst day
-    const sorted = [...allRecords].sort((a, b) => b.dailyPnl - a.dailyPnl);
+    const sorted = [...settledRecords].sort((a, b) => b.dailyPnl - a.dailyPnl);
     const bestDay = sorted[0] ? { date: sorted[0].date, pnl: sorted[0].dailyPnl, pnlPercent: sorted[0].dailyPnlPercent } : null;
     const worstDay = sorted[sorted.length - 1] ? { date: sorted[sorted.length - 1].date, pnl: sorted[sorted.length - 1].dailyPnl, pnlPercent: sorted[sorted.length - 1].dailyPnlPercent } : null;
 
     return {
-      todayPnl: todayPnl + (todayRecord ? 0 : 0), // Add live P&L if no settlement yet
+      todayPnl,
       todayPnlPercent,
-      monthPnl: monthPnl + (todayRecord ? 0 : todayPnl),
-      monthPnlPercent: monthPnlPercent + (todayRecord ? 0 : todayPnlPercent),
-      yearPnl: yearPnl + (todayRecord ? 0 : todayPnl),
-      yearPnlPercent: yearPnlPercent + (todayRecord ? 0 : todayPnlPercent),
+      monthPnl: monthHistoryPnl + todayPnl,
+      monthPnlPercent: monthHistoryPnlPct + todayPnlPercent,
+      yearPnl: yearHistoryPnl + todayPnl,
+      yearPnlPercent: yearHistoryPnlPct + todayPnlPercent,
       totalDays,
       profitDays,
       lossDays,
@@ -616,22 +645,53 @@ export async function getSimPortfolioData(): Promise<SimPortfolioData> {
   const config = db ? await db.select().from(simConfig).where(eq(simConfig.isActive, 1)).limit(1) : [];
   const positions = db ? await db.select().from(simPortfolio) : [];
   const trades = db ? await db.select().from(simTrades).orderBy(desc(simTrades.id)).limit(50) : [];
-  const snapshots = db ? await db.select().from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(30) : [];
+  const snapshots = db ? await db.select().from(simSnapshots).orderBy(desc(simSnapshots.id)).limit(50) : [];
 
   const activeConfig = config[0];
-  const investedValue = positions.reduce((sum: number, p: any) => sum + p.currentValue, 0);
-  const lastSnapshot = snapshots[0];
-  const cashBalance = lastSnapshot?.cashBalance ?? (activeConfig?.initialCapital ?? INITIAL_CAPITAL);
-  const totalValue = cashBalance + investedValue;
-  const totalPnl = totalValue - (activeConfig?.initialCapital ?? INITIAL_CAPITAL);
-  const totalPnlPercent = ((totalPnl) / (activeConfig?.initialCapital ?? INITIAL_CAPITAL)) * 100;
+  const capital = activeConfig?.initialCapital ?? INITIAL_CAPITAL;
 
-  // Get P&L stats
+  // Use latest crypto prices for live calculation
+  const boardData = getCryptoBoardData();
+  let investedValue = 0;
+  const livePositions = positions.map((p: any) => {
+    const allCoins = boardData ? [...boardData.mainstream, ...boardData.meme] : [];
+    const latest = allCoins.find(c => c.symbol === p.symbol);
+    const currentPrice = latest && latest.price > 0 ? latest.price : p.currentPrice;
+    const currentValue = p.quantity * currentPrice;
+    const pnl = currentValue - p.costBasis;
+    const pnlPercent = p.costBasis > 0 ? (pnl / p.costBasis) * 100 : 0;
+    investedValue += currentValue;
+    return {
+      symbol: p.symbol,
+      name: p.name,
+      category: p.category,
+      entryPrice: p.entryPrice,
+      currentPrice,
+      quantity: p.quantity,
+      costBasis: p.costBasis,
+      currentValue,
+      pnl,
+      pnlPercent,
+      weight: 0, // will be calculated below
+    };
+  });
+
+  const lastSnapshot = snapshots[0];
+  const cashBalance = lastSnapshot?.cashBalance ?? capital;
+  const totalValue = cashBalance + investedValue;
+  const totalPnl = totalValue - capital;
+  const totalPnlPercent = capital > 0 ? (totalPnl / capital) * 100 : 0;
+
+  // Calculate weights
+  for (const pos of livePositions) {
+    pos.weight = totalValue > 0 ? (pos.currentValue / totalValue) * 100 : 0;
+  }
+
   const pnlStats = await getPnlStats();
 
   return {
     config: {
-      initialCapital: activeConfig?.initialCapital ?? INITIAL_CAPITAL,
+      initialCapital: capital,
       startDate: activeConfig?.startDate?.toISOString() ?? new Date().toISOString(),
       isActive: !!activeConfig?.isActive,
     },
@@ -641,22 +701,10 @@ export async function getSimPortfolioData(): Promise<SimPortfolioData> {
       investedValue,
       totalPnl,
       totalPnlPercent,
-      positionCount: positions.length,
+      positionCount: livePositions.length,
       lastUpdateTime: lastSnapshot?.createdAt?.toISOString() ?? '',
     },
-    positions: positions.map((p: any) => ({
-      symbol: p.symbol,
-      name: p.name,
-      category: p.category,
-      entryPrice: p.entryPrice,
-      currentPrice: p.currentPrice,
-      quantity: p.quantity,
-      costBasis: p.costBasis,
-      currentValue: p.currentValue,
-      pnl: p.pnl,
-      pnlPercent: p.pnlPercent,
-      weight: p.weight,
-    })),
+    positions: livePositions,
     trades: trades.map((t: any) => ({
       symbol: t.symbol,
       name: t.name,
@@ -679,40 +727,53 @@ export async function getSimPortfolioData(): Promise<SimPortfolioData> {
 }
 
 // ===================================================================
-// Scheduler — 每天8:00（北京时间）清零重建 + 14:00/20:00更新
-// UTC 0:00 = 北京 08:00 (daily reset)
-// UTC 6:00 = 北京 14:00 (mid-day update)
-// UTC 12:00 = 北京 20:00 (evening update)
+// Scheduler — 24/7 continuous trading
+// - 每日08:00北京时间: 清零重建 (daily reset + rebalance)
+// - 每30分钟: 更新持仓价格 (price update)
+// - 每2小时: 调仓检查 (rebalance check for stop-loss/rotation)
 // ===================================================================
+let lastResetDate = '';
+let lastRebalanceHour = -1;
+
 export function startSimInvestmentScheduler() {
-  // Run initial rebalance 30s after startup
+  // Run initial rebalance 60s after startup (wait for CryptoBoard data)
   setTimeout(async () => {
     console.log('[SimInvestment] Initial rebalance starting...');
     await runSimRebalance(false);
-  }, 30_000);
+  }, 60_000);
 
-  // Check every 10 minutes if it's time to rebalance
-  setInterval(() => {
+  // Main loop: check every 15 minutes
+  setInterval(async () => {
     const now = new Date();
-    const utcHour = now.getUTCHours();
-    const utcMinute = now.getUTCMinutes();
+    const bjHour = getBeijingHour(now);
+    const bjMinute = now.getUTCMinutes(); // minutes are same in any timezone
+    const todayStr = getBeijingDateStr(now);
 
-    // UTC 0:00 = Beijing 08:00 → Daily reset + rebalance
-    if (utcHour === 0 && utcMinute < 10) {
-      console.log(`[SimInvestment] Daily reset at Beijing 08:00 (UTC ${utcHour}:${utcMinute.toString().padStart(2, '0')})`);
-      runSimRebalance(true); // isReset = true
+    // 1. Daily reset at 08:00 Beijing time (UTC 00:00)
+    if (bjHour === 8 && bjMinute < 15 && lastResetDate !== todayStr) {
+      lastResetDate = todayStr;
+      lastRebalanceHour = bjHour;
+      console.log(`[SimInvestment] Daily reset at Beijing 08:00`);
+      await runSimRebalance(true); // isReset = true
+      return;
     }
-    // UTC 6:00 = Beijing 14:00 → Mid-day update
-    else if (utcHour === 6 && utcMinute < 10) {
-      console.log(`[SimInvestment] Mid-day update at Beijing 14:00`);
-      runSimRebalance(false);
-    }
-    // UTC 12:00 = Beijing 20:00 → Evening update
-    else if (utcHour === 12 && utcMinute < 10) {
-      console.log(`[SimInvestment] Evening update at Beijing 20:00`);
-      runSimRebalance(false);
-    }
-  }, 10 * 60 * 1000);
 
-  console.log('[SimInvestment] Scheduler registered: initial in 30s, daily reset at 08:00, updates at 14:00 & 20:00 Beijing time');
+    // 2. Rebalance check every 2 hours (at :00-:15 of even hours)
+    const isRebalanceHour = bjHour % 2 === 0 && bjMinute < 15 && lastRebalanceHour !== bjHour;
+    if (isRebalanceHour && bjHour !== 8) { // Skip 08:00 since it's handled above
+      lastRebalanceHour = bjHour;
+      console.log(`[SimInvestment] Rebalance check at Beijing ${bjHour.toString().padStart(2, '0')}:00`);
+      await runSimRebalance(false);
+      return;
+    }
+
+    // 3. Price update every 30 minutes (at :15 and :45)
+    if (bjMinute >= 13 && bjMinute <= 17) {
+      await updatePositionPrices();
+    } else if (bjMinute >= 43 && bjMinute <= 47) {
+      await updatePositionPrices();
+    }
+  }, 15 * 60 * 1000); // Check every 15 minutes
+
+  console.log('[SimInvestment] Scheduler registered: 24/7 trading — initial in 60s, daily reset at 08:00, rebalance every 2h, price update every 30min');
 }
