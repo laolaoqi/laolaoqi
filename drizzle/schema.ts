@@ -158,3 +158,16 @@ export const simConfig = mysqlTable("sim_config", {
 });
 
 export type SimConfig = typeof simConfig.$inferSelect;
+
+/**
+ * Crypto Board cache — persists latest successful data fetch
+ * Survives server restarts and API rate limiting
+ */
+export const cryptoBoardCache = mysqlTable("crypto_board_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  dataKey: varchar("dataKey", { length: 50 }).notNull().unique(), // 'latest'
+  jsonData: text("jsonData").notNull(),                            // full JSON blob
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CryptoBoardCacheRow = typeof cryptoBoardCache.$inferSelect;

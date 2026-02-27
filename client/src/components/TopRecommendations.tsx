@@ -7,7 +7,7 @@ import { StockRecommendation } from '@/lib/marketData';
 import HudPanel from './HudPanel';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@/_core/hooks/useAuth';
-import { getLoginUrl } from '@/const';
+import { getLoginUrl, getRegisterUrl } from '@/const';
 import { t, getName, getReason, Lang } from '@/lib/i18n';
 import { Link } from 'wouter';
 import { ExternalLink, Lock, X, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
@@ -381,19 +381,31 @@ export default function TopRecommendations({ recommendations }: Props) {
         ))}
       </div>
 
-      {/* Guest login prompt */}
+      {/* Guest login/register prompt */}
       {isGuest && (
-        <div className="flex items-center justify-center gap-2 mt-3 py-3 border border-red-500/20 rounded bg-red-500/5">
-          <Lock size={14} className="text-red-500" />
-          <span className="text-sm text-red-500 font-medium">
-            {lang === 'zh' ? '登录后查看完整推荐数据' : 'Login to view full recommendation data'}
-          </span>
-          <a
-            href={getLoginUrl()}
-            className="ml-2 px-4 py-1.5 text-xs font-medium bg-red-500/20 border border-red-500/30 text-red-400 rounded hover:bg-red-500/30 transition-colors"
-          >
-            {lang === 'zh' ? '立即登录' : 'Login Now'}
-          </a>
+        <div className="mt-3 py-4 px-4 border border-[#00d4ff]/20 rounded-lg bg-gradient-to-r from-[#00d4ff]/5 to-[rgba(0,102,255,0.04)]">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="flex items-center gap-2">
+              <Lock size={14} className="text-[#00d4ff]" />
+              <span className="text-sm text-white font-medium">
+                {lang === 'zh' ? '注册账号即可查看完整AI推荐数据' : 'Register to view full AI recommendation data'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={getRegisterUrl()}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold bg-gradient-to-r from-[#00d4ff] to-[#0066ff] text-white rounded-lg hover:opacity-90 transition-opacity shadow-[0_0_12px_rgba(0,212,255,0.2)]"
+              >
+                {lang === 'zh' ? '免费注册' : 'Sign Up Free'}
+              </a>
+              <a
+                href={getLoginUrl()}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium border border-[#00d4ff]/30 text-[#00d4ff] rounded-lg hover:bg-[#00d4ff]/10 transition-colors"
+              >
+                {lang === 'zh' ? '已有账号？登录' : 'Have account? Login'}
+              </a>
+            </div>
+          </div>
         </div>
       )}
 

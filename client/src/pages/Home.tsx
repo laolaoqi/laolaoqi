@@ -5,7 +5,9 @@
 
 import { useMarketData } from '@/hooks/useMarketData';
 import { AppProvider, useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/_core/hooks/useAuth';
 import { t } from '@/lib/i18n';
+import { getLoginUrl, getRegisterUrl } from '@/const';
 import TopBar from '@/components/TopBar';
 import ModeScores from '@/components/ModeScores';
 import MarketOverview from '@/components/MarketOverview';
@@ -21,6 +23,7 @@ import AnnouncementBoard from '@/components/AnnouncementBoard';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
+import { UserPlus, LogIn, Sparkles } from 'lucide-react';
 
 const HERO_BG = 'https://private-us-east-1.manuscdn.com/sessionFile/5mBhgnjK6Lia4j3MfXGMvH/sandbox/NOT8bhL1LfjHxBx0AyI0wR-img-1_1771952361000_na1fn_aGVyby1iZw.jpg?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvNW1CaGduaks2TGlhNGozTWZYR012SC9zYW5kYm94L05PVDhiaEwxTGZqSHhCeDBBeUkwd1ItaW1nLTFfMTc3MTk1MjM2MTAwMF9uYTFmbl9hR1Z5YnkxaVp3LmpwZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSx3XzE5MjAsaF8xOTIwL2Zvcm1hdCx3ZWJwL3F1YWxpdHkscV84MCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5ODc2MTYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=qoHWe24bvuKdu1D0CP0~Vo-ld~CZQXa3jXk0IiQJFKBFgJ-ki-pQeVDSG9egdIdB4QgdYPwar8lPX0qmOLzFFmRAqIpaAaqAoJwDTRdxpUyjlKzR3de6JM0UuobYAVFRxh66RsF6-u7X80gdnKSZ~SOM3yMuFqeW9nsFDTJusALH6v9YyPpYKX2aGo3K~gyjrm9Ld5dhbrhEsdrikS78hPazjngkmrHg5ZVwlZgPHq06syWOlC7aqVfzdroxBLDmXF9SJAFkJNJiIQs120ykZ5lIM7FAM-~4LPBzQHBv7jH8zPfHy1OqnMPYZt2198dhB-TRX-QFN3UuhU9ejSxTaA__';
 
@@ -35,6 +38,7 @@ const itemVariants = {
 
 function Dashboard() {
   const { lang, market } = useApp();
+  const { isAuthenticated } = useAuth();
 
   // SEO: Set document.title dynamically (30-60 chars)
   useEffect(() => {
@@ -80,6 +84,54 @@ function Dashboard() {
       </div>
       {/* SEO: H1 for mobile (sr-only so it doesn't break layout) */}
       <h1 className="sr-only lg:hidden">猎手阿尔法 - AI智能选股平台</h1>
+
+      {/* Guest Registration/Login Banner — only shown to unauthenticated users */}
+      {!isAuthenticated && (
+        <motion.div
+          className="max-w-[1600px] mx-auto px-3 lg:px-5 pt-3"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          <div className="relative overflow-hidden rounded-lg border border-[#00d4ff]/25 bg-gradient-to-r from-[#00d4ff]/8 via-[rgba(0,102,255,0.06)] to-[#00d4ff]/8">
+            {/* Glow lines */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff]/40 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#0066ff]/30 to-transparent" />
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 lg:px-6 lg:py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00d4ff]/20 to-[#0066ff]/20 flex items-center justify-center shrink-0">
+                  <Sparkles size={20} className="text-[#00d4ff]" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">
+                    {lang === 'zh' ? '欢迎来到猎手阿尔法！注册账号解锁全部功能' : 'Welcome! Register to unlock all features'}
+                  </p>
+                  <p className="text-xs text-[#8899aa] mt-0.5">
+                    {lang === 'zh' ? '注册后可查看AI核心推荐TOP10、投资看板、下载PDF报告等专属功能' : 'Access AI TOP10 picks, Crypto Board, PDF reports and more'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={getRegisterUrl()}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-[#00d4ff] to-[#0066ff] text-white text-sm font-bold hover:opacity-90 transition-opacity shadow-[0_0_16px_rgba(0,212,255,0.25)]"
+                >
+                  <UserPlus size={14} />
+                  {lang === 'zh' ? '免费注册' : 'Sign Up Free'}
+                </a>
+                <a
+                  href={getLoginUrl()}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#00d4ff]/30 text-[#00d4ff] text-sm font-medium hover:bg-[#00d4ff]/10 transition-colors"
+                >
+                  <LogIn size={14} />
+                  {lang === 'zh' ? '登录' : 'Login'}
+                </a>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Crypto Investment Board Entry Banner */}
       <motion.div

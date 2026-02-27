@@ -1,11 +1,16 @@
 // ===================================================================
 // Crypto Investment Board — 主流币 vs 空气币/永续合约 投资看板
-// 后端定时任务：CoinGecko 数据抓取 → JSON缓存
+// 后端定时任务：CoinGecko 数据抓取 → DB持久化 + 内存缓存
 // 包含Logo图标 + 7日迷你K线数据
 // 零AI token消耗，纯API数据驱动
 // ===================================================================
 
+import { getDb } from './db';
+import { cryptoBoardCache } from '../drizzle/schema';
+import { eq } from 'drizzle-orm';
+
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+const CACHE_KEY = 'latest';
 
 // ===================================================================
 // Types
@@ -33,12 +38,46 @@ export interface CryptoBoardData {
 }
 
 // ===================================================================
-// In-memory cache
+// In-memory cache (fast path)
 // ===================================================================
 let cachedBoard: CryptoBoardData | null = null;
 
 export function getCryptoBoardData(): CryptoBoardData | null {
   return cachedBoard;
+}
+
+// ===================================================================
+// DB persistence — save/load cache to survive restarts + rate limits
+// ===================================================================
+async function saveCacheToDB(data: CryptoBoardData): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const json = JSON.stringify(data);
+    // Upsert: try insert, on duplicate key update
+    await db.insert(cryptoBoardCache)
+      .values({ dataKey: CACHE_KEY, jsonData: json })
+      .onDuplicateKeyUpdate({ set: { jsonData: json } });
+    console.log('[CryptoBoard] Data persisted to DB');
+  } catch (err: any) {
+    console.error('[CryptoBoard] Failed to save cache to DB:', err?.message);
+  }
+}
+
+async function loadCacheFromDB(): Promise<CryptoBoardData | null> {
+  try {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db.select().from(cryptoBoardCache).where(eq(cryptoBoardCache.dataKey, CACHE_KEY)).limit(1);
+    if (rows.length > 0) {
+      const data = JSON.parse(rows[0].jsonData) as CryptoBoardData;
+      console.log(`[CryptoBoard] Loaded cache from DB (${data.mainstream.length} mainstream, ${data.meme.length} meme, age=${Math.round((Date.now() - data.timestamp) / 60000)}min)`);
+      return data;
+    }
+  } catch (err: any) {
+    console.error('[CryptoBoard] Failed to load cache from DB:', err?.message);
+  }
+  return null;
 }
 
 // ===================================================================
@@ -86,40 +125,56 @@ const MEME_DEFS: CoinDef[] = [
 ];
 
 // ===================================================================
-// CoinGecko fetch with sparkline + logo
+// CoinGecko fetch with sparkline + logo (with retry)
 // ===================================================================
+async function fetchWithRetry(url: string, retries = 2): Promise<any> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': UA, 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(20000),
+      });
+      if (resp.status === 429) {
+        console.warn(`[CryptoBoard] Rate limited (429), attempt ${attempt + 1}/${retries + 1}`);
+        if (attempt < retries) {
+          await sleep(5000 * (attempt + 1)); // exponential backoff
+          continue;
+        }
+        throw new Error('CoinGecko rate limited (429)');
+      }
+      if (!resp.ok) throw new Error(`CoinGecko HTTP ${resp.status}`);
+      return await resp.json();
+    } catch (err: any) {
+      if (attempt < retries && !err.message?.includes('rate limited')) {
+        await sleep(3000);
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 async function fetchCoinsWithDetails(defs: CoinDef[]): Promise<CryptoCoin[]> {
-  // Filter out coins without CoinGecko IDs
   const cgDefs = defs.filter(d => d.id);
   const nonCgDefs = defs.filter(d => !d.id);
-
   const coins: CryptoCoin[] = [];
 
   if (cgDefs.length > 0) {
     try {
       const idsParam = cgDefs.map(d => d.id).join(',');
-      // sparkline=true gives us 7-day price data
       const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${idsParam}&order=market_cap_desc&per_page=50&page=1&sparkline=true`;
-      const resp = await fetch(url, {
-        headers: { 'User-Agent': UA, 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(20000),
-      });
-      if (!resp.ok) throw new Error(`CoinGecko HTTP ${resp.status}`);
-      const data: any[] = await resp.json();
+      const data: any[] = await fetchWithRetry(url);
 
-      // Build a map from CoinGecko ID to data
       const dataMap = new Map<string, any>();
       for (const d of data) {
         dataMap.set(d.id, d);
       }
 
-      // Map in the order of our definitions
       for (const def of cgDefs) {
         const d = dataMap.get(def.id);
         if (d) {
           const rawSparkline = d.sparkline_in_7d?.price || [];
           const sparkline = downsampleSparkline(rawSparkline, 28);
-
           coins.push({
             name: def.name,
             symbol: def.symbol,
@@ -132,10 +187,8 @@ async function fetchCoinsWithDetails(defs: CoinDef[]): Promise<CryptoCoin[]> {
             rank: 0,
           });
         } else {
-          // CoinGecko returned data but this coin wasn't in it
           coins.push({
-            name: def.name,
-            symbol: def.symbol,
+            name: def.name, symbol: def.symbol,
             price: 0, change24h: 0, marketCap: 0, volume24h: 0,
             logo: '', sparkline7d: [], rank: 0,
           });
@@ -143,37 +196,22 @@ async function fetchCoinsWithDetails(defs: CoinDef[]): Promise<CryptoCoin[]> {
       }
     } catch (err: any) {
       console.error('[CryptoBoard] CoinGecko detailed fetch failed:', err?.message);
-      // On total failure, add all cgDefs as empty placeholders
-      for (const def of cgDefs) {
-        coins.push({
-          name: def.name,
-          symbol: def.symbol,
-          price: 0, change24h: 0, marketCap: 0, volume24h: 0,
-          logo: '', sparkline7d: [], rank: 0,
-        });
-      }
+      // Return null to signal total failure — caller will use DB cache
+      return [];
     }
   }
 
-  // Add non-CoinGecko coins as placeholders
   for (const def of nonCgDefs) {
     coins.push({
-      name: def.name,
-      symbol: def.symbol,
-      price: 0,
-      change24h: 0,
-      marketCap: 0,
-      volume24h: 0,
-      logo: '',
-      sparkline7d: [],
-      rank: 0,
+      name: def.name, symbol: def.symbol,
+      price: 0, change24h: 0, marketCap: 0, volume24h: 0,
+      logo: '', sparkline7d: [], rank: 0,
     });
   }
 
   return coins;
 }
 
-// Downsample a large array to target size by picking evenly spaced points
 function downsampleSparkline(data: number[], targetSize: number): number[] {
   if (!data || data.length === 0) return [];
   if (data.length <= targetSize) return data;
@@ -182,40 +220,28 @@ function downsampleSparkline(data: number[], targetSize: number): number[] {
   for (let i = 0; i < targetSize; i++) {
     result.push(data[Math.floor(i * step)]);
   }
-  // Always include the last point
   result.push(data[data.length - 1]);
   return result;
 }
 
 // ===================================================================
-// Fetch mainstream coins
+// Fetch functions
 // ===================================================================
 async function fetchMainstreamCoins(): Promise<CryptoCoin[]> {
   const coins = await fetchCoinsWithDetails(MAINSTREAM_DEFS);
   return coins.map((c, i) => ({ ...c, rank: i + 1 }));
 }
 
-// ===================================================================
-// Fetch meme/空气币
-// ===================================================================
 async function fetchMemeCoins(): Promise<CryptoCoin[]> {
   const coins = await fetchCoinsWithDetails(MEME_DEFS);
-  console.log(`[CryptoBoard] Meme coins fetched: ${coins.filter(c => c.price > 0).length}/${MEME_DEFS.length}`);
-  // Assign ranks in definition order (user's preferred order)
+  const withPrice = coins.filter(c => c.price > 0).length;
+  console.log(`[CryptoBoard] Meme coins fetched: ${withPrice}/${MEME_DEFS.length} with price data`);
   return coins.map((c, i) => ({ ...c, rank: i + 1 }));
 }
 
-// ===================================================================
-// CoinGecko Global — BTC主导率 + 总市值
-// ===================================================================
 async function fetchGlobalData(): Promise<{ btcDominance: number; totalMarketCap: number }> {
   try {
-    const resp = await fetch('https://api.coingecko.com/api/v3/global', {
-      headers: { 'User-Agent': UA, 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!resp.ok) throw new Error(`CoinGecko Global HTTP ${resp.status}`);
-    const data = await resp.json();
+    const data = await fetchWithRetry('https://api.coingecko.com/api/v3/global');
     return {
       btcDominance: data.data?.market_cap_percentage?.btc || 57.9,
       totalMarketCap: data.data?.total_market_cap?.usd || 0,
@@ -254,7 +280,14 @@ function generateAdvice(btcDominance: number): { zh: string; en: string } {
 }
 
 // ===================================================================
-// Main Job Runner — staggered requests to avoid CoinGecko rate limit
+// Helper: check if fetched data has meaningful content
+// ===================================================================
+function hasRealData(coins: CryptoCoin[]): boolean {
+  return coins.some(c => c.price > 0);
+}
+
+// ===================================================================
+// Main Job Runner — staggered requests with DB persistence
 // ===================================================================
 let isRunning = false;
 
@@ -268,17 +301,56 @@ export async function runCryptoBoardJob(): Promise<CryptoBoardData | null> {
   try {
     console.log('[CryptoBoard] Starting data fetch (with logos + sparklines)...');
 
-    // Stagger CoinGecko requests to avoid 429 rate limit
+    // Step 1: Fetch global data (BTC dominance) — always try this first
     const globalData = await fetchGlobalData();
-    await sleep(2500);
+    await sleep(3000);
 
+    // Step 2: Fetch mainstream coins
     const mainstream = await fetchMainstreamCoins();
-    await sleep(2500);
+    await sleep(3000);
 
+    // Step 3: Fetch meme coins
     const memeCoins = await fetchMemeCoins();
 
+    // Step 4: Generate advice (always works as long as we have BTC dominance)
     const advice = generateAdvice(globalData.btcDominance);
 
+    // Step 5: Determine if we got real data or just placeholders
+    const mainstreamHasData = hasRealData(mainstream);
+    const memeHasData = hasRealData(memeCoins);
+
+    // If both lists failed (all price=0), merge with DB cache to preserve last good data
+    if (!mainstreamHasData || !memeHasData) {
+      console.warn(`[CryptoBoard] Partial failure: mainstream=${mainstreamHasData}, meme=${memeHasData}. Merging with cached data...`);
+      
+      // Load previous good data from DB or memory
+      const prevData = cachedBoard || await loadCacheFromDB();
+      
+      const finalMainstream = mainstreamHasData ? mainstream : (prevData?.mainstream || mainstream);
+      const finalMeme = memeHasData ? memeCoins : (prevData?.meme || memeCoins);
+
+      const board: CryptoBoardData = {
+        mainstream: finalMainstream,
+        meme: finalMeme,
+        btcDominance: globalData.btcDominance,
+        totalMarketCap: globalData.totalMarketCap,
+        advice: advice.zh,
+        adviceEn: advice.en,
+        timestamp: Date.now(),
+      };
+
+      cachedBoard = board;
+
+      // Only save to DB if we have at least some real data
+      if (hasRealData(finalMainstream) || hasRealData(finalMeme)) {
+        await saveCacheToDB(board);
+      }
+
+      console.log(`[CryptoBoard] Updated (merged): ${finalMainstream.length} mainstream (real=${hasRealData(finalMainstream)}), ${finalMeme.length} meme (real=${hasRealData(finalMeme)})`);
+      return board;
+    }
+
+    // Full success — save fresh data
     const board: CryptoBoardData = {
       mainstream,
       meme: memeCoins,
@@ -290,6 +362,7 @@ export async function runCryptoBoardJob(): Promise<CryptoBoardData | null> {
     };
 
     cachedBoard = board;
+    await saveCacheToDB(board);
     console.log(`[CryptoBoard] Updated: ${mainstream.length} mainstream, ${memeCoins.length} meme, BTC dom=${globalData.btcDominance.toFixed(1)}%`);
     return board;
   } catch (err: any) {
@@ -305,19 +378,36 @@ function sleep(ms: number) {
 }
 
 // ===================================================================
-// Scheduler — 启动时运行 + 每小时自动更新
+// Scheduler — load DB cache on start, then fetch fresh data
 // ===================================================================
 const CRYPTO_BOARD_INTERVAL = 60 * 60 * 1000; // 1 hour
 
 export function startCryptoBoardScheduler() {
-  setTimeout(() => {
-    console.log('[CryptoBoard] Initial run starting...');
-    runCryptoBoardJob();
-  }, 15_000);
+  // Immediately load from DB cache so data is available right away
+  setTimeout(async () => {
+    console.log('[CryptoBoard] Loading cached data from DB...');
+    const dbData = await loadCacheFromDB();
+    if (dbData) {
+      cachedBoard = dbData;
+      // Regenerate advice with current BTC dominance from cache
+      const advice = generateAdvice(dbData.btcDominance);
+      cachedBoard.advice = advice.zh;
+      cachedBoard.adviceEn = advice.en;
+      console.log('[CryptoBoard] DB cache loaded — data available immediately');
+    } else {
+      console.log('[CryptoBoard] No DB cache found, will fetch fresh data');
+    }
+
+    // Then fetch fresh data after a short delay
+    setTimeout(() => {
+      console.log('[CryptoBoard] Initial fresh data fetch starting...');
+      runCryptoBoardJob();
+    }, 10_000);
+  }, 5_000);
 
   setInterval(() => {
     runCryptoBoardJob();
   }, CRYPTO_BOARD_INTERVAL);
 
-  console.log('[CryptoBoard] Scheduler registered: initial in 15s, then every 1h');
+  console.log('[CryptoBoard] Scheduler registered: DB cache in 5s, fresh fetch in 15s, then every 1h');
 }

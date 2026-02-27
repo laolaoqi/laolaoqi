@@ -36,6 +36,13 @@
       "when": 1772162193101,
       "tag": "0004_modern_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1772164722147,
+      "tag": "0005_sturdy_silverclaw",
+      "breakpoints": true
     }
   ]
 }
