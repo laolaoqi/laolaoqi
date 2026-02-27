@@ -221,3 +221,12 @@
 - [x] 上传Telegram二维码图片到CDN
 - [x] 在首页footer添加Telegram二维码（小图+hover放大）和@LAOLAOQI888链接
 - [x] 在关于页面新增“联系我们”HudPanel，含Telegram二维码+邮箱
+
+## v7.8 - 数字货币投资看板游客试用机制
+- [x] 游客可免费访问投资看板2次（localStorage记录访问次数）
+- [x] 2次用完后显示TRIAL ENDED屏幕（含注册/登录按钮+管理员联系方式）
+- [x] 游客试用期间显示顶部Banner（剩余次数+注册/登录快捷链接）
+- [x] 注册用户仍需管理员授权才能继续使用（现有权限不变）
+- [x] 后端新增cryptoBoard.getDataPublic公开接口供游客试用
+- [x] checkAccess返回isGuestTrial和maxTrials字段支持前端判断
+- [x] 74个vitest测试全部通过

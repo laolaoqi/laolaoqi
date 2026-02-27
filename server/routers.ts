@@ -864,12 +864,29 @@ export const appRouter = router({
   // 数字货币投资看板
   // ===================================================================
   cryptoBoard: router({
-    // 检查当前用户的投资看板访问权限
+    // 检查当前用户的投资看板访问权限（支持游客试用模式）
     checkAccess: publicProcedure.query(async ({ ctx }) => {
       const userId = (ctx as any).user?.id;
-      if (!userId) return { hasAccess: false, expiresAt: null, isExpired: false, isLoggedIn: false };
+      // 未登录用户 — 返回游客试用模式，由前端 localStorage 控制访问次数
+      if (!userId) return { hasAccess: false, expiresAt: null, isExpired: false, isLoggedIn: false, isGuestTrial: true, maxTrials: 2 };
       const result = await checkCryptoBoardAccess(userId);
-      return { ...result, isLoggedIn: true };
+      return { ...result, isLoggedIn: true, isGuestTrial: false, maxTrials: 0 };
+    }),
+
+    // 获取投资看板数据（游客试用 — 公开接口，前端控制访问次数）
+    getDataPublic: publicProcedure.query(async () => {
+      const data = getCryptoBoardData();
+      if (data) return data;
+      const fresh = await runCryptoBoardJob();
+      return fresh || {
+        mainstream: [],
+        meme: [],
+        btcDominance: 57.9,
+        totalMarketCap: 0,
+        advice: '数据加载中，请稍后刷新...',
+        adviceEn: 'Loading data, please refresh later...',
+        timestamp: Date.now(),
+      };
     }),
 
     // 获取投资看板数据（需要权限）
