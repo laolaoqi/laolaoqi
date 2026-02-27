@@ -933,7 +933,13 @@ export const appRouter = router({
 
     // 手动触发调仓（管理员）
     rebalance: adminProcedure.mutation(async () => {
-      await runSimRebalance();
+      await runSimRebalance(false);
+      return { success: true, timestamp: Date.now() };
+    }),
+
+    // 手动触发每日重置+调仓（管理员）
+    resetRebalance: adminProcedure.mutation(async () => {
+      await runSimRebalance(true);
       return { success: true, timestamp: Date.now() };
     }),
   }),

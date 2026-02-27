@@ -230,3 +230,13 @@
 - [x] 后端新增cryptoBoard.getDataPublic公开接口供游客试用
 - [x] checkAccess返回isGuestTrial和maxTrials字段支持前端判断
 - [x] 74个vitest测试全部通过
+
+## v7.9 - 模拟投资每日调仓 + 收益统计
+- [x] 本金从$10,000升级为$100,000，每日8:00北京时间自动清零重建
+- [x] 新增sim_daily_pnl数据库表记录每日结算收益
+- [x] 新增getPnlStats()收益统计API（单日/当月/一年 + 胜率/最佳最差日）
+- [x] 前端SimPortfolioPanel新增“收益统计”区域（3张卡片 + 胜率/最佳最差日）
+- [x] 每日8:00重置前自动保存当日结算收益到历史表
+- [x] 新增resetRebalance管理员接口支持手动触发每日重置
+- [x] 调度器更新：08:00重置+调仓、14:00/20:00更新持仓
+- [x] 75个vitest测试全部通过
