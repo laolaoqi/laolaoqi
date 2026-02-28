@@ -226,3 +226,8 @@
 - [x] 定位所有包含错误域名 llq555.com 的文件（7个文件27处引用）
 - [x] 将所有 www.llq555.com 改为 www.llq555.vip（index.html/robots.txt/sitemap.xml/seoPrerender.ts/Home.tsx/About.tsx/StockDetail.tsx/CryptoInvestment.tsx/google-site-verification.html/baidu-verification.html）
 - [x] 运行测试验证修复无回归（74个测试全部通过）
+
+## v7.10.4 - 恢复首页底部联系方式
+- [x] 检查首页Footer代码，定位联系方式缺失原因（之前版本合并时丢失）
+- [x] 恢复邮箱 laolaoqi@126.com 和 Telegram @LAOLAOQI888 二维码（从v7.7.3版本恢复）
+- [x] 验证显示效果并运行测试（74个测试全部通过）
