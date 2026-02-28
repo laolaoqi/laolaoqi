@@ -331,7 +331,7 @@ export default function CryptoInvestment() {
   useSEO({
     title: '数字货币投资看板 - 猎手阿尔法 | 主流币 vs 空气币永续合约',
     description: '猎手阿尔法数字货币投资看板，实时跟踪BTC、ETH等主流币与Meme币永续合约行情，提供AI投资建议与模拟投资实盘。',
-    canonical: 'https://www.llq555.com/crypto-investment',
+    canonical: 'https://www.llq555.vip/crypto-investment',
     ogTitle: '数字货币投资看板 - 猎手阿尔法 HUNTER ALPHA',
     ogDescription: '实时跟踪BTC、ETH等主流币与Meme币永续合约行情，AI投资建议与模拟投资实盘',
   });

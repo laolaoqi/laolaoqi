@@ -3,23 +3,23 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <!-- Homepage -->
   <url>
-    <loc>https://www.llq555.com/</loc>
+    <loc>https://www.llq555.vip/</loc>
     <changefreq>hourly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://www.llq555.com/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://www.llq555.com/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://www.llq555.vip/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.llq555.vip/" />
   </url>
 
   <!-- Crypto Investment Board -->
   <url>
-    <loc>https://www.llq555.com/crypto-investment</loc>
+    <loc>https://www.llq555.vip/crypto-investment</loc>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <!-- About Page -->
   <url>
-    <loc>https://www.llq555.com/about</loc>
+    <loc>https://www.llq555.vip/about</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -221,3 +221,8 @@
 - [x] 导出loadCacheFromDB供routers.ts直接调用
 - [x] 前端游客试用完整实现：localStorage计数+GuestTrialEndedScreen+试用Banner
 - [x] 74个vitest测试全部通过
+
+## v7.10.3 - 修复Canonical标签错误域名
+- [x] 定位所有包含错误域名 llq555.com 的文件（7个文件27处引用）
+- [x] 将所有 www.llq555.com 改为 www.llq555.vip（index.html/robots.txt/sitemap.xml/seoPrerender.ts/Home.tsx/About.tsx/StockDetail.tsx/CryptoInvestment.tsx/google-site-verification.html/baidu-verification.html）
+- [x] 运行测试验证修复无回归（74个测试全部通过）

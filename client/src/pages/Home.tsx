@@ -46,7 +46,7 @@ function Dashboard() {
   useSEO({
     title: `猎手阿尔法 HUNTER ALPHA - AI智能选股 | ${marketLabel}实时行情与策略`,
     description: `猎手阿尔法（Hunter Alpha）AI驱动的${marketLabel}智能选股平台，提供多因子策略分析、恐惧贪婪指数、行业热力图、AI核心推荐TOP10与风控建议。`,
-    canonical: 'https://www.llq555.com/',
+    canonical: 'https://www.llq555.vip/',
     ogTitle: `猎手阿尔法 - ${marketLabel}AI智能选股平台`,
     ogDescription: `AI驱动的${marketLabel}多因子策略分析、行业热力图、TOP10推荐与风控建议 | ${marketLabelEn} Real-time Analysis`,
   });

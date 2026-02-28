@@ -43,7 +43,7 @@ function isBot(ua: string): boolean {
 
 // OG image URL
 const OG_IMAGE = 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663244547938/BrShWaGSPDGvDoGc.png';
-const SITE_URL = 'https://www.llq555.com';
+const SITE_URL = 'https://www.llq555.vip';
 
 interface PageMeta {
   title: string;

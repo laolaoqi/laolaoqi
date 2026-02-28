@@ -186,7 +186,7 @@ function StockDetailContent() {
   useSEO({
     title: `${stockName} (${symbol}) - 猎手阿尔法 | 个股详情与技术分析`,
     description: `查看${stockName}的实时行情、K线图、技术指标与基本面数据分析。猎手阿尔法AI智能选股平台。`,
-    canonical: `https://www.llq555.com/stock/${encodeURIComponent(symbol)}`,
+    canonical: `https://www.llq555.vip/stock/${encodeURIComponent(symbol)}`,
     ogTitle: `${stockName} (${symbol}) - 个股详情 | 猎手阿尔法`,
     ogDescription: `${stockName}实时行情、K线图、技术指标与基本面数据分析`,
   });
