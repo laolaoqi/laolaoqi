@@ -231,3 +231,15 @@
 - [x] 检查首页Footer代码，定位联系方式缺失原因（之前版本合并时丢失）
 - [x] 恢复邮箱 laolaoqi@126.com 和 Telegram @LAOLAOQI888 二维码（从v7.7.3版本恢复）
 - [x] 验证显示效果并运行测试（74个测试全部通过）
+
+## v7.11 - 数字货币全景看板（Crypto Panorama）
+- [x] 创建CryptoPanorama页面（/crypto-panorama）
+- [x] 4列x5行网格布局展示全部23币种卡片（PC端4列）
+- [x] 每张卡片含：币种Logo、名称、实时价格、24h涨跌幅、迷你分时图
+- [x] 涨跌幅超3%的卡片红/绿色边框+脉冲闪动动画+右上角ping圆点
+- [x] 点击卡片弹窗显示大图K线（分时/1分/5分/15分/1时/4时/日K多周期切换）
+- [x] 复用现有cryptoBoard API数据（getData/getDataPublic）
+- [x] 在投资看板页面Header和首页Footer添加全景看板入口链接
+- [x] 注册路由到App.tsx + SEO预渲染 + sitemap.xml
+- [x] 30秒自动刷新数据
+- [x] 运行测试验证（74个测试全部通过）

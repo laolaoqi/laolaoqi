@@ -9,6 +9,7 @@ import StockDetail from "./pages/StockDetail";
 import Admin from "./pages/Admin";
 import About from "./pages/About";
 import CryptoInvestment from "./pages/CryptoInvestment";
+import CryptoPanorama from "./pages/CryptoPanorama";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/admin"} component={Admin} />
       <Route path={"/about"} component={About} />
       <Route path={"/crypto-investment"} component={CryptoInvestment} />
+      <Route path={"/crypto-panorama"} component={CryptoPanorama} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

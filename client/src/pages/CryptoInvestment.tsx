@@ -454,6 +454,13 @@ export default function CryptoInvestment() {
 
             <div className="flex-1" />
 
+            <Link href="/crypto-panorama">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[rgba(255,107,0,0.12)] to-[rgba(255,51,102,0.12)] border border-[rgba(255,107,0,0.25)] text-[#ff6b00] hover:from-[rgba(255,107,0,0.2)] hover:to-[rgba(255,51,102,0.2)] transition-all text-xs font-bold">
+                <Zap size={12} />
+                <span>全景看板</span>
+              </button>
+            </Link>
+
             <div className="flex items-center gap-1.5 text-xs text-[#8899aa]">
               <Clock size={12} />
               <span className="font-mono tabular-nums">{now.toLocaleTimeString('zh-CN', { hour12: false })}</span>

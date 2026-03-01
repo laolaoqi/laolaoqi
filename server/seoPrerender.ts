@@ -133,6 +133,30 @@ function getPageMeta(path: string): PageMeta {
     };
   }
 
+  // Crypto Panorama
+  if (path === '/crypto-panorama') {
+    return {
+      title: '数字货币全景看板 - 猎手阿尔法 | 全部币种实时K线',
+      description: '猎手阿尔法数字货币全景看板，4x5网格实时展示全部主流币与空气币行情、分时图和K线图，涨跌超过3%闪动提醒。',
+      canonical: `${SITE_URL}/crypto-panorama`,
+      h1: '数字货币全景看板 - 全部币种实时K线与分时图',
+      content: `
+        <section>
+          <h2>全景看板 - 4×5网格布局</h2>
+          <p>实时展示BTC、ETH、SOL等20+主流币与Meme币的价格、涨跌幅、分时图和K线图，一屏总览全部币种行情。</p>
+        </section>
+        <section>
+          <h2>涨跌幅超3%闪动提醒</h2>
+          <p>当币种24小时涨跌幅超过3%时，卡片边框会以红色（涨）或绿色（跌）脉冲闪动，帮助快速识别异动币种。</p>
+        </section>
+        <section>
+          <h2>点击查看详细K线</h2>
+          <p>点击任意币种卡片，弹窗展示详细K线图，支持分时、1分、5分、15分、1小时、4小时、日K多周期切换。</p>
+        </section>
+      `,
+    };
+  }
+
   // About
   if (path === '/about') {
     return {
@@ -273,8 +297,9 @@ function renderPrerenderedHTML(meta: PageMeta): string {
     <p>数据仅供参考，不构成投资建议。投资有风险，入市需谨慎。</p>
     <nav aria-label="页脚导航">
       <a href="/">首页</a> |
-      <a href="/crypto-investment">数字货币投资看板</a> |
-      <a href="/about">关于我们</a>
+<a href="/crypto-investment">数字货币投资看板</a> |
+       <a href="/crypto-panorama">全景看板</a> |
+       <a href="/about">关于我们</a>
     </nav>
   </footer>
 </body>
