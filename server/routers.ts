@@ -6,7 +6,7 @@ import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { listUsers, updateUserRole, updateCryptoBoardAccess, batchUpdateCryptoBoardAccess, checkCryptoBoardAccess, getUserStats, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement, saveStrategyResults, getLatestRecommendations, getLatestSentiment, cleanOldStrategyData } from "./db";
 import { runAllStrategies, runStrategyForMarket } from "./strategyEngine";
-import { getCryptoBoardData, runCryptoBoardJob, startCryptoBoardScheduler, loadCacheFromDB } from "./cryptoBoard";
+import { getCryptoBoardData, runCryptoBoardJob, startCryptoBoardScheduler, loadCacheFromDB, fetchOHLC, getCoinGeckoId } from "./cryptoBoard";
 import { getSimPortfolioData, runSimRebalance, startSimInvestmentScheduler } from "./simInvestment";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -1006,6 +1006,35 @@ export const appRouter = router({
         timestamp: Date.now(),
       };
     }),
+
+    // OHLC K线数据（公开接口，用于全景看板弹窗）
+    getOHLC: publicProcedure
+      .input(z.object({
+        symbol: z.string(),
+        period: z.enum(['time', '1m', '5m', '15m', '1h', '4h', '1d']),
+      }))
+      .query(async ({ input }) => {
+        const coinId = getCoinGeckoId(input.symbol);
+        if (!coinId) return { candles: [], period: input.period };
+
+        // Map period to CoinGecko OHLC days parameter
+        // CoinGecko free OHLC: days=1 → 30min candles, days=7 → 4h candles,
+        // days=14 → 4h, days=30 → daily, days=90/180/365 → daily
+        let days: number;
+        switch (input.period) {
+          case 'time': days = 1; break;   // 30min candles for intraday
+          case '1m':   days = 1; break;   // 30min candles (closest to 1m)
+          case '5m':   days = 1; break;   // 30min candles
+          case '15m':  days = 1; break;   // 30min candles
+          case '1h':   days = 7; break;   // 4h candles for 7 days
+          case '4h':   days = 14; break;  // 4h candles for 14 days
+          case '1d':   days = 90; break;  // daily candles for 90 days
+          default:     days = 7;
+        }
+
+        const candles = await fetchOHLC(coinId, days);
+        return { candles, period: input.period };
+      }),
 
     // 手动刷新（管理员）
     refresh: adminProcedure.mutation(async () => {

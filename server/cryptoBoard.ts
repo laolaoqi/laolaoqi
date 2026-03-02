@@ -378,6 +378,67 @@ function sleep(ms: number) {
 }
 
 // ===================================================================
+// OHLC K-line data — CoinGecko OHLC endpoint
+// ===================================================================
+
+// Build symbol → CoinGecko ID mapping for all coins
+const ALL_COIN_DEFS = [...MAINSTREAM_DEFS, ...MEME_DEFS];
+const symbolToIdMap = new Map<string, string>();
+for (const def of ALL_COIN_DEFS) {
+  if (def.id && !symbolToIdMap.has(def.symbol)) {
+    symbolToIdMap.set(def.symbol, def.id);
+  }
+}
+
+export function getCoinGeckoId(symbol: string): string | undefined {
+  return symbolToIdMap.get(symbol.toUpperCase());
+}
+
+export interface OHLCCandle {
+  time: number;   // Unix timestamp in seconds
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+// CoinGecko OHLC endpoint: /coins/{id}/ohlc?vs_currency=usd&days=N
+// days: 1, 7, 14, 30, 90, 180, 365, max
+// Returns: [[timestamp_ms, open, high, low, close], ...]
+const OHLC_CACHE = new Map<string, { data: OHLCCandle[]; ts: number }>();
+const OHLC_CACHE_TTL = 5 * 60_000; // 5 min
+
+export async function fetchOHLC(coinId: string, days: number): Promise<OHLCCandle[]> {
+  const cacheKey = `${coinId}-${days}`;
+  const cached = OHLC_CACHE.get(cacheKey);
+  if (cached && Date.now() - cached.ts < OHLC_CACHE_TTL) {
+    return cached.data;
+  }
+
+  try {
+    const url = `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`;
+    const raw: number[][] = await fetchWithRetry(url);
+    if (!Array.isArray(raw) || raw.length === 0) return [];
+
+    const candles: OHLCCandle[] = raw.map(r => ({
+      time: Math.floor(r[0] / 1000), // ms → seconds
+      open: r[1],
+      high: r[2],
+      low: r[3],
+      close: r[4],
+    }));
+
+    OHLC_CACHE.set(cacheKey, { data: candles, ts: Date.now() });
+    return candles;
+  } catch (err: any) {
+    console.error(`[CryptoBoard] OHLC fetch failed for ${coinId} (days=${days}):`, err?.message);
+    // Return cached if available even if stale
+    if (cached) return cached.data;
+    return [];
+  }
+}
+
+// ===================================================================
 // Scheduler — load DB cache on start, then fetch fresh data
 // ===================================================================
 const CRYPTO_BOARD_INTERVAL = 60 * 60 * 1000; // 1 hour

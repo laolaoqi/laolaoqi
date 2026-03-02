@@ -187,9 +187,9 @@ function MiniKline({ data, width = 120, height = 40 }: {
 }
 
 // ===================================================================
-// Big Chart (Modal) — Canvas-based K-line / time chart
+// Big Line Chart (Modal) — Canvas-based time/sparkline chart
 // ===================================================================
-function BigChart({ data, isUp, width, height }: {
+function BigLineChart({ data, isUp, width, height }: {
   data: number[]; isUp: boolean; width: number; height: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -197,38 +197,27 @@ function BigChart({ data, isUp, width, height }: {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !data || data.length < 2) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // Set canvas resolution
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
-
-    // Clear
     ctx.clearRect(0, 0, width, height);
 
     const min = Math.min(...data);
     const max = Math.max(...data);
     const range = max - min || 1;
-    const padX = 50;
-    const padY = 20;
+    const padX = 60, padY = 20;
     const chartW = width - padX - 10;
     const chartH = height - padY * 2;
 
-    // Grid lines
+    // Grid
     ctx.strokeStyle = 'rgba(0,212,255,0.06)';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= 4; i++) {
       const y = padY + (i / 4) * chartH;
-      ctx.beginPath();
-      ctx.moveTo(padX, y);
-      ctx.lineTo(padX + chartW, y);
-      ctx.stroke();
-
-      // Price labels
+      ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(padX + chartW, y); ctx.stroke();
       const val = max - (i / 4) * range;
       ctx.fillStyle = '#667788';
       ctx.font = '10px JetBrains Mono, monospace';
@@ -236,43 +225,148 @@ function BigChart({ data, isUp, width, height }: {
       ctx.fillText(val >= 1 ? val.toFixed(2) : val.toFixed(6), padX - 6, y + 3);
     }
 
-    // Draw line
     const color = isUp ? '#ff4444' : '#00cc66';
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
     data.forEach((v, i) => {
       const x = padX + (i / (data.length - 1)) * chartW;
       const y = padY + chartH - ((v - min) / range) * chartH;
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
     ctx.stroke();
-
-    // Fill area
-    const lastX = padX + chartW;
-    const firstX = padX;
-    ctx.lineTo(lastX, padY + chartH);
-    ctx.lineTo(firstX, padY + chartH);
+    ctx.lineTo(padX + chartW, padY + chartH);
+    ctx.lineTo(padX, padY + chartH);
     ctx.closePath();
     const grad = ctx.createLinearGradient(0, padY, 0, padY + chartH);
     grad.addColorStop(0, isUp ? 'rgba(255,68,68,0.15)' : 'rgba(0,204,102,0.15)');
     grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.fill();
-
+    ctx.fillStyle = grad; ctx.fill();
   }, [data, isUp, width, height]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ width, height }}
-      className="rounded-lg bg-[#0a0e17]"
-    />
-  );
+  return <canvas ref={canvasRef} style={{ width, height }} className="rounded-lg bg-[#0a0e17]" />;
 }
 
 // ===================================================================
-// Modal — Full K-line view with period tabs
+// Big Candlestick Chart (Modal) — Canvas OHLC candles + volume
+// ===================================================================
+interface OHLCCandle {
+  time: number; open: number; high: number; low: number; close: number;
+}
+
+function BigCandleChart({ candles, width, height }: {
+  candles: OHLCCandle[]; width: number; height: number;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !candles || candles.length < 2) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, width, height);
+
+    const padX = 60, padTop = 20, padBottom = 30;
+    const chartW = width - padX - 10;
+    const chartH = height - padTop - padBottom;
+
+    // Price range
+    const allHigh = candles.map(c => c.high);
+    const allLow = candles.map(c => c.low);
+    const priceMin = Math.min(...allLow);
+    const priceMax = Math.max(...allHigh);
+    const priceRange = priceMax - priceMin || 1;
+    const pricePad = priceRange * 0.05;
+    const adjMin = priceMin - pricePad;
+    const adjMax = priceMax + pricePad;
+    const adjRange = adjMax - adjMin;
+
+    const toY = (price: number) => padTop + chartH - ((price - adjMin) / adjRange) * chartH;
+
+    // Grid lines + price labels
+    ctx.strokeStyle = 'rgba(0,212,255,0.06)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= 5; i++) {
+      const y = padTop + (i / 5) * chartH;
+      ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(padX + chartW, y); ctx.stroke();
+      const val = adjMax - (i / 5) * adjRange;
+      ctx.fillStyle = '#667788';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(val >= 1 ? val.toFixed(2) : val.toFixed(6), padX - 6, y + 3);
+    }
+
+    // Draw candles
+    const n = candles.length;
+    const barW = chartW / n;
+    const bodyW = Math.max(1, barW * 0.65);
+    const wickW = Math.max(0.5, barW * 0.08);
+
+    for (let i = 0; i < n; i++) {
+      const c = candles[i];
+      const isUp = c.close >= c.open;
+      const upColor = '#ff4444';   // 红色涨
+      const downColor = '#00cc66'; // 绿色跌
+      const color = isUp ? upColor : downColor;
+
+      const x = padX + i * barW + barW / 2;
+      const yHigh = toY(c.high);
+      const yLow = toY(c.low);
+      const yOpen = toY(c.open);
+      const yClose = toY(c.close);
+      const bodyTop = Math.min(yOpen, yClose);
+      const bodyH = Math.max(1, Math.abs(yOpen - yClose));
+
+      // Wick (shadow)
+      ctx.strokeStyle = color;
+      ctx.lineWidth = wickW;
+      ctx.beginPath();
+      ctx.moveTo(x, yHigh);
+      ctx.lineTo(x, yLow);
+      ctx.stroke();
+
+      // Body
+      if (isUp) {
+        // Hollow or filled for up candles — use filled red
+        ctx.fillStyle = color;
+        ctx.fillRect(x - bodyW / 2, bodyTop, bodyW, bodyH);
+      } else {
+        // Filled green for down candles
+        ctx.fillStyle = color;
+        ctx.fillRect(x - bodyW / 2, bodyTop, bodyW, bodyH);
+      }
+    }
+
+    // Time labels (show a few)
+    ctx.fillStyle = '#556677';
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    const labelCount = Math.min(6, n);
+    const labelStep = Math.max(1, Math.floor(n / labelCount));
+    for (let i = 0; i < n; i += labelStep) {
+      const c = candles[i];
+      const x = padX + i * barW + barW / 2;
+      const d = new Date(c.time * 1000);
+      let label: string;
+      if (n <= 48) {
+        // Intraday: show HH:MM
+        label = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+      } else {
+        // Multi-day: show MM/DD
+        label = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+      }
+      ctx.fillText(label, x, height - 8);
+    }
+
+  }, [candles, width, height]);
+
+  return <canvas ref={canvasRef} style={{ width, height }} className="rounded-lg bg-[#0a0e17]" />;
+}
+
+// ===================================================================
+// Modal — Full K-line view with period tabs + real OHLC data
 // ===================================================================
 const TABS = [
   { key: 'time', label: '分时' },
@@ -298,30 +392,25 @@ interface CoinData {
 }
 
 function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<TabKey>('time');
+  const [activeTab, setActiveTab] = useState<TabKey>('1d');
   const isUp = coin.change24h >= 0;
 
-  // Generate chart data based on tab (using sparkline7d as base, simulate different periods)
-  const chartData = useMemo(() => {
+  // Fetch real OHLC data from backend
+  const { data: ohlcData, isLoading: ohlcLoading } = trpc.cryptoBoard.getOHLC.useQuery(
+    { symbol: coin.symbol, period: activeTab },
+    { staleTime: 60_000, refetchOnWindowFocus: false }
+  );
+
+  // Fallback sparkline data for time chart
+  const sparklineData = useMemo(() => {
     const base = coin.sparkline7d || [];
     if (base.length < 2) return [];
+    return base;
+  }, [coin.sparkline7d]);
 
-    // For different periods, slice/resample the sparkline data
-    switch (activeTab) {
-      case 'time': return base.slice(-24); // Last 24 points
-      case '1m': return base.slice(-48);
-      case '5m': return base.slice(-60);
-      case '15m': return base.slice(-80);
-      case '1h': return base.slice(-100);
-      case '4h': return base;
-      case '1d': {
-        // Downsample to daily-like
-        const step = Math.max(1, Math.floor(base.length / 30));
-        return base.filter((_, i) => i % step === 0);
-      }
-      default: return base;
-    }
-  }, [coin.sparkline7d, activeTab]);
+  // Determine chart mode: 'time' tab = line chart, others = candlestick
+  const isLineMode = activeTab === 'time';
+  const hasOHLC = ohlcData?.candles && ohlcData.candles.length >= 2;
 
   // Close on Escape
   useEffect(() => {
@@ -379,21 +468,59 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
               {tab.label}
             </button>
           ))}
+          {ohlcLoading && (
+            <span className="flex items-center gap-1 text-[10px] text-[#00d4ff] ml-2">
+              <RefreshCw size={10} className="animate-spin" /> 加载中...
+            </span>
+          )}
         </div>
 
         {/* Chart */}
         <div className="w-full rounded-xl overflow-hidden bg-[#0a0e17] border border-[rgba(0,212,255,0.08)]">
-          {chartData.length >= 2 ? (
-            <BigChart data={chartData} isUp={isUp} width={850} height={360} />
+          {isLineMode ? (
+            // 分时图：用sparkline数据画折线，或用OHLC close价格画折线
+            hasOHLC ? (
+              <BigLineChart
+                data={ohlcData!.candles.map((c: OHLCCandle) => c.close)}
+                isUp={isUp}
+                width={850}
+                height={360}
+              />
+            ) : sparklineData.length >= 2 ? (
+              <BigLineChart data={sparklineData} isUp={isUp} width={850} height={360} />
+            ) : (
+              <div className="flex items-center justify-center h-[360px] text-[#556677] text-sm">
+                暂无分时数据
+              </div>
+            )
           ) : (
-            <div className="flex items-center justify-center h-[360px] text-[#556677] text-sm">
-              暂无图表数据
-            </div>
+            // K线图：用真实OHLC数据画蜡烛图
+            hasOHLC ? (
+              <BigCandleChart candles={ohlcData!.candles} width={850} height={360} />
+            ) : ohlcLoading ? (
+              <div className="flex items-center justify-center h-[360px] text-[#00d4ff] text-sm">
+                <RefreshCw size={16} className="animate-spin mr-2" /> 正在加载K线数据...
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-[360px] text-[#556677] text-sm">
+                暂无K线数据
+              </div>
+            )
           )}
         </div>
 
+        {/* Chart type indicator */}
+        <div className="flex items-center gap-3 mt-2 text-[10px] text-[#556677]">
+          <span>{isLineMode ? '◈ 分时折线图' : '■ OHLC 蜡烛图'}</span>
+          {hasOHLC && <span>· {ohlcData!.candles.length} 根K线</span>}
+          <span className="ml-auto">
+            <span className="inline-block w-2 h-2 rounded-sm bg-[#ff4444] mr-1" />涨
+            <span className="inline-block w-2 h-2 rounded-sm bg-[#00cc66] ml-2 mr-1" />跌
+          </span>
+        </div>
+
         {/* Info row */}
-        <div className="flex flex-wrap gap-4 mt-4 text-xs text-[#8899aa]">
+        <div className="flex flex-wrap gap-4 mt-3 text-xs text-[#8899aa]">
           {coin.marketCap ? (
             <div>市值: <span className="text-white font-mono">{formatMarketCap(coin.marketCap)}</span></div>
           ) : null}
