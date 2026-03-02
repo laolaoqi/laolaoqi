@@ -252,8 +252,8 @@ interface OHLCCandle {
   time: number; open: number; high: number; low: number; close: number;
 }
 
-function BigCandleChart({ candles, width, height }: {
-  candles: OHLCCandle[]; width: number; height: number;
+function BigCandleChart({ candles, width, height, period }: {
+  candles: OHLCCandle[]; width: number; height: number; period?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -339,28 +339,56 @@ function BigCandleChart({ candles, width, height }: {
       }
     }
 
-    // Time labels (show a few)
+    // Time labels — format based on period type
     ctx.fillStyle = '#556677';
     ctx.font = '9px JetBrains Mono, monospace';
     ctx.textAlign = 'center';
-    const labelCount = Math.min(6, n);
+    const labelCount = Math.min(7, n);
     const labelStep = Math.max(1, Math.floor(n / labelCount));
+
+    // Determine time format based on period
+    const formatTime = (ts: number): string => {
+      const d = new Date(ts * 1000);
+      const hh = d.getHours().toString().padStart(2, '0');
+      const mm = d.getMinutes().toString().padStart(2, '0');
+      const MM = (d.getMonth() + 1).toString().padStart(2, '0');
+      const DD = d.getDate().toString().padStart(2, '0');
+
+      switch (period) {
+        case 'time':
+        case '1m':
+        case '5m':
+        case '15m':
+          // Intraday: HH:MM
+          return `${hh}:${mm}`;
+        case '1h':
+          // Hourly over multi-day: MM/DD HH:MM
+          return `${MM}/${DD} ${hh}:${mm}`;
+        case '4h':
+          // 4-hour over 2 weeks: MM/DD HH时
+          return `${MM}/${DD} ${hh}:00`;
+        case '1d':
+          // Daily: MM/DD
+          return `${MM}/${DD}`;
+        default:
+          // Auto-detect: if time span > 3 days show date, otherwise time
+          if (n > 0) {
+            const span = candles[n - 1].time - candles[0].time;
+            if (span > 3 * 86400) return `${MM}/${DD}`;
+            if (span > 86400) return `${MM}/${DD} ${hh}:${mm}`;
+          }
+          return `${hh}:${mm}`;
+      }
+    };
+
     for (let i = 0; i < n; i += labelStep) {
       const c = candles[i];
       const x = padX + i * barW + barW / 2;
-      const d = new Date(c.time * 1000);
-      let label: string;
-      if (n <= 48) {
-        // Intraday: show HH:MM
-        label = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-      } else {
-        // Multi-day: show MM/DD
-        label = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
-      }
+      const label = formatTime(c.time);
       ctx.fillText(label, x, height - 8);
     }
 
-  }, [candles, width, height]);
+  }, [candles, width, height, period]);
 
   return <canvas ref={canvasRef} style={{ width, height }} className="rounded-lg bg-[#0a0e17]" />;
 }
@@ -496,7 +524,7 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
           ) : (
             // K线图：用真实OHLC数据画蜡烛图
             hasOHLC ? (
-              <BigCandleChart candles={ohlcData!.candles} width={850} height={360} />
+              <BigCandleChart candles={ohlcData!.candles} width={850} height={360} period={activeTab} />
             ) : ohlcLoading ? (
               <div className="flex items-center justify-center h-[360px] text-[#00d4ff] text-sm">
                 <RefreshCw size={16} className="animate-spin mr-2" /> 正在加载K线数据...
@@ -598,19 +626,9 @@ function CoinCard({ coin, index, onClick }: {
         )}
       </div>
 
-      {/* Mini charts: Sparkline (left) + K-line (right) */}
-      <div className="flex gap-1 w-full">
-        <div className="flex-1 h-[36px]">
-          <MiniSparkline data={coin.sparkline7d || []} isUp={isUp} width={80} height={36} />
-        </div>
-        <div className="flex-1 h-[36px]">
-          <MiniKline data={coin.sparkline7d || []} width={80} height={36} />
-        </div>
-      </div>
-      {/* Chart labels */}
-      <div className="flex justify-between mt-0.5">
-        <span className="text-[8px] text-[#445566] font-mono">分时</span>
-        <span className="text-[8px] text-[#445566] font-mono">K线</span>
+      {/* Mini sparkline chart — full width, larger */}
+      <div className="w-full h-[56px] mt-1">
+        <MiniSparkline data={coin.sparkline7d || []} isUp={isUp} width={200} height={56} />
       </div>
     </div>
   );
