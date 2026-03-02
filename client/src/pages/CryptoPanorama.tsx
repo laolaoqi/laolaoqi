@@ -125,6 +125,68 @@ function MiniSparkline({ data, isUp, width = 120, height = 40 }: {
 }
 
 // ===================================================================
+// Mini K-line SVG — card-level candlestick chart
+// ===================================================================
+function MiniKline({ data, width = 120, height = 40 }: {
+  data: number[]; width?: number; height?: number;
+}) {
+  const candles = useMemo(() => {
+    if (!data || data.length < 8) return [];
+    // Group sparkline data into candle-like bars (every 4 points = 1 candle)
+    const bars: { open: number; close: number; high: number; low: number }[] = [];
+    const step = Math.max(1, Math.floor(data.length / 14)); // ~14 candles
+    for (let i = 0; i < data.length - step; i += step) {
+      const slice = data.slice(i, i + step);
+      bars.push({
+        open: slice[0],
+        close: slice[slice.length - 1],
+        high: Math.max(...slice),
+        low: Math.min(...slice),
+      });
+    }
+    return bars;
+  }, [data]);
+
+  if (candles.length < 3) {
+    return <div style={{ width, height }} className="flex items-center justify-center text-[10px] text-[#556677]">No Data</div>;
+  }
+
+  const allPrices = candles.flatMap(c => [c.high, c.low]);
+  const min = Math.min(...allPrices);
+  const max = Math.max(...allPrices);
+  const range = max - min || 1;
+  const pad = 2;
+  const barW = (width - pad * 2) / candles.length;
+  const chartH = height - pad * 2;
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
+      {candles.map((c, i) => {
+        const isUp = c.close >= c.open;
+        const color = isUp ? '#ff4444' : '#00cc66';
+        const x = pad + i * barW + barW * 0.15;
+        const candleW = barW * 0.7;
+        const bodyTop = pad + chartH - ((Math.max(c.open, c.close) - min) / range) * chartH;
+        const bodyBottom = pad + chartH - ((Math.min(c.open, c.close) - min) / range) * chartH;
+        const bodyH = Math.max(1, bodyBottom - bodyTop);
+        const wickTop = pad + chartH - ((c.high - min) / range) * chartH;
+        const wickBottom = pad + chartH - ((c.low - min) / range) * chartH;
+        const cx = x + candleW / 2;
+        return (
+          <g key={i}>
+            {/* Wick */}
+            <line x1={cx} y1={wickTop} x2={cx} y2={wickBottom} stroke={color} strokeWidth="0.8" />
+            {/* Body */}
+            <rect x={x} y={bodyTop} width={candleW} height={bodyH}
+              fill={isUp ? color : color} rx="0.5" opacity="0.9" />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ===================================================================
 // Big Chart (Modal) — Canvas-based K-line / time chart
 // ===================================================================
 function BigChart({ data, isUp, width, height }: {
@@ -409,9 +471,19 @@ function CoinCard({ coin, index, onClick }: {
         )}
       </div>
 
-      {/* Mini chart */}
-      <div className="w-full h-[36px]">
-        <MiniSparkline data={coin.sparkline7d || []} isUp={isUp} width={160} height={36} />
+      {/* Mini charts: Sparkline (left) + K-line (right) */}
+      <div className="flex gap-1 w-full">
+        <div className="flex-1 h-[36px]">
+          <MiniSparkline data={coin.sparkline7d || []} isUp={isUp} width={80} height={36} />
+        </div>
+        <div className="flex-1 h-[36px]">
+          <MiniKline data={coin.sparkline7d || []} width={80} height={36} />
+        </div>
+      </div>
+      {/* Chart labels */}
+      <div className="flex justify-between mt-0.5">
+        <span className="text-[8px] text-[#445566] font-mono">分时</span>
+        <span className="text-[8px] text-[#445566] font-mono">K线</span>
       </div>
     </div>
   );

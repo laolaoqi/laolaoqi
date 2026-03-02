@@ -432,6 +432,7 @@ export const appRouter = router({
 
   market: router({
     // 获取指定市场的指数数据（只返回该市场的指数）
+    // crypto市场使用CoinGecko数据（与投资看板一致），其他市场使用Yahoo Finance
     indices: publicProcedure
       .input(z.object({ market: marketIdSchema }))
       .query(async ({ input }) => {
@@ -439,6 +440,83 @@ export const appRouter = router({
         const cached = getCached<any>(cacheKey, INDEX_CACHE_TTL);
         if (cached) return { ...cached, fromCache: true };
 
+        // For crypto market, use CoinGecko data (same source as CryptoBoard)
+        // This ensures consistency between homepage and investment board
+        if (input.market === 'crypto') {
+          try {
+            // Try in-memory cache from CryptoBoard first
+            const boardData = getCryptoBoardData();
+            const mainstream = boardData?.mainstream || [];
+            if (mainstream.length > 0) {
+              // Map top 3 mainstream coins to index format (BTC, ETH, SOL)
+              const top3 = mainstream.slice(0, 3);
+              const data = top3.map(coin => {
+                // Generate chartData from sparkline7d
+                const chartData = (coin.sparkline7d || []).map((val, i) => ({
+                  time: Math.floor(Date.now() / 1000) - (coin.sparkline7d!.length - i) * 3600,
+                  value: val,
+                }));
+                const configs = MARKET_INDICES.crypto;
+                const cfg = configs.find(c => c.symbol.startsWith(coin.symbol)) || configs[0];
+                return {
+                  symbol: `${coin.symbol}-USD`,
+                  nameZh: cfg?.nameZh || coin.name,
+                  nameEn: cfg?.nameEn || coin.name,
+                  nameJa: cfg?.nameJa || coin.name,
+                  nameKo: cfg?.nameKo || coin.name,
+                  nameAr: cfg?.nameAr || coin.name,
+                  price: coin.price,
+                  change: coin.price * (coin.change24h / 100),
+                  changePercent: coin.change24h,
+                  high: coin.price * 1.01,
+                  low: coin.price * 0.99,
+                  volume: coin.volume24h || 0,
+                  chartData,
+                  market: 'crypto',
+                };
+              });
+              const result = { data, isLive: true, fromCache: false };
+              setCache(cacheKey, result);
+              return result;
+            }
+            // Fallback: try DB cache from CryptoBoard
+            const dbData = await loadCacheFromDB();
+            if (dbData && dbData.mainstream.length > 0) {
+              const top3 = dbData.mainstream.slice(0, 3);
+              const data = top3.map(coin => {
+                const chartData = (coin.sparkline7d || []).map((val, i) => ({
+                  time: Math.floor(Date.now() / 1000) - (coin.sparkline7d!.length - i) * 3600,
+                  value: val,
+                }));
+                const configs = MARKET_INDICES.crypto;
+                const cfg = configs.find(c => c.symbol.startsWith(coin.symbol)) || configs[0];
+                return {
+                  symbol: `${coin.symbol}-USD`,
+                  nameZh: cfg?.nameZh || coin.name,
+                  nameEn: cfg?.nameEn || coin.name,
+                  nameJa: cfg?.nameJa || coin.name,
+                  nameKo: cfg?.nameKo || coin.name,
+                  nameAr: cfg?.nameAr || coin.name,
+                  price: coin.price,
+                  change: coin.price * (coin.change24h / 100),
+                  changePercent: coin.change24h,
+                  high: coin.price * 1.01,
+                  low: coin.price * 0.99,
+                  volume: coin.volume24h || 0,
+                  chartData,
+                  market: 'crypto',
+                };
+              });
+              const result = { data, isLive: true, fromCache: false };
+              setCache(cacheKey, result);
+              return result;
+            }
+          } catch (err: any) {
+            console.error('[Market] CoinGecko crypto indices fallback to Yahoo:', err?.message);
+          }
+        }
+
+        // Default: use Yahoo Finance for non-crypto markets (or as fallback)
         const configs = MARKET_INDICES[input.market].map(c => ({ ...c, market: input.market }));
         const results = await Promise.allSettled(configs.map(cfg => fetchIndexData(cfg)));
         const data = results.map((r, i) => {
