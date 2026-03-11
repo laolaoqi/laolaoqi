@@ -5,7 +5,7 @@
 
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Link } from 'wouter';
 import {
   ArrowLeft, Users, Megaphone, Shield, ShieldCheck,
@@ -962,6 +962,19 @@ function VisitorAnalytics() {
   const { data: recentVisitors } = trpc.admin.visitorRecentList.useQuery({ limit: 50 });
   const utils = trpc.useUtils();
 
+  // Calculate period PV/UV from dailyStats
+  const periodStats = useMemo(() => {
+    if (!dailyStats || dailyStats.length === 0) return { periodPV: 0, periodUV: 0 };
+    const periodPV = dailyStats.reduce((sum, d) => sum + Number(d.pv), 0);
+    const periodUV = dailyStats.reduce((sum, d) => sum + Number(d.uv), 0);
+    return { periodPV, periodUV };
+  }, [dailyStats]);
+
+  const timeRangeLabel = useMemo(() => {
+    const labels: Record<number, string> = { 1: '今日', 7: '近7天', 14: '近14天', 30: '近30天', 90: '近90天', 365: '近一年' };
+    return labels[days] || `近${days}天`;
+  }, [days]);
+
   const refreshAll = () => {
     utils.admin.visitorSummary.invalidate();
     utils.admin.visitorDailyStats.invalidate();
@@ -989,6 +1002,7 @@ function VisitorAnalytics() {
             onChange={e => setDays(Number(e.target.value))}
             className="bg-red-500/5 border border-red-500/20 rounded px-3 py-1.5 text-xs text-red-400 focus:outline-none"
           >
+            <option value={1}>今日</option>
             <option value={7}>近7天</option>
             <option value={14}>近14天</option>
             <option value={30}>近30天</option>
@@ -1004,10 +1018,10 @@ function VisitorAnalytics() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: '今日PV', value: summary?.todayPV ?? 0, icon: <Eye size={20} />, color: 'text-cyan-400' },
-          { label: '今日UV', value: summary?.todayUV ?? 0, icon: <Users size={20} />, color: 'text-green-400' },
-          { label: '累计PV', value: summary?.totalPV ?? 0, icon: <TrendingUp size={20} />, color: 'text-blue-400' },
-          { label: '累计UV', value: summary?.totalUV ?? 0, icon: <Globe size={20} />, color: 'text-purple-400' },
+          { label: `${timeRangeLabel} PV`, value: periodStats.periodPV, icon: <Eye size={20} />, color: 'text-cyan-400' },
+          { label: `${timeRangeLabel} UV`, value: periodStats.periodUV, icon: <Users size={20} />, color: 'text-green-400' },
+          { label: '今日PV', value: summary?.todayPV ?? 0, icon: <TrendingUp size={20} />, color: 'text-blue-400' },
+          { label: '今日UV', value: summary?.todayUV ?? 0, icon: <Globe size={20} />, color: 'text-purple-400' },
           { label: '今日热门地区', value: summary?.topCountry ?? '-', icon: <MapPin size={20} />, color: 'text-orange-400', isText: true },
         ].map((s, i) => (
           <div key={i} className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
@@ -1226,7 +1240,7 @@ function countryCodeToFlag(code: string): string {
 function BarLineChart({ data }: { data: Array<{ date: string; pv: number; uv: number }> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useMemo(() => {
+  useEffect(() => {
     if (!canvasRef.current || !data.length) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -1271,7 +1285,10 @@ function BarLineChart({ data }: { data: Array<{ date: string; pv: number; uv: nu
       const x = pad.left + i * gap + (gap - barW) / 2;
       const barH = (Number(d.pv) / maxVal) * ch;
       const y = pad.top + ch - barH;
-      ctx.fillStyle = 'rgba(0,180,255,0.25)';
+      const gradient = ctx.createLinearGradient(x, y, x, y + barH);
+      gradient.addColorStop(0, 'rgba(0,180,255,0.4)');
+      gradient.addColorStop(1, 'rgba(0,180,255,0.1)');
+      ctx.fillStyle = gradient;
       ctx.fillRect(x, y, barW, barH);
     });
 
@@ -1332,7 +1349,7 @@ function BarLineChart({ data }: { data: Array<{ date: string; pv: number; uv: nu
 function HourlyChart({ data }: { data: Array<{ hour: number; pv: number; uv: number }> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useMemo(() => {
+  useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');

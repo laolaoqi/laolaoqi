@@ -166,6 +166,20 @@ export async function recordVisit(params: {
 // Analytics Queries
 // ===================================================================
 
+// Common filter to exclude dev/build paths from analytics
+const DEV_PATH_FILTER = sql.raw(`
+  AND path NOT LIKE '/src/%'
+  AND path NOT LIKE '/@%'
+  AND path NOT LIKE '/node_modules/%'
+  AND path NOT LIKE '/__vite%'
+  AND path NOT LIKE '/client/%'
+  AND path NOT LIKE '%.tsx'
+  AND path NOT LIKE '%.ts'
+  AND path NOT LIKE '%.css'
+  AND path NOT LIKE '%.js'
+  AND path NOT LIKE '%.map'
+`);
+
 /** Get daily PV/UV for a date range */
 export async function getDailyStats(days: number = 30) {
   const db = await getDb();
@@ -176,7 +190,7 @@ export async function getDailyStats(days: number = 30) {
 
   // Use raw SQL to avoid only_full_group_by issues
   const rows = await db.execute(
-    sql`SELECT DATE(createdAt) as date, COUNT(*) as pv, COUNT(DISTINCT ip) as uv FROM visitor_logs WHERE createdAt >= ${since} GROUP BY DATE(createdAt) ORDER BY DATE(createdAt)`
+    sql`SELECT DATE(createdAt) as date, COUNT(*) as pv, COUNT(DISTINCT ip) as uv FROM visitor_logs WHERE createdAt >= ${since} ${DEV_PATH_FILTER} GROUP BY DATE(createdAt) ORDER BY DATE(createdAt)`
   );
 
   const rawRows = Array.isArray(rows) && rows.length > 0 && Array.isArray(rows[0]) ? rows[0] : rows;
@@ -203,7 +217,14 @@ export async function getCountryStats(days: number = 30) {
       uniqueIps: countDistinct(visitorLogs.ip).as('uniqueIps'),
     })
     .from(visitorLogs)
-    .where(and(gte(visitorLogs.createdAt, since), sql`${visitorLogs.country} IS NOT NULL`))
+    .where(and(
+      gte(visitorLogs.createdAt, since),
+      sql`${visitorLogs.country} IS NOT NULL`,
+      sql`${visitorLogs.path} NOT LIKE '/src/%'`,
+      sql`${visitorLogs.path} NOT LIKE '/@%'`,
+      sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
+      sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+    ))
     .groupBy(visitorLogs.country, visitorLogs.countryCode)
     .orderBy(desc(sql`visits`))
     .limit(50);
@@ -228,7 +249,14 @@ export async function getCityStats(days: number = 30) {
       uniqueIps: countDistinct(visitorLogs.ip).as('uniqueIps'),
     })
     .from(visitorLogs)
-    .where(and(gte(visitorLogs.createdAt, since), sql`${visitorLogs.city} IS NOT NULL AND ${visitorLogs.city} != ''`))
+    .where(and(
+      gte(visitorLogs.createdAt, since),
+      sql`${visitorLogs.city} IS NOT NULL AND ${visitorLogs.city} != ''`,
+      sql`${visitorLogs.path} NOT LIKE '/src/%'`,
+      sql`${visitorLogs.path} NOT LIKE '/@%'`,
+      sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
+      sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+    ))
     .groupBy(visitorLogs.city, visitorLogs.country, visitorLogs.countryCode)
     .orderBy(desc(sql`visits`))
     .limit(50);
@@ -251,7 +279,20 @@ export async function getTopPages(days: number = 30) {
       uniqueIps: countDistinct(visitorLogs.ip).as('uniqueIps'),
     })
     .from(visitorLogs)
-    .where(gte(visitorLogs.createdAt, since))
+    .where(and(
+      gte(visitorLogs.createdAt, since),
+      // Filter out dev/build paths that shouldn't appear in analytics
+      sql`${visitorLogs.path} NOT LIKE '/src/%'`,
+      sql`${visitorLogs.path} NOT LIKE '/@%'`,
+      sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
+      sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
+      sql`${visitorLogs.path} NOT LIKE '/client/%'`,
+      sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
+      sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+      sql`${visitorLogs.path} NOT LIKE '%.css'`,
+      sql`${visitorLogs.path} NOT LIKE '%.js'`,
+      sql`${visitorLogs.path} NOT LIKE '%.map'`,
+    ))
     .groupBy(visitorLogs.path)
     .orderBy(desc(sql`visits`))
     .limit(20);
@@ -317,6 +358,12 @@ export async function getRecentVisitors(limit: number = 50) {
       createdAt: visitorLogs.createdAt,
     })
     .from(visitorLogs)
+    .where(and(
+      sql`${visitorLogs.path} NOT LIKE '/src/%'`,
+      sql`${visitorLogs.path} NOT LIKE '/@%'`,
+      sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
+      sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+    ))
     .orderBy(desc(visitorLogs.createdAt))
     .limit(limit);
 
@@ -331,22 +378,30 @@ export async function getTodaySummary() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Reusable dev path filter for Drizzle where clauses
+  const devPathFilter = [
+    sql`${visitorLogs.path} NOT LIKE '/src/%'`,
+    sql`${visitorLogs.path} NOT LIKE '/@%'`,
+    sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
+    sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+  ];
+
   const [todayStats, totalStats, topCountry] = await Promise.all([
     db.select({
       pv: count().as('pv'),
       uv: countDistinct(visitorLogs.ip).as('uv'),
-    }).from(visitorLogs).where(gte(visitorLogs.createdAt, today)),
+    }).from(visitorLogs).where(and(gte(visitorLogs.createdAt, today), ...devPathFilter)),
 
     db.select({
       pv: count().as('pv'),
       uv: countDistinct(visitorLogs.ip).as('uv'),
-    }).from(visitorLogs),
+    }).from(visitorLogs).where(and(...devPathFilter)),
 
     db.select({
       country: visitorLogs.country,
       visits: count().as('visits'),
     }).from(visitorLogs)
-      .where(and(gte(visitorLogs.createdAt, today), sql`${visitorLogs.country} IS NOT NULL`))
+      .where(and(gte(visitorLogs.createdAt, today), sql`${visitorLogs.country} IS NOT NULL`, ...devPathFilter))
       .groupBy(visitorLogs.country)
       .orderBy(desc(sql`visits`))
       .limit(1),
@@ -371,7 +426,7 @@ export async function getHourlyStats() {
 
   // Use raw SQL to avoid Drizzle ORM GROUP BY expression mismatch with only_full_group_by
   const rows = await db.execute(
-    sql`SELECT HOUR(createdAt) as hour, COUNT(*) as pv, COUNT(DISTINCT ip) as uv FROM visitor_logs WHERE createdAt >= ${today} GROUP BY HOUR(createdAt) ORDER BY HOUR(createdAt)`
+    sql`SELECT HOUR(createdAt) as hour, COUNT(*) as pv, COUNT(DISTINCT ip) as uv FROM visitor_logs WHERE createdAt >= ${today} ${DEV_PATH_FILTER} GROUP BY HOUR(createdAt) ORDER BY HOUR(createdAt)`
   );
 
   // db.execute returns [[rows], fields] — extract the inner rows array

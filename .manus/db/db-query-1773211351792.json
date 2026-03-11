@@ -1,0 +1,15 @@
+{
+  "query": "SELECT DATE(createdAt) as date, COUNT(*) as pv, COUNT(DISTINCT ip) as uv FROM visitor_logs GROUP BY DATE(createdAt) ORDER BY DATE(createdAt) DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT DATE(createdAt) as date, COUNT(*) as pv, COUNT(DISTINCT ip) as uv FROM visitor_logs GROUP BY DATE(createdAt) ORDER BY DATE(createdAt) DESC LIMIT 20;",
+  "rows": [
+    {
+      "date": "2026-03-11",
+      "pv": "156",
+      "uv": "7"
+    }
+  ],
+  "messages": [],
+  "stdout": "date\tpv\tuv\n2026-03-11\t156\t7\n",
+  "stderr": "",
+  "execution_time_ms": 1571
+}

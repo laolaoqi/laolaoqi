@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as total FROM visitor_logs;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT COUNT(*) as total FROM visitor_logs;",
+  "rows": [
+    {
+      "total": "156"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n156\n",
+  "stderr": "",
+  "execution_time_ms": 1508
+}

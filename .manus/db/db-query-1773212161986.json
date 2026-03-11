@@ -1,0 +1,90 @@
+{
+  "query": "SELECT path, COUNT(*) as cnt FROM visitor_logs GROUP BY path ORDER BY cnt DESC LIMIT 20",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT path, COUNT(*) as cnt FROM visitor_logs GROUP BY path ORDER BY cnt DESC LIMIT 20",
+  "rows": [
+    {
+      "path": "/",
+      "cnt": "20"
+    },
+    {
+      "path": "/admin",
+      "cnt": "19"
+    },
+    {
+      "path": "/src/pages/StockDetail.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/pages/Admin.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/App.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/ui/tooltip.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/ThemeSwitcher.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/lib/marketData.ts",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/contexts/ThemeContext.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/contexts/AppContext.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/_core/hooks/useAuth.ts",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/SimPortfolioPanel.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/pages/CryptoInvestment.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/ui/card.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/HudPanel.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/pages/NotFound.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/TopBar.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/pages/About.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/WeightAllocation.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/MarketSentiment.tsx",
+      "cnt": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "path\tcnt\n/\t20\n/admin\t19\n/src/pages/StockDetail.tsx\t3\n/src/pages/Admin.tsx\t3\n/src/App.tsx\t3\n/src/components/ui/tooltip.tsx\t3\n/src/components/ThemeSwitcher.tsx\t3\n/src/lib/marketData.ts\t3\n/src/contexts/ThemeContext.tsx\t3\n/src/contexts/AppContext.tsx\t3\n/src/_core/hooks/useAuth.ts\t3\n/src/components/SimPortfolioPanel.tsx\t3\n/src/pages/CryptoInvestment.tsx\t3\n/src/components/ui/card.tsx\t3\n/src/components/HudPanel.tsx\t3\n/src/pages/NotFound.tsx\t3\n/src/components/TopBar.tsx\t3\n/src/pages/About.tsx\t3\n/src/components/WeightAllocation.tsx\t3\n/src/components/MarketSentiment.tsx\t3\n",
+  "stderr": "",
+  "execution_time_ms": 1514
+}

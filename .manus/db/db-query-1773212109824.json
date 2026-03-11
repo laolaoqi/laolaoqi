@@ -1,0 +1,15 @@
+{
+  "query": "SELECT \n  COUNT(*) as total,\n  SUM(CASE WHEN path LIKE '/src/%' OR path LIKE '/@%' OR path LIKE '%.tsx' OR path LIKE '%.ts' OR path LIKE '%.css' OR path LIKE '%.js' OR path LIKE '%.map' THEN 1 ELSE 0 END) as dev_paths,\n  SUM(CASE WHEN path NOT LIKE '/src/%' AND path NOT LIKE '/@%' AND path NOT LIKE '%.tsx' AND path NOT LIKE '%.ts' AND path NOT LIKE '%.css' AND path NOT LIKE '%.js' AND path NOT LIKE '%.map' THEN 1 ELSE 0 END) as clean_paths\nFROM visitor_logs\nWHERE DATE(createdAt) = CURDATE()",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT \n  COUNT(*) as total,\n  SUM(CASE WHEN path LIKE '/src/%' OR path LIKE '/@%' OR path LIKE '%.tsx' OR path LIKE '%.ts' OR path LIKE '%.css' OR path LIKE '%.js' OR path LIKE '%.map' THEN 1 ELSE 0 END) as dev_paths,\n  SUM(CASE WHEN path NOT LIKE '/src/%' AND path NOT LIKE '/@%' AND path NOT LIKE '%.tsx' AND path NOT LIKE '%.ts' AND path NOT LIKE '%.css' AND path NOT LIKE '%.js' AND path NOT LIKE '%.map' THEN 1 ELSE 0 END) as clean_paths\nFROM visitor_logs\nWHERE DATE(createdAt) = CURDATE()",
+  "rows": [
+    {
+      "total": "162",
+      "dev_paths": "117",
+      "clean_paths": "45"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tdev_paths\tclean_paths\n162\t117\t45\n",
+  "stderr": "",
+  "execution_time_ms": 1588
+}

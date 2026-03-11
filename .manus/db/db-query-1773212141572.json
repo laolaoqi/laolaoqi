@@ -1,0 +1,22 @@
+{
+  "query": "SELECT 'with_filter' as type, DATE(createdAt) as date, COUNT(*) as pv, COUNT(DISTINCT ip) as uv \nFROM visitor_logs \nWHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)\nAND path NOT LIKE '/src/%'\nAND path NOT LIKE '/@%'\nAND path NOT LIKE '/node_modules/%'\nAND path NOT LIKE '/__vite%'\nAND path NOT LIKE '/client/%'\nAND path NOT LIKE '%.tsx'\nAND path NOT LIKE '%.ts'\nAND path NOT LIKE '%.css'\nAND path NOT LIKE '%.js'\nAND path NOT LIKE '%.map'\nGROUP BY DATE(createdAt)\nUNION ALL\nSELECT 'without_filter' as type, DATE(createdAt) as date, COUNT(*) as pv, COUNT(DISTINCT ip) as uv\nFROM visitor_logs\nWHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)\nGROUP BY DATE(createdAt)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT 'with_filter' as type, DATE(createdAt) as date, COUNT(*) as pv, COUNT(DISTINCT ip) as uv \nFROM visitor_logs \nWHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)\nAND path NOT LIKE '/src/%'\nAND path NOT LIKE '/@%'\nAND path NOT LIKE '/node_modules/%'\nAND path NOT LIKE '/__vite%'\nAND path NOT LIKE '/client/%'\nAND path NOT LIKE '%.tsx'\nAND path NOT LIKE '%.ts'\nAND path NOT LIKE '%.css'\nAND path NOT LIKE '%.js'\nAND path NOT LIKE '%.map'\nGROUP BY DATE(createdAt)\nUNION ALL\nSELECT 'without_filter' as type, DATE(createdAt) as date, COUNT(*) as pv, COUNT(DISTINCT ip) as uv\nFROM visitor_logs\nWHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)\nGROUP BY DATE(createdAt)",
+  "rows": [
+    {
+      "type": "with_filter",
+      "date": "2026-03-11",
+      "pv": "45",
+      "uv": "7"
+    },
+    {
+      "type": "without_filter",
+      "date": "2026-03-11",
+      "pv": "162",
+      "uv": "7"
+    }
+  ],
+  "messages": [],
+  "stdout": "type\tdate\tpv\tuv\nwith_filter\t2026-03-11\t45\t7\nwithout_filter\t2026-03-11\t162\t7\n",
+  "stderr": "",
+  "execution_time_ms": 1498
+}

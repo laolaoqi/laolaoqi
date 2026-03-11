@@ -1,0 +1,14 @@
+{
+  "query": "SELECT DATE(createdAt) as d, COUNT(*) as cnt FROM visitor_logs GROUP BY d ORDER BY d DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT DATE(createdAt) as d, COUNT(*) as cnt FROM visitor_logs GROUP BY d ORDER BY d DESC;",
+  "rows": [
+    {
+      "d": "2026-03-11",
+      "cnt": "156"
+    }
+  ],
+  "messages": [],
+  "stdout": "d\tcnt\n2026-03-11\t156\n",
+  "stderr": "",
+  "execution_time_ms": 1564
+}

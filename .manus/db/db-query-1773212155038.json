@@ -1,0 +1,20 @@
+{
+  "query": "SELECT 'filtered' as type, COUNT(*) as pv, COUNT(DISTINCT ip) as uv \nFROM visitor_logs \nWHERE path NOT LIKE '/src/%'\nAND path NOT LIKE '/@%'\nAND path NOT LIKE '%.tsx'\nAND path NOT LIKE '%.ts'\nAND path NOT LIKE '%.css'\nAND path NOT LIKE '%.js'\nAND path NOT LIKE '%.map'\nUNION ALL\nSELECT 'unfiltered' as type, COUNT(*) as pv, COUNT(DISTINCT ip) as uv\nFROM visitor_logs",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT 'filtered' as type, COUNT(*) as pv, COUNT(DISTINCT ip) as uv \nFROM visitor_logs \nWHERE path NOT LIKE '/src/%'\nAND path NOT LIKE '/@%'\nAND path NOT LIKE '%.tsx'\nAND path NOT LIKE '%.ts'\nAND path NOT LIKE '%.css'\nAND path NOT LIKE '%.js'\nAND path NOT LIKE '%.map'\nUNION ALL\nSELECT 'unfiltered' as type, COUNT(*) as pv, COUNT(DISTINCT ip) as uv\nFROM visitor_logs",
+  "rows": [
+    {
+      "type": "filtered",
+      "pv": "45",
+      "uv": "7"
+    },
+    {
+      "type": "unfiltered",
+      "pv": "162",
+      "uv": "7"
+    }
+  ],
+  "messages": [],
+  "stdout": "type\tpv\tuv\nfiltered\t45\t7\nunfiltered\t162\t7\n",
+  "stderr": "",
+  "execution_time_ms": 1518
+}
