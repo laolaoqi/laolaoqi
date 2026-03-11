@@ -142,7 +142,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
               <ChevronDown size={9} className={`transition-transform ${langOpen ? 'rotate-180' : ''}`} />
             </button>
             {langOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-popover border border-[var(--theme-panel-border)] rounded-lg shadow-2xl overflow-hidden z-50 min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1 bg-popover border border-[var(--theme-panel-border)] rounded-lg shadow-2xl overflow-y-auto z-50 min-w-[140px] max-h-[400px]">
                 {LANGS.map(l => (
                   <button
                     key={l.id}

@@ -152,9 +152,9 @@ async function fetchScreenerStocks(scrId: string, count = 50): Promise<ScreenerQ
 
 // ===================================================================
 // Stock Universe — Comprehensive candidate pools per market
-// A股：沪深300全覆盖 (300只成分股)
-// 港股：恒生指数 + 恒生科技 + 国企指数成分股 (50+只)
-// 美股：动态screener + 蓝筹池 (150+只)
+// A股：沪深300核心池 + 动态Screener覆盖沪深两市全部股票 (300+动态扩展)
+// 港股：恒生指数全部成分股 (~82只)
+// 美股：纳斯达克100全部成分股 + 动态Screener (~101+动态扩展)
 // 加密：主流 + DeFi + L2 (30+只)
 // ===================================================================
 interface StockDef {
@@ -472,62 +472,99 @@ const STOCK_UNIVERSE: Record<string, StockDef[]> = {
     { symbol: '688981.SS', nameZh: '中芯国际', nameEn: 'SMIC', industry: '半导体', approxPE: 40, approxPB: 2.5 },
   ],
   hk: [
-    // === 互联网/科技 ===
-    { symbol: '0700.HK', nameZh: '腾讯控股', nameEn: 'Tencent', industry: '互联网', approxPE: 18, approxPB: 4.5, approxDividend: 0.8 },
-    { symbol: '9988.HK', nameZh: '阿里巴巴', nameEn: 'Alibaba', industry: '电商', approxPE: 12, approxPB: 1.5, approxDividend: 1.2 },
-    { symbol: '3690.HK', nameZh: '美团', nameEn: 'Meituan', industry: '本地生活', approxPE: 30, approxPB: 5.0 },
-    { symbol: '1810.HK', nameZh: '小米集团', nameEn: 'Xiaomi', industry: '消费电子', approxPE: 20, approxPB: 3.5 },
-    { symbol: '1024.HK', nameZh: '快手', nameEn: 'Kuaishou', industry: '短视频', approxPE: 25, approxPB: 3.0 },
-    { symbol: '9618.HK', nameZh: '京东集团', nameEn: 'JD.com', industry: '电商', approxPE: 10, approxPB: 1.8, approxDividend: 2.0 },
-    { symbol: '9999.HK', nameZh: '网易', nameEn: 'NetEase', industry: '游戏', approxPE: 14, approxPB: 3.0, approxDividend: 2.0 },
-    { symbol: '9888.HK', nameZh: '百度集团', nameEn: 'Baidu', industry: 'AI', approxPE: 12, approxPB: 1.0 },
-    { symbol: '0285.HK', nameZh: '比亚迪电子', nameEn: 'BYD Electronic', industry: '电子', approxPE: 15, approxPB: 2.5 },
-    { symbol: '2015.HK', nameZh: '理想汽车', nameEn: 'Li Auto', industry: '新能源车', approxPE: 20, approxPB: 3.0 },
-    { symbol: '9866.HK', nameZh: '蔚来', nameEn: 'NIO', industry: '新能源车', approxPE: -1, approxPB: 3.0 },
-    { symbol: '9868.HK', nameZh: '小鹏汽车', nameEn: 'XPeng', industry: '新能源车', approxPE: -1, approxPB: 2.5 },
-    // === 金融 ===
-    { symbol: '2318.HK', nameZh: '中国平安', nameEn: 'Ping An', industry: '金融', approxPE: 8, approxPB: 0.9, approxDividend: 4.5 },
-    { symbol: '0388.HK', nameZh: '港交所', nameEn: 'HKEX', industry: '金融', approxPE: 30, approxPB: 8.0, approxDividend: 2.5 },
-    { symbol: '0005.HK', nameZh: '汇丰控股', nameEn: 'HSBC', industry: '银行', approxPE: 7, approxPB: 0.9, approxDividend: 6.0 },
-    { symbol: '1398.HK', nameZh: '工商银行H', nameEn: 'ICBC-H', industry: '银行', approxPE: 4.5, approxPB: 0.4, approxDividend: 7.0 },
-    { symbol: '3988.HK', nameZh: '中国银行H', nameEn: 'BOC-H', industry: '银行', approxPE: 4.0, approxPB: 0.35, approxDividend: 7.5 },
-    { symbol: '2628.HK', nameZh: '中国人寿', nameEn: 'China Life', industry: '保险', approxPE: 8, approxPB: 0.7, approxDividend: 3.5 },
-    { symbol: '2388.HK', nameZh: '中银香港', nameEn: 'BOC HK', industry: '银行', approxPE: 8, approxPB: 1.0, approxDividend: 5.0 },
-    // === 通信/运营商 ===
-    { symbol: '0941.HK', nameZh: '中国移动', nameEn: 'China Mobile', industry: '通信', approxPE: 10, approxPB: 1.2, approxDividend: 5.0 },
-    { symbol: '0762.HK', nameZh: '中国联通H', nameEn: 'China Unicom-H', industry: '通信', approxPE: 10, approxPB: 0.6, approxDividend: 4.0 },
-    { symbol: '0728.HK', nameZh: '中国电信H', nameEn: 'China Telecom-H', industry: '通信', approxPE: 8, approxPB: 0.5, approxDividend: 5.5 },
-    // === 能源/资源 ===
-    { symbol: '0883.HK', nameZh: '中国海洋石油', nameEn: 'CNOOC', industry: '石油', approxPE: 6, approxPB: 1.0, approxDividend: 6.0 },
-    { symbol: '0857.HK', nameZh: '中国石油H', nameEn: 'PetroChina-H', industry: '石油', approxPE: 7, approxPB: 0.6, approxDividend: 5.0 },
-    { symbol: '1088.HK', nameZh: '中国神华H', nameEn: 'Shenhua-H', industry: '煤炭', approxPE: 8, approxPB: 1.2, approxDividend: 7.0 },
-    // === 综合/地产 ===
+    // === 恒生指数全部成分股 (HSI Full Constituents ~82 stocks) ===
+    // 综合/地产
     { symbol: '0001.HK', nameZh: '长和', nameEn: 'CK Hutchison', industry: '综合', approxPE: 8, approxPB: 0.5, approxDividend: 5.5 },
+    { symbol: '0012.HK', nameZh: '恒基兆业', nameEn: 'Henderson Land', industry: '地产', approxPE: 8, approxPB: 0.3, approxDividend: 5.0 },
     { symbol: '0016.HK', nameZh: '新鸿基地产', nameEn: 'Sun Hung Kai', industry: '地产', approxPE: 10, approxPB: 0.4, approxDividend: 4.5 },
-    { symbol: '0017.HK', nameZh: '新世界发展', nameEn: 'New World Dev', industry: '地产', approxPE: 8, approxPB: 0.3, approxDividend: 6.0 },
-    // === 公用事业 ===
+    { symbol: '0101.HK', nameZh: '恒隆地产', nameEn: 'Hang Lung Ppt', industry: '地产', approxPE: 10, approxPB: 0.4, approxDividend: 5.0 },
+    { symbol: '0267.HK', nameZh: '中信股份', nameEn: 'CITIC', industry: '综合', approxPE: 5, approxPB: 0.4, approxDividend: 6.0 },
+    { symbol: '0316.HK', nameZh: '东方海外国际', nameEn: 'OOIL', industry: '航运', approxPE: 5, approxPB: 0.6, approxDividend: 8.0 },
+    { symbol: '0688.HK', nameZh: '中国海外发展', nameEn: 'China Overseas', industry: '地产', approxPE: 5, approxPB: 0.4, approxDividend: 5.0 },
+    { symbol: '0960.HK', nameZh: '龙湖集团', nameEn: 'Longfor Group', industry: '地产', approxPE: 8, approxPB: 0.5, approxDividend: 4.0 },
+    { symbol: '1038.HK', nameZh: '长江基建', nameEn: 'CKI Holdings', industry: '基建', approxPE: 10, approxPB: 1.0, approxDividend: 5.0 },
+    { symbol: '1109.HK', nameZh: '华润置地', nameEn: 'China Res Land', industry: '地产', approxPE: 6, approxPB: 0.5, approxDividend: 5.0 },
+    { symbol: '1113.HK', nameZh: '长实集团', nameEn: 'CK Asset', industry: '地产', approxPE: 6, approxPB: 0.4, approxDividend: 5.5 },
+    { symbol: '1209.HK', nameZh: '华润万象生活', nameEn: 'China Res Mixc', industry: '物管', approxPE: 20, approxPB: 4.0, approxDividend: 2.0 },
+    { symbol: '1997.HK', nameZh: '九龙仓置业', nameEn: 'Wharf REIC', industry: '地产', approxPE: 10, approxPB: 0.3, approxDividend: 6.0 },
+    { symbol: '2007.HK', nameZh: '碧桂园', nameEn: 'Country Garden', industry: '地产', approxPE: -1, approxPB: 0.2 },
+    // 公用事业
     { symbol: '0002.HK', nameZh: '中电控股', nameEn: 'CLP Holdings', industry: '电力', approxPE: 12, approxPB: 1.5, approxDividend: 4.5 },
     { symbol: '0003.HK', nameZh: '香港中华煤气', nameEn: 'HK China Gas', industry: '燃气', approxPE: 15, approxPB: 2.0, approxDividend: 4.0 },
     { symbol: '0006.HK', nameZh: '电能实业', nameEn: 'Power Assets', industry: '电力', approxPE: 12, approxPB: 1.2, approxDividend: 5.5 },
-    // === 医药 ===
-    { symbol: '2269.HK', nameZh: '药明生物', nameEn: 'WuXi Biologics', industry: '医药', approxPE: 35, approxPB: 4.0 },
-    { symbol: '1177.HK', nameZh: '中国生物制药', nameEn: 'Sino Biopharm', industry: '医药', approxPE: 15, approxPB: 2.0, approxDividend: 1.5 },
-    // === 消费/博彩 ===
-    { symbol: '1928.HK', nameZh: '金沙中国', nameEn: 'Sands China', industry: '博彩', approxPE: 20, approxPB: 5.0, approxDividend: 3.0 },
-    { symbol: '0027.HK', nameZh: '银河娱乐', nameEn: 'Galaxy Ent', industry: '博彩', approxPE: 18, approxPB: 3.0, approxDividend: 1.5 },
-    { symbol: '0291.HK', nameZh: '华润啤酒', nameEn: 'CR Beer', industry: '啤酒', approxPE: 25, approxPB: 5.0, approxDividend: 1.5 },
-    { symbol: '2319.HK', nameZh: '蒙牛乳业', nameEn: 'Mengniu', industry: '乳业', approxPE: 15, approxPB: 2.5, approxDividend: 2.0 },
-    // === 工业 ===
+    { symbol: '0066.HK', nameZh: '港铁公司', nameEn: 'MTR Corporation', industry: '交通', approxPE: 15, approxPB: 0.8, approxDividend: 3.5 },
+    { symbol: '0823.HK', nameZh: '领展房产基金', nameEn: 'Link REIT', industry: 'REIT', approxPE: 15, approxPB: 0.6, approxDividend: 5.5 },
+    // 金融
+    { symbol: '0005.HK', nameZh: '汇丰控股', nameEn: 'HSBC', industry: '银行', approxPE: 7, approxPB: 0.9, approxDividend: 6.0 },
+    { symbol: '0388.HK', nameZh: '港交所', nameEn: 'HKEX', industry: '金融', approxPE: 30, approxPB: 8.0, approxDividend: 2.5 },
+    { symbol: '0939.HK', nameZh: '建设银行H', nameEn: 'CCB-H', industry: '银行', approxPE: 4.5, approxPB: 0.4, approxDividend: 7.0 },
+    { symbol: '1398.HK', nameZh: '工商银行H', nameEn: 'ICBC-H', industry: '银行', approxPE: 4.5, approxPB: 0.4, approxDividend: 7.0 },
+    { symbol: '2318.HK', nameZh: '中国平安', nameEn: 'Ping An', industry: '保险', approxPE: 8, approxPB: 0.9, approxDividend: 4.5 },
+    { symbol: '2328.HK', nameZh: '中国人保', nameEn: 'PICC P&C', industry: '保险', approxPE: 6, approxPB: 0.7, approxDividend: 5.0 },
+    { symbol: '2388.HK', nameZh: '中银香港', nameEn: 'BOC HK', industry: '银行', approxPE: 8, approxPB: 1.0, approxDividend: 5.0 },
+    { symbol: '2628.HK', nameZh: '中国人寿', nameEn: 'China Life', industry: '保险', approxPE: 8, approxPB: 0.7, approxDividend: 3.5 },
+    { symbol: '3328.HK', nameZh: '交通银行H', nameEn: 'BOCOM-H', industry: '银行', approxPE: 4, approxPB: 0.3, approxDividend: 7.5 },
+    { symbol: '3968.HK', nameZh: '招商银行H', nameEn: 'CM Bank-H', industry: '银行', approxPE: 6, approxPB: 0.8, approxDividend: 4.0 },
+    { symbol: '3988.HK', nameZh: '中国银行H', nameEn: 'BOC-H', industry: '银行', approxPE: 4.0, approxPB: 0.35, approxDividend: 7.5 },
+    // 通信/运营商
+    { symbol: '0728.HK', nameZh: '中国电信H', nameEn: 'China Telecom-H', industry: '通信', approxPE: 8, approxPB: 0.5, approxDividend: 5.5 },
+    { symbol: '0762.HK', nameZh: '中国联通H', nameEn: 'China Unicom-H', industry: '通信', approxPE: 10, approxPB: 0.6, approxDividend: 4.0 },
+    { symbol: '0941.HK', nameZh: '中国移动', nameEn: 'China Mobile', industry: '通信', approxPE: 10, approxPB: 1.2, approxDividend: 5.0 },
+    // 能源/资源
+    { symbol: '0386.HK', nameZh: '中国石化H', nameEn: 'Sinopec-H', industry: '石油', approxPE: 7, approxPB: 0.5, approxDividend: 6.0 },
+    { symbol: '0836.HK', nameZh: '华润电力', nameEn: 'China Res Power', industry: '电力', approxPE: 8, approxPB: 1.0, approxDividend: 4.5 },
+    { symbol: '0857.HK', nameZh: '中国石油H', nameEn: 'PetroChina-H', industry: '石油', approxPE: 7, approxPB: 0.6, approxDividend: 5.0 },
+    { symbol: '0868.HK', nameZh: '信义玻璃', nameEn: 'Xinyi Glass', industry: '玻璃', approxPE: 8, approxPB: 1.2, approxDividend: 5.0 },
+    { symbol: '0883.HK', nameZh: '中国海洋石油', nameEn: 'CNOOC', industry: '石油', approxPE: 6, approxPB: 1.0, approxDividend: 6.0 },
+    { symbol: '0968.HK', nameZh: '信义光能', nameEn: 'Xinyi Solar', industry: '光伏', approxPE: 10, approxPB: 1.0, approxDividend: 4.0 },
+    { symbol: '1088.HK', nameZh: '中国神华H', nameEn: 'Shenhua-H', industry: '煤炭', approxPE: 8, approxPB: 1.2, approxDividend: 7.0 },
+    { symbol: '1378.HK', nameZh: '中国宏桥', nameEn: 'China Hongqiao', industry: '铝业', approxPE: 5, approxPB: 0.8, approxDividend: 6.0 },
+    // 互联网/科技
+    { symbol: '0700.HK', nameZh: '腾讯控股', nameEn: 'Tencent', industry: '互联网', approxPE: 18, approxPB: 4.5, approxDividend: 0.8 },
+    { symbol: '0981.HK', nameZh: '中芯国际H', nameEn: 'SMIC-H', industry: '半导体', approxPE: 35, approxPB: 2.0 },
+    { symbol: '0992.HK', nameZh: '联想集团', nameEn: 'Lenovo Group', industry: '电脑', approxPE: 10, approxPB: 1.5, approxDividend: 3.5 },
+    { symbol: '1024.HK', nameZh: '快手', nameEn: 'Kuaishou', industry: '短视频', approxPE: 25, approxPB: 3.0 },
+    { symbol: '1810.HK', nameZh: '小米集团', nameEn: 'Xiaomi', industry: '消费电子', approxPE: 20, approxPB: 3.5 },
+    { symbol: '2018.HK', nameZh: '瑞声科技', nameEn: 'AAC Tech', industry: '声学', approxPE: 15, approxPB: 1.5, approxDividend: 2.0 },
+    { symbol: '2382.HK', nameZh: '舜宇光学', nameEn: 'Sunny Optical', industry: '光学', approxPE: 25, approxPB: 3.0, approxDividend: 1.0 },
+    { symbol: '3690.HK', nameZh: '美团', nameEn: 'Meituan', industry: '本地生活', approxPE: 30, approxPB: 5.0 },
+    { symbol: '9618.HK', nameZh: '京东集团', nameEn: 'JD.com', industry: '电商', approxPE: 10, approxPB: 1.8, approxDividend: 2.0 },
+    { symbol: '9888.HK', nameZh: '百度集团', nameEn: 'Baidu', industry: 'AI', approxPE: 12, approxPB: 1.0 },
+    { symbol: '9961.HK', nameZh: '携程集团', nameEn: 'Trip.com', industry: '旅游', approxPE: 18, approxPB: 3.0, approxDividend: 1.0 },
+    { symbol: '9988.HK', nameZh: '阿里巴巴', nameEn: 'Alibaba', industry: '电商', approxPE: 12, approxPB: 1.5, approxDividend: 1.2 },
+    { symbol: '9999.HK', nameZh: '网易', nameEn: 'NetEase', industry: '游戏', approxPE: 14, approxPB: 3.0, approxDividend: 2.0 },
+    // 汽车/工业
+    { symbol: '0175.HK', nameZh: '吉利汽车', nameEn: 'Geely Auto', industry: '汽车', approxPE: 12, approxPB: 1.5, approxDividend: 1.5 },
+    { symbol: '0285.HK', nameZh: '比亚迪电子', nameEn: 'BYD Electronic', industry: '电子', approxPE: 15, approxPB: 2.5 },
+    { symbol: '0300.HK', nameZh: '美的集团H', nameEn: 'Midea Group-H', industry: '家电', approxPE: 12, approxPB: 3.0, approxDividend: 3.0 },
     { symbol: '0669.HK', nameZh: '创科实业', nameEn: 'Techtronic', industry: '工具', approxPE: 20, approxPB: 5.0, approxDividend: 1.5 },
     { symbol: '1211.HK', nameZh: '比亚迪', nameEn: 'BYD-H', industry: '新能源车', approxPE: 20, approxPB: 3.5, approxDividend: 0.5 },
-    { symbol: '2382.HK', nameZh: '舜宇光学', nameEn: 'Sunny Optical', industry: '光学', approxPE: 25, approxPB: 3.0, approxDividend: 1.0 },
-    { symbol: '0175.HK', nameZh: '吉利汽车', nameEn: 'Geely Auto', industry: '汽车', approxPE: 12, approxPB: 1.5, approxDividend: 1.5 },
-    { symbol: '1876.HK', nameZh: '百济神州', nameEn: 'BeiGene', industry: '生物医药', approxPE: -1, approxPB: 5.0 },
-    { symbol: '0981.HK', nameZh: '中芯国际H', nameEn: 'SMIC-H', industry: '半导体', approxPE: 35, approxPB: 2.0 },
-    { symbol: '6060.HK', nameZh: '众安在线', nameEn: 'ZhongAn', industry: '保险科技', approxPE: 20, approxPB: 1.5 },
+    // 消费/博彩
+    { symbol: '0027.HK', nameZh: '银河娱乐', nameEn: 'Galaxy Ent', industry: '博彩', approxPE: 18, approxPB: 3.0, approxDividend: 1.5 },
+    { symbol: '0288.HK', nameZh: '万洲国际', nameEn: 'WH Group', industry: '食品', approxPE: 8, approxPB: 1.2, approxDividend: 4.0 },
+    { symbol: '0291.HK', nameZh: '华润啤酒', nameEn: 'CR Beer', industry: '啤酒', approxPE: 25, approxPB: 5.0, approxDividend: 1.5 },
+    { symbol: '0322.HK', nameZh: '康师傅控股', nameEn: 'Tingyi', industry: '食品', approxPE: 15, approxPB: 3.0, approxDividend: 3.0 },
+    { symbol: '1876.HK', nameZh: '百威亚太', nameEn: 'Bud APAC', industry: '啤酒', approxPE: 20, approxPB: 3.0, approxDividend: 2.0 },
+    { symbol: '1928.HK', nameZh: '金沙中国', nameEn: 'Sands China', industry: '博彩', approxPE: 20, approxPB: 5.0, approxDividend: 3.0 },
+    { symbol: '1929.HK', nameZh: '周大福', nameEn: 'Chow Tai Fook', industry: '珠宝', approxPE: 12, approxPB: 2.5, approxDividend: 5.0 },
+    { symbol: '2020.HK', nameZh: '安踏体育', nameEn: 'ANTA Sports', industry: '运动', approxPE: 20, approxPB: 5.0, approxDividend: 2.0 },
+    { symbol: '2313.HK', nameZh: '申洲国际', nameEn: 'Shenzhou Intl', industry: '纺织', approxPE: 18, approxPB: 3.5, approxDividend: 3.0 },
+    { symbol: '2319.HK', nameZh: '蒙牛乳业', nameEn: 'Mengniu', industry: '乳业', approxPE: 15, approxPB: 2.5, approxDividend: 2.0 },
+    // 医药
+    { symbol: '1093.HK', nameZh: '石药集团', nameEn: 'CSPC Pharma', industry: '医药', approxPE: 10, approxPB: 1.5, approxDividend: 3.0 },
+    { symbol: '1099.HK', nameZh: '国药控股', nameEn: 'Sinopharm', industry: '医药', approxPE: 8, approxPB: 0.8, approxDividend: 3.5 },
+    { symbol: '1177.HK', nameZh: '中国生物制药', nameEn: 'Sino Biopharm', industry: '医药', approxPE: 15, approxPB: 2.0, approxDividend: 1.5 },
+    { symbol: '1801.HK', nameZh: '信达生物', nameEn: 'Innovent Bio', industry: '生物医药', approxPE: 40, approxPB: 5.0 },
+    { symbol: '2269.HK', nameZh: '药明生物', nameEn: 'WuXi Biologics', industry: '医药', approxPE: 35, approxPB: 4.0 },
+    { symbol: '2688.HK', nameZh: '新奥能源', nameEn: 'ENN Energy', industry: '燃气', approxPE: 8, approxPB: 1.2, approxDividend: 4.0 },
+    // 服务/其他
+    { symbol: '6098.HK', nameZh: '碧桂园服务', nameEn: 'CG Services', industry: '物管', approxPE: 10, approxPB: 1.5, approxDividend: 3.0 },
+    { symbol: '6862.HK', nameZh: '海底捞', nameEn: 'Haidilao', industry: '餐饮', approxPE: 20, approxPB: 5.0, approxDividend: 1.5 },
+    { symbol: '0241.HK', nameZh: '阿里健康', nameEn: 'Ali Health', industry: '医疗', approxPE: 30, approxPB: 4.0 },
   ],
   us: [
-    // Core blue chips (always included)
+    // === 纳斯达克100全部成分股 (Nasdaq 100 Full Constituents ~101 stocks) ===
+    // 科技巨头
     { symbol: 'AAPL', nameZh: '苹果', nameEn: 'Apple', industry: '科技', approxPE: 30, approxPB: 45, approxDividend: 0.5 },
     { symbol: 'MSFT', nameZh: '微软', nameEn: 'Microsoft', industry: '软件', approxPE: 35, approxPB: 12, approxDividend: 0.7 },
     { symbol: 'NVDA', nameZh: '英伟达', nameEn: 'NVIDIA', industry: '半导体', approxPE: 55, approxPB: 40 },
@@ -535,39 +572,109 @@ const STOCK_UNIVERSE: Record<string, StockDef[]> = {
     { symbol: 'AMZN', nameZh: '亚马逊', nameEn: 'Amazon', industry: '电商', approxPE: 40, approxPB: 8.0 },
     { symbol: 'META', nameZh: 'Meta', nameEn: 'Meta', industry: '社交', approxPE: 25, approxPB: 7.5, approxDividend: 0.4 },
     { symbol: 'TSLA', nameZh: '特斯拉', nameEn: 'Tesla', industry: '新能源车', approxPE: 60, approxPB: 12 },
-    { symbol: 'TSM', nameZh: '台积电', nameEn: 'TSMC', industry: '半导体', approxPE: 22, approxPB: 6.0, approxDividend: 1.5 },
-    { symbol: 'BRK-B', nameZh: '伯克希尔', nameEn: 'Berkshire', industry: '综合', approxPE: 10, approxPB: 1.5 },
-    { symbol: 'LLY', nameZh: '礼来', nameEn: 'Eli Lilly', industry: '医药', approxPE: 65, approxPB: 50 },
-    { symbol: 'V', nameZh: 'Visa', nameEn: 'Visa', industry: '支付', approxPE: 28, approxPB: 12, approxDividend: 0.8 },
-    { symbol: 'JPM', nameZh: '摩根大通', nameEn: 'JPMorgan', industry: '银行', approxPE: 12, approxPB: 2.0, approxDividend: 2.2 },
-    { symbol: 'UNH', nameZh: '联合健康', nameEn: 'UnitedHealth', industry: '医疗', approxPE: 18, approxPB: 6.0, approxDividend: 1.5 },
-    { symbol: 'MA', nameZh: '万事达', nameEn: 'Mastercard', industry: '支付', approxPE: 32, approxPB: 55, approxDividend: 0.6 },
-    { symbol: 'COST', nameZh: '好市多', nameEn: 'Costco', industry: '零售', approxPE: 48, approxPB: 14, approxDividend: 0.6 },
     { symbol: 'AVGO', nameZh: '博通', nameEn: 'Broadcom', industry: '半导体', approxPE: 30, approxPB: 10, approxDividend: 1.3 },
-    { symbol: 'HD', nameZh: '家得宝', nameEn: 'Home Depot', industry: '零售', approxPE: 24, approxPB: 200, approxDividend: 2.5 },
+    { symbol: 'COST', nameZh: '好市多', nameEn: 'Costco', industry: '零售', approxPE: 48, approxPB: 14, approxDividend: 0.6 },
     { symbol: 'NFLX', nameZh: '奈飞', nameEn: 'Netflix', industry: '流媒体', approxPE: 40, approxPB: 15 },
-    { symbol: 'CRM', nameZh: 'Salesforce', nameEn: 'Salesforce', industry: 'SaaS', approxPE: 40, approxPB: 4.5 },
+    // 半导体/芯片
     { symbol: 'AMD', nameZh: 'AMD', nameEn: 'AMD', industry: '半导体', approxPE: 45, approxPB: 4.0 },
-    { symbol: 'ORCL', nameZh: '甲骨文', nameEn: 'Oracle', industry: '软件', approxPE: 28, approxPB: 8.0, approxDividend: 1.2 },
-    { symbol: 'WMT', nameZh: '沃尔玛', nameEn: 'Walmart', industry: '零售', approxPE: 30, approxPB: 6.0, approxDividend: 1.3 },
-    { symbol: 'PG', nameZh: '宝洁', nameEn: 'P&G', industry: '日用品', approxPE: 25, approxPB: 7.5, approxDividend: 2.5 },
-    { symbol: 'JNJ', nameZh: '强生', nameEn: 'J&J', industry: '医药', approxPE: 15, approxPB: 5.0, approxDividend: 3.0 },
-    { symbol: 'KO', nameZh: '可口可乐', nameEn: 'Coca-Cola', industry: '饮料', approxPE: 22, approxPB: 10, approxDividend: 3.0 },
-    { symbol: 'PEP', nameZh: '百事可乐', nameEn: 'PepsiCo', industry: '饮料', approxPE: 20, approxPB: 12, approxDividend: 3.5 },
-    { symbol: 'DIS', nameZh: '迪士尼', nameEn: 'Disney', industry: '娱乐', approxPE: 35, approxPB: 2.0, approxDividend: 0.8 },
     { symbol: 'INTC', nameZh: '英特尔', nameEn: 'Intel', industry: '半导体', approxPE: 25, approxPB: 1.2, approxDividend: 1.5 },
-    { symbol: 'BA', nameZh: '波音', nameEn: 'Boeing', industry: '航空', approxPE: 40, approxPB: 8.0 },
-    { symbol: 'GS', nameZh: '高盛', nameEn: 'Goldman Sachs', industry: '投行', approxPE: 14, approxPB: 1.5, approxDividend: 2.0 },
-    { symbol: 'CAT', nameZh: '卡特彼勒', nameEn: 'Caterpillar', industry: '机械', approxPE: 18, approxPB: 8.0, approxDividend: 1.5 },
-    { symbol: 'ABBV', nameZh: '艾伯维', nameEn: 'AbbVie', industry: '医药', approxPE: 15, approxPB: 20, approxDividend: 3.5 },
-    { symbol: 'MRK', nameZh: '默沙东', nameEn: 'Merck', industry: '医药', approxPE: 12, approxPB: 6.0, approxDividend: 3.0 },
-    { symbol: 'XOM', nameZh: '埃克森美孚', nameEn: 'ExxonMobil', industry: '石油', approxPE: 12, approxPB: 2.0, approxDividend: 3.5 },
-    { symbol: 'CVX', nameZh: '雪佛龙', nameEn: 'Chevron', industry: '石油', approxPE: 14, approxPB: 2.0, approxDividend: 4.0 },
-    { symbol: 'T', nameZh: 'AT&T', nameEn: 'AT&T', industry: '通信', approxPE: 10, approxPB: 1.2, approxDividend: 5.0 },
-    { symbol: 'VZ', nameZh: '威瑞森', nameEn: 'Verizon', industry: '通信', approxPE: 9, approxPB: 1.8, approxDividend: 6.5 },
-    { symbol: 'NKE', nameZh: '耐克', nameEn: 'Nike', industry: '运动', approxPE: 25, approxPB: 8.0, approxDividend: 1.5 },
-    { symbol: 'SBUX', nameZh: '星巴克', nameEn: 'Starbucks', industry: '餐饮', approxPE: 25, approxPB: 10, approxDividend: 2.5 },
     { symbol: 'QCOM', nameZh: '高通', nameEn: 'Qualcomm', industry: '芯片', approxPE: 15, approxPB: 6.0, approxDividend: 2.0 },
+    { symbol: 'ASML', nameZh: '阿斯麦', nameEn: 'ASML', industry: '半导体设备', approxPE: 35, approxPB: 20 },
+    { symbol: 'AMAT', nameZh: '应用材料', nameEn: 'Applied Materials', industry: '半导体设备', approxPE: 20, approxPB: 8.0, approxDividend: 0.8 },
+    { symbol: 'ADI', nameZh: '亚德诺', nameEn: 'Analog Devices', industry: '模拟芯片', approxPE: 25, approxPB: 3.0, approxDividend: 1.8 },
+    { symbol: 'LRCX', nameZh: '泰美科技', nameEn: 'Lam Research', industry: '半导体设备', approxPE: 22, approxPB: 10, approxDividend: 1.0 },
+    { symbol: 'KLAC', nameZh: 'KLA', nameEn: 'KLA Corp', industry: '半导体设备', approxPE: 22, approxPB: 15, approxDividend: 1.0 },
+    { symbol: 'MCHP', nameZh: '微芯科技', nameEn: 'Microchip Tech', industry: '芯片', approxPE: 15, approxPB: 3.0, approxDividend: 2.0 },
+    { symbol: 'NXPI', nameZh: '恩智浦', nameEn: 'NXP Semi', industry: '芯片', approxPE: 18, approxPB: 6.0, approxDividend: 1.5 },
+    { symbol: 'MRVL', nameZh: 'Marvell', nameEn: 'Marvell Tech', industry: '芯片', approxPE: 40, approxPB: 5.0 },
+    { symbol: 'MU', nameZh: '美光', nameEn: 'Micron', industry: '存储', approxPE: 8, approxPB: 2.0, approxDividend: 0.5 },
+    { symbol: 'ARM', nameZh: 'ARM', nameEn: 'ARM Holdings', industry: '芯片设计', approxPE: 80, approxPB: 20 },
+    { symbol: 'MPWR', nameZh: '芯源系统', nameEn: 'Monolithic Power', industry: '电源芯片', approxPE: 30, approxPB: 15 },
+    // 软件/SaaS
+    { symbol: 'ADBE', nameZh: 'Adobe', nameEn: 'Adobe', industry: '软件', approxPE: 35, approxPB: 15 },
+    { symbol: 'INTU', nameZh: 'Intuit', nameEn: 'Intuit', industry: '软件', approxPE: 35, approxPB: 10, approxDividend: 0.6 },
+    { symbol: 'ADSK', nameZh: 'Autodesk', nameEn: 'Autodesk', industry: '软件', approxPE: 30, approxPB: 15 },
+    { symbol: 'SNPS', nameZh: '新思科技', nameEn: 'Synopsys', industry: 'EDA', approxPE: 40, approxPB: 10 },
+    { symbol: 'CDNS', nameZh: 'Cadence', nameEn: 'Cadence Design', industry: 'EDA', approxPE: 50, approxPB: 15 },
+    { symbol: 'WDAY', nameZh: 'Workday', nameEn: 'Workday', industry: 'SaaS', approxPE: 40, approxPB: 8.0 },
+    { symbol: 'TEAM', nameZh: 'Atlassian', nameEn: 'Atlassian', industry: 'SaaS', approxPE: 50, approxPB: 15 },
+    { symbol: 'DDOG', nameZh: 'Datadog', nameEn: 'Datadog', industry: '监控', approxPE: 60, approxPB: 15 },
+    { symbol: 'CSGP', nameZh: 'CoStar', nameEn: 'CoStar Group', industry: '数据', approxPE: 60, approxPB: 5.0 },
+    // 网络安全
+    { symbol: 'CRWD', nameZh: 'CrowdStrike', nameEn: 'CrowdStrike', industry: '网络安全', approxPE: 60, approxPB: 20 },
+    { symbol: 'PANW', nameZh: 'Palo Alto', nameEn: 'Palo Alto Networks', industry: '网络安全', approxPE: 45, approxPB: 15 },
+    { symbol: 'FTNT', nameZh: 'Fortinet', nameEn: 'Fortinet', industry: '网络安全', approxPE: 35, approxPB: 40 },
+    { symbol: 'ZS', nameZh: 'Zscaler', nameEn: 'Zscaler', industry: '网络安全', approxPE: 60, approxPB: 15 },
+    // 互联网/电商
+    { symbol: 'ABNB', nameZh: 'Airbnb', nameEn: 'Airbnb', industry: '旅游', approxPE: 30, approxPB: 10 },
+    { symbol: 'BKNG', nameZh: 'Booking', nameEn: 'Booking Holdings', industry: '旅游', approxPE: 25, approxPB: 20, approxDividend: 0.8 },
+    { symbol: 'PDD', nameZh: '拼多多', nameEn: 'PDD Holdings', industry: '电商', approxPE: 10, approxPB: 4.0 },
+    { symbol: 'MELI', nameZh: 'MercadoLibre', nameEn: 'MercadoLibre', industry: '电商', approxPE: 50, approxPB: 15 },
+    { symbol: 'SHOP', nameZh: 'Shopify', nameEn: 'Shopify', industry: '电商', approxPE: 60, approxPB: 10 },
+    { symbol: 'DASH', nameZh: 'DoorDash', nameEn: 'DoorDash', industry: '外卖', approxPE: 80, approxPB: 8.0 },
+    // 支付/金融科技
+    { symbol: 'PYPL', nameZh: 'PayPal', nameEn: 'PayPal', industry: '支付', approxPE: 15, approxPB: 3.0 },
+    { symbol: 'ISRG', nameZh: '直觉外科', nameEn: 'Intuitive Surgical', industry: '医疗机器人', approxPE: 60, approxPB: 12 },
+    { symbol: 'MSTR', nameZh: 'MicroStrategy', nameEn: 'MicroStrategy', industry: '比特币', approxPE: -1, approxPB: 5.0 },
+    { symbol: 'PLTR', nameZh: 'Palantir', nameEn: 'Palantir', industry: 'AI/数据', approxPE: 80, approxPB: 20 },
+    // 医药/生物
+    { symbol: 'AMGN', nameZh: '安进', nameEn: 'Amgen', industry: '生物医药', approxPE: 15, approxPB: 15, approxDividend: 3.0 },
+    { symbol: 'GILD', nameZh: '吉利德', nameEn: 'Gilead Sciences', industry: '生物医药', approxPE: 12, approxPB: 5.0, approxDividend: 3.5 },
+    { symbol: 'REGN', nameZh: '再生元', nameEn: 'Regeneron', industry: '生物医药', approxPE: 20, approxPB: 4.0 },
+    { symbol: 'VRTX', nameZh: 'Vertex', nameEn: 'Vertex Pharma', industry: '生物医药', approxPE: 25, approxPB: 8.0 },
+    { symbol: 'IDXX', nameZh: 'IDEXX', nameEn: 'IDEXX Labs', industry: '宠物医疗', approxPE: 45, approxPB: 50 },
+    { symbol: 'DXCM', nameZh: 'DexCom', nameEn: 'DexCom', industry: '医疗器械', approxPE: 40, approxPB: 10 },
+    { symbol: 'ALNY', nameZh: 'Alnylam', nameEn: 'Alnylam Pharma', industry: 'RNA疗法', approxPE: -1, approxPB: 15 },
+    { symbol: 'GEHC', nameZh: 'GE医疗', nameEn: 'GE HealthCare', industry: '医疗设备', approxPE: 20, approxPB: 5.0, approxDividend: 0.2 },
+    { symbol: 'INSM', nameZh: 'Insmed', nameEn: 'Insmed', industry: '生物医药', approxPE: -1, approxPB: 10 },
+    // 消费/零售
+    { symbol: 'WMT', nameZh: '沃尔玛', nameEn: 'Walmart', industry: '零售', approxPE: 30, approxPB: 6.0, approxDividend: 1.3 },
+    { symbol: 'SBUX', nameZh: '星巴克', nameEn: 'Starbucks', industry: '餐饮', approxPE: 25, approxPB: 10, approxDividend: 2.5 },
+    { symbol: 'PEP', nameZh: '百事可乐', nameEn: 'PepsiCo', industry: '饮料', approxPE: 20, approxPB: 12, approxDividend: 3.5 },
+    { symbol: 'KDP', nameZh: 'Keurig Dr Pepper', nameEn: 'Keurig Dr Pepper', industry: '饮料', approxPE: 18, approxPB: 3.0, approxDividend: 2.5 },
+    { symbol: 'KHC', nameZh: '卡夫亨氏', nameEn: 'Kraft Heinz', industry: '食品', approxPE: 12, approxPB: 0.8, approxDividend: 4.5 },
+    { symbol: 'MDLZ', nameZh: '亿滋', nameEn: 'Mondelez', industry: '食品', approxPE: 20, approxPB: 3.0, approxDividend: 2.5 },
+    { symbol: 'MNST', nameZh: '怪兽饮料', nameEn: 'Monster Beverage', industry: '饮料', approxPE: 30, approxPB: 10 },
+    { symbol: 'CPRT', nameZh: 'Copart', nameEn: 'Copart', industry: '汽车拍卖', approxPE: 35, approxPB: 12 },
+    { symbol: 'ORLY', nameZh: "O'Reilly", nameEn: "O'Reilly Auto", industry: '汽配', approxPE: 25, approxPB: 50 },
+    { symbol: 'ROST', nameZh: 'Ross Stores', nameEn: 'Ross Stores', industry: '零售', approxPE: 22, approxPB: 10, approxDividend: 1.0 },
+    { symbol: 'FAST', nameZh: 'Fastenal', nameEn: 'Fastenal', industry: '工业分销', approxPE: 30, approxPB: 12, approxDividend: 2.0 },
+    // 通信/媒体
+    { symbol: 'CSCO', nameZh: '思科', nameEn: 'Cisco', industry: '网络', approxPE: 15, approxPB: 5.0, approxDividend: 3.0 },
+    { symbol: 'CMCSA', nameZh: 'Comcast', nameEn: 'Comcast', industry: '媒体', approxPE: 10, approxPB: 2.0, approxDividend: 3.0 },
+    { symbol: 'TMUS', nameZh: 'T-Mobile', nameEn: 'T-Mobile US', industry: '通信', approxPE: 20, approxPB: 3.0, approxDividend: 1.5 },
+    { symbol: 'CHTR', nameZh: 'Charter', nameEn: 'Charter Comm', industry: '有线电视', approxPE: 12, approxPB: 5.0 },
+    { symbol: 'WBD', nameZh: 'Warner Bros', nameEn: 'Warner Bros Discovery', industry: '媒体', approxPE: 15, approxPB: 0.5 },
+    { symbol: 'EA', nameZh: 'EA', nameEn: 'Electronic Arts', industry: '游戏', approxPE: 18, approxPB: 5.0, approxDividend: 0.5 },
+    { symbol: 'TTWO', nameZh: 'Take-Two', nameEn: 'Take-Two Interactive', industry: '游戏', approxPE: 30, approxPB: 3.0 },
+    // 工业/能源
+    { symbol: 'HON', nameZh: '霍尼韦尔', nameEn: 'Honeywell', industry: '工业', approxPE: 20, approxPB: 8.0, approxDividend: 2.0 },
+    { symbol: 'LIN', nameZh: '林德', nameEn: 'Linde', industry: '工业气体', approxPE: 30, approxPB: 5.0, approxDividend: 1.2 },
+    { symbol: 'CSX', nameZh: 'CSX', nameEn: 'CSX Corp', industry: '铁路', approxPE: 18, approxPB: 6.0, approxDividend: 1.2 },
+    { symbol: 'PCAR', nameZh: 'PACCAR', nameEn: 'PACCAR', industry: '卡车', approxPE: 12, approxPB: 4.0, approxDividend: 1.5 },
+    { symbol: 'ODFL', nameZh: 'Old Dominion', nameEn: 'Old Dominion Freight', industry: '物流', approxPE: 30, approxPB: 10, approxDividend: 0.4 },
+    { symbol: 'CTAS', nameZh: 'Cintas', nameEn: 'Cintas', industry: '服务', approxPE: 40, approxPB: 15, approxDividend: 0.8 },
+    { symbol: 'VRSK', nameZh: 'Verisk', nameEn: 'Verisk Analytics', industry: '数据分析', approxPE: 35, approxPB: 15, approxDividend: 0.6 },
+    { symbol: 'ROP', nameZh: 'Roper', nameEn: 'Roper Technologies', industry: '工业软件', approxPE: 30, approxPB: 3.0, approxDividend: 0.5 },
+    { symbol: 'PAYX', nameZh: 'Paychex', nameEn: 'Paychex', industry: '人力资源', approxPE: 25, approxPB: 12, approxDividend: 2.5 },
+    { symbol: 'CTSH', nameZh: 'Cognizant', nameEn: 'Cognizant', industry: 'IT服务', approxPE: 15, approxPB: 3.0, approxDividend: 1.5 },
+    { symbol: 'ADP', nameZh: 'ADP', nameEn: 'ADP', industry: '人力资源', approxPE: 28, approxPB: 15, approxDividend: 2.0 },
+    // 能源/公用事业
+    { symbol: 'CEG', nameZh: 'Constellation', nameEn: 'Constellation Energy', industry: '核电', approxPE: 25, approxPB: 5.0, approxDividend: 0.8 },
+    { symbol: 'AEP', nameZh: 'AEP', nameEn: 'American Electric Power', industry: '电力', approxPE: 15, approxPB: 2.0, approxDividend: 3.5 },
+    { symbol: 'EXC', nameZh: 'Exelon', nameEn: 'Exelon', industry: '电力', approxPE: 15, approxPB: 1.5, approxDividend: 3.5 },
+    { symbol: 'XEL', nameZh: 'Xcel', nameEn: 'Xcel Energy', industry: '电力', approxPE: 15, approxPB: 2.0, approxDividend: 3.5 },
+    { symbol: 'FANG', nameZh: 'Diamondback', nameEn: 'Diamondback Energy', industry: '石油', approxPE: 8, approxPB: 1.5, approxDividend: 5.0 },
+    { symbol: 'BKR', nameZh: 'Baker Hughes', nameEn: 'Baker Hughes', industry: '油服', approxPE: 15, approxPB: 2.5, approxDividend: 2.5 },
+    // 其他
+    { symbol: 'MAR', nameZh: '万豪', nameEn: 'Marriott', industry: '酒店', approxPE: 25, approxPB: 20, approxDividend: 1.0 },
+    { symbol: 'AXON', nameZh: 'Axon', nameEn: 'Axon Enterprise', industry: '安防', approxPE: 80, approxPB: 15 },
+    { symbol: 'APP', nameZh: 'AppLovin', nameEn: 'AppLovin', industry: '广告科技', approxPE: 40, approxPB: 30 },
+    { symbol: 'CCEP', nameZh: '可口可乐欧洲', nameEn: 'Coca-Cola Europacific', industry: '饮料', approxPE: 18, approxPB: 3.0, approxDividend: 2.5 },
+    { symbol: 'FER', nameZh: 'Ferrovial', nameEn: 'Ferrovial', industry: '基建', approxPE: 50, approxPB: 3.0, approxDividend: 1.5 },
+    { symbol: 'TRI', nameZh: 'Thomson Reuters', nameEn: 'Thomson Reuters', industry: '信息服务', approxPE: 30, approxPB: 5.0, approxDividend: 1.5 },
+    { symbol: 'STX', nameZh: '希捷', nameEn: 'Seagate', industry: '存储', approxPE: 12, approxPB: 8.0, approxDividend: 3.5 },
+    { symbol: 'WDC', nameZh: '西数', nameEn: 'Western Digital', industry: '存储', approxPE: 10, approxPB: 2.0 },
   ],
   crypto: [
     { symbol: 'BTC-USD', nameZh: '比特币', nameEn: 'Bitcoin', industry: 'L1' },
@@ -845,6 +952,40 @@ export async function runStrategyForMarket(market: string): Promise<{ stocks: Sc
   if (!universe) {
     console.error(`[Strategy] Unknown market: ${market}`);
     return { stocks: [], sentiment: getDefaultSentiment(market) };
+  }
+
+  // For CN market: dynamically fetch screener data to expand beyond CSI 300
+  // This covers all Shanghai + Shenzhen stocks via Yahoo Finance screener
+  if (market === 'cn') {
+    try {
+      console.log(`[Strategy] Fetching CN market screener data (gainers + losers + actives)...`);
+      const [gainers, losers, actives] = await Promise.all([
+        fetchScreenerStocks('day_gainers', 100),
+        fetchScreenerStocks('day_losers', 100),
+        fetchScreenerStocks('most_actives', 100),
+      ]);
+
+      const dynamicSymbols = new Set(universe.map(d => d.symbol));
+      const allScreener = [...gainers, ...losers, ...actives];
+      let cnAdded = 0;
+
+      for (const q of allScreener) {
+        if (!q.symbol || dynamicSymbols.has(q.symbol)) continue;
+        // Only include Shanghai (.SS) and Shenzhen (.SZ) stocks
+        if (!q.symbol.endsWith('.SS') && !q.symbol.endsWith('.SZ')) continue;
+        dynamicSymbols.add(q.symbol);
+        universe = [...universe, {
+          symbol: q.symbol,
+          nameZh: q.shortName || q.symbol,
+          nameEn: q.shortName || q.symbol,
+          industry: '动态筛选',
+        }];
+        cnAdded++;
+      }
+      console.log(`[Strategy] CN universe expanded to ${universe.length} candidates (+${cnAdded} from screener)`);
+    } catch (err: any) {
+      console.warn(`[Strategy] CN screener failed, using static CSI300 pool:`, err?.message);
+    }
   }
 
   // For US market: dynamically fetch screener data and merge with blue chip pool

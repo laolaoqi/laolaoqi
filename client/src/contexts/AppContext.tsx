@@ -124,7 +124,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     // Check localStorage first
     const saved = localStorage.getItem('hunter-alpha-lang');
-    if (saved && ['zh', 'en', 'ja', 'ko', 'ar'].includes(saved)) {
+    if (saved && ['zh', 'en', 'ja', 'ko', 'ar', 'pt', 'es', 'th', 'ms'].includes(saved)) {
       setLangState(saved as Lang);
       return;
     }
@@ -135,6 +135,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (browserLang.startsWith('ja')) { setLangState('ja'); return; }
     if (browserLang.startsWith('ko')) { setLangState('ko'); return; }
     if (browserLang.startsWith('ar')) { setLangState('ar'); return; }
+    if (browserLang.startsWith('pt')) { setLangState('pt'); return; }
+    if (browserLang.startsWith('es')) { setLangState('es'); return; }
+    if (browserLang.startsWith('th')) { setLangState('th'); return; }
+    if (browserLang.startsWith('ms')) { setLangState('ms'); return; }
     if (browserLang.startsWith('en')) { setLangState('en'); return; }
 
     // Fallback: try IP detection via backend
@@ -142,7 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then(r => r.json())
       .then(data => {
         const detected = data?.result?.data?.json?.lang || data?.result?.data?.json;
-        if (typeof detected === 'string' && ['zh', 'en', 'ja', 'ko', 'ar'].includes(detected)) {
+        if (typeof detected === 'string' && ['zh', 'en', 'ja', 'ko', 'ar', 'pt', 'es', 'th', 'ms'].includes(detected)) {
           setLangState(detected as Lang);
         }
       })

@@ -264,9 +264,13 @@ async function detectLanguageFromIP(ip: string): Promise<string> {
     if (!cc) return 'zh';
     const langMap: Record<string, string> = {
       CN: 'zh', TW: 'zh', HK: 'zh', MO: 'zh', SG: 'zh',
-      US: 'en', GB: 'en', CA: 'en', AU: 'en', NZ: 'en', IN: 'en',
+      US: 'en', GB: 'en', CA: 'en', AU: 'en', NZ: 'en', IN: 'en', IE: 'en', ZA: 'en',
       JP: 'ja', KR: 'ko',
       SA: 'ar', AE: 'ar', EG: 'ar', IQ: 'ar', QA: 'ar', KW: 'ar', BH: 'ar', OM: 'ar', JO: 'ar', LB: 'ar', SY: 'ar', YE: 'ar', LY: 'ar', TN: 'ar', DZ: 'ar', MA: 'ar', SD: 'ar',
+      BR: 'pt', PT: 'pt', AO: 'pt', MZ: 'pt',
+      ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es', VE: 'es', EC: 'es', GT: 'es', CU: 'es', BO: 'es', DO: 'es', HN: 'es', PY: 'es', SV: 'es', NI: 'es', CR: 'es', PA: 'es', UY: 'es',
+      TH: 'th',
+      MY: 'ms', BN: 'ms',
     };
     return langMap[cc] || 'en';
   } catch { return 'zh'; }
