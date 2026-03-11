@@ -92,7 +92,7 @@ export default function SimPortfolioPanel() {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-[rgba(0,10,20,0.6)] p-6">
+      <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-card/80 p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-lg bg-[#00d4ff]/10 flex items-center justify-center">
             <BarChart3 className="w-5 h-5 text-[#00d4ff]" />
@@ -101,12 +101,12 @@ export default function SimPortfolioPanel() {
             <h3 className="text-lg font-bold text-[#00d4ff]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
               模拟投资
             </h3>
-            <p className="text-xs text-[#8899aa]">加载中...</p>
+            <p className="text-xs text-muted-foreground">加载中...</p>
           </div>
         </div>
         <div className="animate-pulse space-y-3">
-          <div className="h-20 bg-[#112233] rounded" />
-          <div className="h-40 bg-[#112233] rounded" />
+          <div className="h-20 bg-muted rounded" />
+          <div className="h-40 bg-muted rounded" />
         </div>
       </div>
     );
@@ -114,7 +114,7 @@ export default function SimPortfolioPanel() {
 
   if (!data || (!data.positions.length && !data.trades.length)) {
     return (
-      <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-[rgba(0,10,20,0.6)] p-6">
+      <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-card/80 p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-lg bg-[#00d4ff]/10 flex items-center justify-center">
             <BarChart3 className="w-5 h-5 text-[#00d4ff]" />
@@ -123,10 +123,10 @@ export default function SimPortfolioPanel() {
             <h3 className="text-lg font-bold text-[#00d4ff]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
               模拟投资
             </h3>
-            <p className="text-xs text-[#8899aa]">$10,000 虚拟本金 · 每日6:00/22:00自动调仓</p>
+            <p className="text-xs text-muted-foreground">$10,000 虚拟本金 · 每日6:00/22:00自动调仓</p>
           </div>
         </div>
-        <div className="text-center py-8 text-[#556677]">
+        <div className="text-center py-8 text-muted-foreground/50">
           <Wallet className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-sm">模拟投资即将启动...</p>
           <p className="text-xs mt-1">系统将在下一个调仓时间自动建仓</p>
@@ -140,7 +140,7 @@ export default function SimPortfolioPanel() {
   const PnlIcon = summary.totalPnl >= 0 ? TrendingUp : TrendingDown;
 
   return (
-    <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-[rgba(0,10,20,0.6)] overflow-hidden">
+    <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-card/80 overflow-hidden">
       {/* Header */}
       <div className="p-5 sm:p-6 border-b border-[rgba(0,212,255,0.08)]">
         <div className="flex items-start justify-between mb-4">
@@ -152,13 +152,13 @@ export default function SimPortfolioPanel() {
               <h3 className="text-lg font-bold text-[#00d4ff]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
                 模拟投资
               </h3>
-              <p className="text-xs text-[#8899aa]">
+              <p className="text-xs text-muted-foreground">
                 $10,000 虚拟本金 · 开始于 {fmtDate(config.startDate)}
               </p>
             </div>
           </div>
           {summary.lastUpdateTime && (
-            <div className="flex items-center gap-1 text-[10px] text-[#556677]">
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
               <Clock className="w-3 h-3" />
               <span>更新: {fmtTime(summary.lastUpdateTime)}</span>
             </div>
@@ -168,16 +168,16 @@ export default function SimPortfolioPanel() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Total Value */}
-          <div className="rounded-lg bg-[rgba(0,20,40,0.6)] border border-[rgba(0,212,255,0.08)] p-3">
-            <div className="text-[10px] text-[#556677] uppercase tracking-wider mb-1">总资产</div>
-            <div className="text-lg font-bold text-white" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <div className="rounded-lg bg-secondary/60 border border-[rgba(0,212,255,0.08)] p-3">
+            <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">总资产</div>
+            <div className="text-lg font-bold text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {fmtUSD(summary.totalValue)}
             </div>
           </div>
 
           {/* P&L */}
-          <div className="rounded-lg bg-[rgba(0,20,40,0.6)] border border-[rgba(0,212,255,0.08)] p-3">
-            <div className="text-[10px] text-[#556677] uppercase tracking-wider mb-1">总盈亏</div>
+          <div className="rounded-lg bg-secondary/60 border border-[rgba(0,212,255,0.08)] p-3">
+            <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">总盈亏</div>
             <div className="flex items-center gap-1">
               <PnlIcon className="w-4 h-4" style={{ color: pnlColor }} />
               <span className="text-lg font-bold" style={{ color: pnlColor, fontFamily: "'JetBrains Mono', monospace" }}>
@@ -190,20 +190,20 @@ export default function SimPortfolioPanel() {
           </div>
 
           {/* Cash */}
-          <div className="rounded-lg bg-[rgba(0,20,40,0.6)] border border-[rgba(0,212,255,0.08)] p-3">
-            <div className="text-[10px] text-[#556677] uppercase tracking-wider mb-1">现金</div>
+          <div className="rounded-lg bg-secondary/60 border border-[rgba(0,212,255,0.08)] p-3">
+            <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">现金</div>
             <div className="text-lg font-bold text-[#ffd700]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {fmtUSD(summary.cashBalance)}
             </div>
           </div>
 
           {/* Positions */}
-          <div className="rounded-lg bg-[rgba(0,20,40,0.6)] border border-[rgba(0,212,255,0.08)] p-3">
-            <div className="text-[10px] text-[#556677] uppercase tracking-wider mb-1">持仓数</div>
-            <div className="text-lg font-bold text-white" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <div className="rounded-lg bg-secondary/60 border border-[rgba(0,212,255,0.08)] p-3">
+            <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">持仓数</div>
+            <div className="text-lg font-bold text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {summary.positionCount}
             </div>
-            <div className="text-[10px] text-[#556677] mt-0.5">
+            <div className="text-[10px] text-muted-foreground/50 mt-0.5">
               投入 {fmtUSD(summary.investedValue)}
             </div>
           </div>
@@ -213,7 +213,7 @@ export default function SimPortfolioPanel() {
       {/* Equity Curve */}
       {snapshots.length >= 2 && (
         <div className="px-5 sm:px-6 py-3 border-b border-[rgba(0,212,255,0.08)]">
-          <div className="text-[10px] text-[#556677] uppercase tracking-wider mb-2">资产曲线</div>
+          <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-2">资产曲线</div>
           <EquityCurve snapshots={snapshots} />
         </div>
       )}
@@ -230,7 +230,7 @@ export default function SimPortfolioPanel() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[10px] text-[#556677] uppercase tracking-wider">
+                <tr className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">
                   <th className="text-left py-2 pr-2">币种</th>
                   <th className="text-left py-2 pr-2 hidden sm:table-cell">类型</th>
                   <th className="text-right py-2 pr-2">买入价</th>
@@ -247,7 +247,7 @@ export default function SimPortfolioPanel() {
                   return (
                     <tr key={i} className="border-t border-[rgba(0,212,255,0.04)] hover:bg-[rgba(0,212,255,0.03)]">
                       <td className="py-2.5 pr-2">
-                        <span className="font-bold text-white">{pos.symbol}</span>
+                        <span className="font-bold text-foreground">{pos.symbol}</span>
                       </td>
                       <td className="py-2.5 pr-2 hidden sm:table-cell">
                         <span className={`text-[10px] px-1.5 py-0.5 rounded ${
@@ -258,22 +258,22 @@ export default function SimPortfolioPanel() {
                           {pos.category === 'mainstream' ? '主流' : '空气'}
                         </span>
                       </td>
-                      <td className="py-2.5 pr-2 text-right text-[#aabbcc]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <td className="py-2.5 pr-2 text-right text-muted-foreground/80" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                         {fmtUSD(pos.entryPrice)}
                       </td>
-                      <td className="py-2.5 pr-2 text-right text-white" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <td className="py-2.5 pr-2 text-right text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                         {fmtUSD(pos.currentPrice)}
                       </td>
-                      <td className="py-2.5 pr-2 text-right text-[#aabbcc]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <td className="py-2.5 pr-2 text-right text-muted-foreground/80" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                         {fmtQty(pos.quantity)}
                       </td>
-                      <td className="py-2.5 pr-2 text-right text-white" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <td className="py-2.5 pr-2 text-right text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                         {fmtUSD(pos.currentValue)}
                       </td>
                       <td className="py-2.5 pr-2 text-right" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                         <span style={{ color: pColor }}>{fmtPct(pos.pnlPercent)}</span>
                       </td>
-                      <td className="py-2.5 text-right text-[#aabbcc]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <td className="py-2.5 text-right text-muted-foreground/80" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                         {pos.weight.toFixed(1)}%
                       </td>
                     </tr>
@@ -293,12 +293,12 @@ export default function SimPortfolioPanel() {
             <span className="text-sm font-bold text-[#ffd700]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
               交易记录
             </span>
-            <span className="text-[10px] text-[#556677]">（最近{Math.min(trades.length, 20)}笔）</span>
+            <span className="text-[10px] text-muted-foreground/50">（最近{Math.min(trades.length, 20)}笔）</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[10px] text-[#556677] uppercase tracking-wider">
+                <tr className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">
                   <th className="text-left py-2 pr-2">时间</th>
                   <th className="text-left py-2 pr-2">操作</th>
                   <th className="text-left py-2 pr-2">币种</th>
@@ -310,7 +310,7 @@ export default function SimPortfolioPanel() {
               <tbody>
                 {trades.slice(0, 20).map((trade, i) => (
                   <tr key={i} className="border-t border-[rgba(0,212,255,0.04)] hover:bg-[rgba(0,212,255,0.03)]">
-                    <td className="py-2 pr-2 text-[#8899aa] text-xs whitespace-nowrap">
+                    <td className="py-2 pr-2 text-muted-foreground text-xs whitespace-nowrap">
                       {fmtTime(trade.time)}
                     </td>
                     <td className="py-2 pr-2">
@@ -322,14 +322,14 @@ export default function SimPortfolioPanel() {
                         {trade.action === 'BUY' ? '买入' : '卖出'}
                       </span>
                     </td>
-                    <td className="py-2 pr-2 font-bold text-white">{trade.symbol}</td>
-                    <td className="py-2 pr-2 text-right text-[#aabbcc]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    <td className="py-2 pr-2 font-bold text-foreground">{trade.symbol}</td>
+                    <td className="py-2 pr-2 text-right text-muted-foreground/80" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                       {fmtUSD(trade.price)}
                     </td>
-                    <td className="py-2 pr-2 text-right text-white" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    <td className="py-2 pr-2 text-right text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                       {fmtUSD(trade.value)}
                     </td>
-                    <td className="py-2 text-[#8899aa] text-xs hidden sm:table-cell truncate max-w-[200px]">
+                    <td className="py-2 text-muted-foreground text-xs hidden sm:table-cell truncate max-w-[200px]">
                       {trade.reason}
                     </td>
                   </tr>
@@ -341,8 +341,8 @@ export default function SimPortfolioPanel() {
       )}
 
       {/* Footer info */}
-      <div className="px-5 sm:px-6 py-3 bg-[rgba(0,10,20,0.4)] border-t border-[rgba(0,212,255,0.06)]">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#445566]">
+      <div className="px-5 sm:px-6 py-3 bg-card/40 border-t border-[rgba(0,212,255,0.06)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground/40">
           <span>⏰ 调仓时间：每日 06:00 / 22:00（北京时间）</span>
           <span>💰 初始本金：$10,000 · 策略：基于BTC主导率自动配置</span>
         </div>

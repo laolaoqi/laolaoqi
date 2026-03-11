@@ -20,7 +20,7 @@ import FearGreedGauge from '@/components/FearGreedGauge';
 import HeatMap from '@/components/HeatMap';
 import AISummary from '@/components/AISummary';
 import AnnouncementBoard from '@/components/AnnouncementBoard';
-import ThemeSwitcher from '@/components/ThemeSwitcher';
+
 import { motion } from 'framer-motion';
 import { UserPlus, LogIn, Sparkles } from 'lucide-react';
 import { useSEO } from '@/hooks/useSEO';
@@ -72,8 +72,6 @@ function Dashboard() {
       {/* Top navigation */}
       <TopBar isLive={isLive} lastUpdate={lastUpdate} onRefresh={refresh} />
 
-      {/* Theme Switcher - top left corner */}
-      <ThemeSwitcher />
 
       {/* SEO: H1 title - visually styled as welcome banner on PC */}
       <div className="hidden lg:block max-w-[1600px] mx-auto px-3 lg:px-5 pt-3">
@@ -109,10 +107,10 @@ function Dashboard() {
                   <Sparkles size={20} className="text-[#00d4ff]" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">
+                  <p className="text-sm font-bold text-foreground">
                     {lang === 'zh' ? '欢迎来到猎手阿尔法！注册账号解锁全部功能' : 'Welcome! Register to unlock all features'}
                   </p>
-                  <p className="text-xs text-[#8899aa] mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {lang === 'zh' ? '注册后可查看AI核心推荐TOP10、投资看板、下载PDF报告等专属功能' : 'Access AI TOP10 picks, Crypto Board, PDF reports and more'}
                   </p>
                 </div>
@@ -170,7 +168,7 @@ function Dashboard() {
                     LIVE
                   </span>
                 </div>
-                <p className="text-[#8899aa] text-xs lg:text-sm mt-0.5">
+                <p className="text-muted-foreground text-xs lg:text-sm mt-0.5">
                   {lang === 'zh' ? '数字货币投资看板 — 主流币 vs 空气币永续合约 + 模拟投资实盘' : 'Crypto Investment Board — Mainstream vs Meme Perps + Sim Portfolio'}
                 </p>
               </div>
@@ -280,7 +278,7 @@ function Dashboard() {
               </div>
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="w-1 h-1 rounded-full bg-[#00d4ff] opacity-40" />
-                <span className="text-xs text-[#8899aa]/60">
+                <span className="text-xs text-muted-foreground/60">
                   {lang === 'zh' ? '联系方式：' : 'Contact: '}
                 </span>
                 <a
@@ -289,7 +287,7 @@ function Dashboard() {
                 >
                   laolaoqi@126.com
                 </a>
-                <span className="text-[#8899aa]/30">·</span>
+                <span className="text-muted-foreground/30">·</span>
                 <a
                   href="https://t.me/LAOLAOQI888"
                   target="_blank"
@@ -305,7 +303,7 @@ function Dashboard() {
               {/* Telegram QR Code - hover to enlarge */}
               <div className="flex items-center gap-2 mt-1">
                 <div className="w-1 h-1 rounded-full bg-[#00d4ff] opacity-40" />
-                <span className="text-xs text-[#8899aa]/60">
+                <span className="text-xs text-muted-foreground/60">
                   {lang === 'zh' ? 'Telegram 扫码联系：' : 'Scan to contact on Telegram:'}
                 </span>
                 <a

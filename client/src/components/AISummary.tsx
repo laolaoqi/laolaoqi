@@ -47,7 +47,7 @@ export default function AISummary() {
             {/* Title */}
             <div className="flex items-start gap-2">
               <Brain size={16} className="text-[#00d4ff] shrink-0 mt-0.5" />
-              <h3 className="text-sm font-bold text-[#ccddeeff] leading-snug">{summary.title}</h3>
+              <h3 className="text-sm font-bold text-foreground leading-snug">{summary.title}</h3>
             </div>
 
             {/* Overview */}
@@ -58,7 +58,7 @@ export default function AISummary() {
               {summary.keyPoints?.map((point: string, i: number) => (
                 <div key={i} className="flex items-start gap-2">
                   <Lightbulb size={11} className="text-[#ffaa00] shrink-0 mt-0.5" />
-                  <span className="text-[11px] text-[#aabbcc]">{point}</span>
+                  <span className="text-[11px] text-muted-foreground/80">{point}</span>
                 </div>
               ))}
             </div>

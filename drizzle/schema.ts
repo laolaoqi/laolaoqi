@@ -202,3 +202,33 @@ export const visitorLogs = mysqlTable("visitor_logs", {
 
 export type VisitorLog = typeof visitorLogs.$inferSelect;
 export type InsertVisitorLog = typeof visitorLogs.$inferInsert;
+
+/**
+ * Page access rules — admin-managed access control per page per user type
+ * Controls which pages are visible to guests (unauthenticated) and registered users
+ * Admin pages are always restricted to admin role only
+ */
+export const pageAccessRules = mysqlTable("page_access_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  pagePath: varchar("pagePath", { length: 100 }).notNull().unique(), // e.g. '/', '/about', '/crypto-investment'
+  pageLabel: varchar("pageLabel", { length: 100 }).notNull(),         // display name e.g. '首页', '关于'
+  guestAccess: int("guestAccess").default(1).notNull(),               // 0=blocked, 1=allowed
+  userAccess: int("userAccess").default(1).notNull(),                 // 0=blocked, 1=allowed (registered users)
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PageAccessRule = typeof pageAccessRules.$inferSelect;
+export type InsertPageAccessRule = typeof pageAccessRules.$inferInsert;
+
+/**
+ * Site settings — global configuration flags
+ * Used for features like "open all pages to everyone"
+ */
+export const siteSettings = mysqlTable("site_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 100 }).notNull().unique(),
+  settingValue: text("settingValue").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SiteSetting = typeof siteSettings.$inferSelect;

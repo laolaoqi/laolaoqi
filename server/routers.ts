@@ -11,6 +11,7 @@ import { getSimPortfolioData, runSimRebalance, startSimInvestmentScheduler } fro
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { getDailyStats, getCountryStats, getCityStats, getTopPages, getDeviceStats, getRecentVisitors, getTodaySummary, getHourlyStats } from "./visitorTracker";
+import { getPageAccessConfig, updatePageAccessRule, setAllPagesOpen, setAllPagesRestricted, checkPageAccess, initPageAccessRules } from "./pageAccess";
 
 // ===================================================================
 // 缓存系统
@@ -455,6 +456,37 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await getRecentVisitors(input.limit);
       }),
+
+    // ===== 页面访问权限管理 =====
+
+    // 获取所有页面权限配置
+    getPageAccessConfig: adminProcedure.query(async () => {
+      return await getPageAccessConfig();
+    }),
+
+    // 更新单个页面的权限
+    updatePageAccess: adminProcedure
+      .input(z.object({
+        pagePath: z.string(),
+        guestAccess: z.number().min(0).max(1),
+        userAccess: z.number().min(0).max(1),
+      }))
+      .mutation(async ({ input }) => {
+        await updatePageAccessRule(input.pagePath, input.guestAccess, input.userAccess);
+        return { success: true };
+      }),
+
+    // 一键全站开放（游客+注册用户都可访问所有页面，不含管理员后台）
+    openAllPages: adminProcedure.mutation(async () => {
+      await setAllPagesOpen();
+      return { success: true };
+    }),
+
+    // 一键全站限制（所有页面都需要权限）
+    restrictAllPages: adminProcedure.mutation(async () => {
+      await setAllPagesRestricted();
+      return { success: true };
+    }),
   }),
 
   // ===================================================================
@@ -472,6 +504,35 @@ export const appRouter = router({
   announcements: router({
     active: publicProcedure.query(async () => {
       return await getActiveAnnouncements();
+    }),
+  }),
+
+  // ===================================================================
+  // 页面访问权限检查（前端路由守卫用）
+  // ===================================================================
+  pageAccess: router({
+    // 检查当前用户是否可以访问指定页面
+    check: publicProcedure
+      .input(z.object({ path: z.string() }))
+      .query(async ({ input, ctx }) => {
+        const user = ctx.user;
+        let userType: "guest" | "user" | "admin" = "guest";
+        if (user) {
+          userType = user.role === "admin" ? "admin" : "user";
+        }
+        const hasAccess = await checkPageAccess(input.path, userType);
+        return { hasAccess, userType };
+      }),
+
+    // 获取所有页面权限规则（前端用于导航显示控制）
+    rules: publicProcedure.query(async ({ ctx }) => {
+      const user = ctx.user;
+      let userType: "guest" | "user" | "admin" = "guest";
+      if (user) {
+        userType = user.role === "admin" ? "admin" : "user";
+      }
+      const config = await getPageAccessConfig();
+      return { ...config, userType };
     }),
   }),
 
@@ -1173,6 +1234,9 @@ startCryptoBoardScheduler();
 
 // Start simulated investment scheduler
 startSimInvestmentScheduler();
+
+// Initialize page access rules
+initPageAccessRules();
 
 // ===================================================================
 // 技术指标计算

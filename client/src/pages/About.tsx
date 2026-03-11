@@ -8,7 +8,6 @@ import { getLoginUrl } from '@/const';
 import { useApp } from '@/contexts/AppContext';
 import { AppProvider } from '@/contexts/AppContext';
 import TopBar from '@/components/TopBar';
-import ThemeSwitcher from '@/components/ThemeSwitcher';
 import HudPanel from '@/components/HudPanel';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
@@ -84,7 +83,6 @@ function AboutContent() {
   return (
     <div className="min-h-screen flex flex-col bg-background grid-bg">
       <TopBar isLive={true} lastUpdate={new Date()} onRefresh={() => {}} />
-      <ThemeSwitcher />
 
       <main className="flex-1 relative z-10">
         <motion.div

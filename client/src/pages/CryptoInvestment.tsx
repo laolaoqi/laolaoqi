@@ -86,7 +86,7 @@ function MiniSparkline({ data, isUp, width = 80, height = 28 }: {
   }, [data, width, height]);
 
   if (!data || data.length < 2) {
-    return <div style={{ width, height }} className="flex items-center justify-center text-[10px] text-[#556677]">-</div>;
+    return <div style={{ width, height }} className="flex items-center justify-center text-[10px] text-muted-foreground/50">-</div>;
   }
 
   const color = isUp ? '#ff4444' : '#00cc66';
@@ -171,14 +171,14 @@ function AccessDeniedScreen({ isLoggedIn, isExpired, expiresAt }: {
   expiresAt: string | null;
 }) {
   return (
-    <div className="min-h-screen bg-[#0a0e17] flex flex-col" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
+    <div className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
       {/* Scan line effect */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]" style={{
         backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.1) 2px, rgba(0,212,255,0.1) 4px)',
       }} />
 
       {/* Header */}
-      <header className="border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl bg-[rgba(10,14,23,0.9)]">
+      <header className="border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl" style={{ background: 'var(--theme-header-bg)' }}>
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent opacity-60" />
         <div className="max-w-[1400px] mx-auto px-4 lg:px-6">
           <div className="flex items-center h-14 gap-3">
@@ -193,7 +193,7 @@ function AccessDeniedScreen({ isLoggedIn, isExpired, expiresAt }: {
                 <Zap size={16} className="text-white" />
               </div>
               <div>
-                <h1 className="text-sm font-bold text-white tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>CRYPTO BOARD</h1>
+                <h1 className="text-sm font-bold text-foreground tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>CRYPTO BOARD</h1>
               </div>
             </div>
           </div>
@@ -214,10 +214,10 @@ function AccessDeniedScreen({ isLoggedIn, isExpired, expiresAt }: {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+            <h2 className="text-2xl font-bold text-foreground mb-2" style={{ fontFamily: "'Orbitron', sans-serif" }}>
               {!isLoggedIn ? 'LOGIN REQUIRED' : isExpired ? 'ACCESS EXPIRED' : 'ACCESS RESTRICTED'}
             </h2>
-            <p className="text-[#8899aa] text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               {!isLoggedIn ? (
                 '请先登录账号以访问投资看板。登录后，管理员将为您开通访问权限。'
               ) : isExpired ? (
@@ -237,7 +237,7 @@ function AccessDeniedScreen({ isLoggedIn, isExpired, expiresAt }: {
               </a>
             ) : (
               <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-[rgba(0,212,255,0.04)] p-4">
-                <p className="text-xs text-[#8899aa] mb-1">如需开通或续期，请联系管理员</p>
+                <p className="text-xs text-muted-foreground mb-1">如需开通或续期，请联系管理员</p>
                 <p className="text-sm text-[#00d4ff] font-medium">管理员可在 Admin Panel → 权限管理 中设置</p>
               </div>
             )}
@@ -258,12 +258,12 @@ function AccessDeniedScreen({ isLoggedIn, isExpired, expiresAt }: {
 // ===================================================================
 function GuestTrialEndedScreen() {
   return (
-    <div className="min-h-screen bg-[#0a0e17] flex flex-col" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
+    <div className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
       <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]" style={{
         backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.1) 2px, rgba(0,212,255,0.1) 4px)',
       }} />
 
-      <header className="border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl bg-[rgba(10,14,23,0.9)]">
+      <header className="border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl" style={{ background: 'var(--theme-header-bg)' }}>
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent opacity-60" />
         <div className="max-w-[1400px] mx-auto px-4 lg:px-6">
           <div className="flex items-center h-14 gap-3">
@@ -290,8 +290,8 @@ function GuestTrialEndedScreen() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "'Orbitron', sans-serif" }}>TRIAL ENDED</h2>
-            <p className="text-[#8899aa] text-sm leading-relaxed">
+            <h2 className="text-2xl font-bold text-foreground mb-2" style={{ fontFamily: "'Orbitron', sans-serif" }}>TRIAL ENDED</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
               您的免费试用已结束。注册账号并联系管理员开通权限，即可解锁完整的数字货币投资看板功能。
             </p>
           </div>
@@ -308,10 +308,10 @@ function GuestTrialEndedScreen() {
               </Button>
             </a>
             <div className="rounded-xl border border-[rgba(0,212,255,0.15)] bg-[rgba(0,212,255,0.04)] p-4 mt-2">
-              <p className="text-xs text-[#8899aa] mb-1">如需开通权限，请联系管理员</p>
+              <p className="text-xs text-muted-foreground mb-1">如需开通权限，请联系管理员</p>
               <div className="flex items-center justify-center gap-3 text-xs">
                 <a href="https://t.me/LAOLAOQI888" target="_blank" rel="noopener noreferrer" className="text-[#00d4ff] hover:underline">Telegram: @LAOLAOQI888</a>
-                <span className="text-[#8899aa]/30">|</span>
+                <span className="text-muted-foreground/30">|</span>
                 <a href="mailto:laolaoqi@126.com" className="text-[#00d4ff] hover:underline">laolaoqi@126.com</a>
               </div>
             </div>
@@ -391,10 +391,10 @@ export default function CryptoInvestment() {
   // Show loading while checking access
   if (accessLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[#8899aa]">正在验证访问权限...</span>
+          <span className="text-sm text-muted-foreground">正在验证访问权限...</span>
         </div>
       </div>
     );
@@ -422,14 +422,14 @@ export default function CryptoInvestment() {
   const lastUpdate = data?.timestamp ? new Date(data.timestamp) : null;
 
   return (
-    <div className="min-h-screen bg-[#0a0e17]" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
+    <div className="min-h-screen bg-background" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
       {/* Scan line effect */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]" style={{
         backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.1) 2px, rgba(0,212,255,0.1) 4px)',
       }} />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl bg-[rgba(10,14,23,0.9)]">
+      <header className="sticky top-0 z-50 border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl" style={{ background: 'var(--theme-header-bg)' }}>
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent opacity-60" />
         <div className="max-w-[1400px] mx-auto px-4 lg:px-6">
           <div className="flex items-center h-14 gap-3">
@@ -445,10 +445,10 @@ export default function CryptoInvestment() {
                 <Zap size={16} className="text-white" />
               </div>
               <div>
-                <h1 className="text-base font-bold text-white tracking-wide" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+                  <h1 className="text-base font-bold text-foreground tracking-wide" style={{ fontFamily: "'Orbitron', sans-serif" }}>
                   CRYPTO BOARD
                 </h1>
-                <p className="text-[10px] text-[#8899aa] -mt-0.5">主流币 vs 空气币/永续合约</p>
+                <p className="text-[10px] text-muted-foreground -mt-0.5">主流币 vs 空气币/永续合约</p>
               </div>
             </div>
 
@@ -461,7 +461,7 @@ export default function CryptoInvestment() {
               </button>
             </Link>
 
-            <div className="flex items-center gap-1.5 text-xs text-[#8899aa]">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Clock size={12} />
               <span className="font-mono tabular-nums">{now.toLocaleTimeString('zh-CN', { hour12: false })}</span>
             </div>
@@ -487,7 +487,7 @@ export default function CryptoInvestment() {
             <div className="flex items-center gap-2">
               <Shield size={14} className="text-[#00d4ff]" />
               <span className="text-xs text-[#00d4ff]">
-                游客试用中 · 剩余 <span className="font-bold text-white">{Math.max(0, guestTrialRemaining - (trialIncremented ? 1 : 0))}</span> 次免费访问
+                游客试用中 · 剩余 <span className="font-bold text-foreground">{Math.max(0, guestTrialRemaining - (trialIncremented ? 1 : 0))}</span> 次免费访问
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -506,19 +506,19 @@ export default function CryptoInvestment() {
           <div className="flex flex-wrap items-center gap-4 sm:gap-8 px-5 py-3 rounded-xl bg-[rgba(0,212,255,0.04)] border border-[rgba(0,212,255,0.1)]">
             <div className="flex items-center gap-2">
               <Globe size={14} className="text-[#00d4ff]" />
-              <span className="text-xs text-[#8899aa]">BTC主导率</span>
+              <span className="text-xs text-muted-foreground">BTC主导率</span>
               <span className="text-lg font-bold text-[#00d4ff] font-mono">{data.btcDominance.toFixed(1)}%</span>
             </div>
             {data.totalMarketCap > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#8899aa]">总市值</span>
-                <span className="text-sm font-bold text-white font-mono">{formatMarketCap(data.totalMarketCap)}</span>
+                <span className="text-xs text-muted-foreground">总市值</span>
+                <span className="text-sm font-bold text-foreground font-mono">{formatMarketCap(data.totalMarketCap)}</span>
               </div>
             )}
             {lastUpdate && (
               <div className="flex items-center gap-2 ml-auto">
-                <span className="text-xs text-[#8899aa]">更新于</span>
-                <span className="text-xs text-[#aabbcc] font-mono">{lastUpdate.toLocaleString('zh-CN')}</span>
+                <span className="text-xs text-muted-foreground">更新于</span>
+                <span className="text-xs text-muted-foreground/80 font-mono">{lastUpdate.toLocaleString('zh-CN')}</span>
               </div>
             )}
           </div>
@@ -529,7 +529,7 @@ export default function CryptoInvestment() {
           <div className="flex items-center justify-center py-20">
             <div className="flex flex-col items-center gap-4">
               <div className="w-12 h-12 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-[#8899aa]">正在获取数据...</span>
+              <span className="text-sm text-muted-foreground">正在获取数据...</span>
             </div>
           </div>
         )}
@@ -539,7 +539,7 @@ export default function CryptoInvestment() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {/* === 主流币前10 === */}
-            <div className="rounded-xl border border-[rgba(0,212,255,0.12)] bg-[rgba(13,17,34,0.8)] overflow-hidden">
+            <div className="rounded-xl border border-[rgba(0,212,255,0.12)] bg-card overflow-hidden">
               <div className="flex items-center gap-2 px-5 py-3 border-b border-[rgba(0,212,255,0.08)] bg-[rgba(0,212,255,0.03)]">
                 <Shield size={16} className="text-[#00d4ff]" />
                 <h2 className="text-base font-bold text-[#00d4ff]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
@@ -551,33 +551,33 @@ export default function CryptoInvestment() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[rgba(0,212,255,0.06)]">
-                      <th className="text-left px-3 py-2.5 text-xs text-[#8899aa] font-medium w-8">#</th>
-                      <th className="text-left px-3 py-2.5 text-xs text-[#8899aa] font-medium">币种</th>
-                      <th className="text-right px-3 py-2.5 text-xs text-[#8899aa] font-medium">价格</th>
-                      <th className="text-right px-3 py-2.5 text-xs text-[#8899aa] font-medium">24h</th>
-                      <th className="text-center px-2 py-2.5 text-xs text-[#8899aa] font-medium hidden sm:table-cell">7日走势</th>
-                      <th className="text-right px-3 py-2.5 text-xs text-[#8899aa] font-medium hidden md:table-cell">市值</th>
+                      <th className="text-left px-3 py-2.5 text-xs text-muted-foreground font-medium w-8">#</th>
+                      <th className="text-left px-3 py-2.5 text-xs text-muted-foreground font-medium">币种</th>
+                      <th className="text-right px-3 py-2.5 text-xs text-muted-foreground font-medium">价格</th>
+                      <th className="text-right px-3 py-2.5 text-xs text-muted-foreground font-medium">24h</th>
+                      <th className="text-center px-2 py-2.5 text-xs text-muted-foreground font-medium hidden sm:table-cell">7日走势</th>
+                      <th className="text-right px-3 py-2.5 text-xs text-muted-foreground font-medium hidden md:table-cell">市值</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.mainstream.length === 0 ? (
-                      <tr><td colSpan={6} className="text-center py-8 text-[#8899aa]">暂无数据</td></tr>
+                      <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">暂无数据</td></tr>
                     ) : (
                       data.mainstream.map((coin, i) => {
                         const isUp = coin.change24h >= 0;
                         return (
                           <tr key={coin.symbol} className="border-b border-[rgba(0,212,255,0.04)] hover:bg-[rgba(0,212,255,0.03)] transition-colors">
-                            <td className="px-3 py-2.5 text-xs text-[#667788] font-mono">{i + 1}</td>
+                            <td className="px-3 py-2.5 text-xs text-muted-foreground/70 font-mono">{i + 1}</td>
                             <td className="px-3 py-2.5">
                               <div className="flex items-center gap-2">
                                 <CoinLogo src={coin.logo} symbol={coin.symbol} size={22} />
                                 <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-white leading-tight">{coin.name}</span>
-                                  <span className="text-[10px] text-[#667788]">{coin.symbol}</span>
+                                  <span className="text-sm font-bold text-foreground leading-tight">{coin.name}</span>
+                                  <span className="text-[10px] text-muted-foreground/70">{coin.symbol}</span>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-3 py-2.5 text-right font-mono font-bold text-white text-sm">
+                            <td className="px-3 py-2.5 text-right font-mono font-bold text-foreground text-sm">
                               {formatPrice(coin.price)}
                             </td>
                             <td className="px-3 py-2.5 text-right">
@@ -593,7 +593,7 @@ export default function CryptoInvestment() {
                                 <MiniSparkline data={coin.sparkline7d || []} isUp={isUp} width={72} height={24} />
                               </div>
                             </td>
-                            <td className="px-3 py-2.5 text-right text-xs text-[#8899aa] font-mono hidden md:table-cell">
+                            <td className="px-3 py-2.5 text-right text-xs text-muted-foreground font-mono hidden md:table-cell">
                               {formatMarketCap(coin.marketCap || 0)}
                             </td>
                           </tr>
@@ -606,7 +606,7 @@ export default function CryptoInvestment() {
             </div>
 
             {/* === 空气币/永续合约 === */}
-            <div className="rounded-xl border border-[rgba(255,107,0,0.15)] bg-[rgba(13,17,34,0.8)] overflow-hidden">
+            <div className="rounded-xl border border-[rgba(255,107,0,0.15)] bg-card overflow-hidden">
               <div className="flex items-center gap-2 px-5 py-3 border-b border-[rgba(255,107,0,0.1)] bg-[rgba(255,107,0,0.03)]">
                 <Zap size={16} className="text-[#ff6b00]" />
                 <h2 className="text-base font-bold text-[#ff6b00]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
@@ -623,42 +623,42 @@ export default function CryptoInvestment() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[rgba(255,107,0,0.06)]">
-                      <th className="text-left px-3 py-2.5 text-xs text-[#8899aa] font-medium w-8">#</th>
-                      <th className="text-left px-3 py-2.5 text-xs text-[#8899aa] font-medium">合约/代币</th>
-                      <th className="text-right px-3 py-2.5 text-xs text-[#8899aa] font-medium">价格</th>
-                      <th className="text-right px-3 py-2.5 text-xs text-[#8899aa] font-medium">24h</th>
-                      <th className="text-center px-2 py-2.5 text-xs text-[#8899aa] font-medium hidden sm:table-cell">7日走势</th>
-                      <th className="text-right px-3 py-2.5 text-xs text-[#8899aa] font-medium hidden md:table-cell">24h成交额</th>
+                      <th className="text-left px-3 py-2.5 text-xs text-muted-foreground font-medium w-8">#</th>
+                      <th className="text-left px-3 py-2.5 text-xs text-muted-foreground font-medium">合约/代币</th>
+                      <th className="text-right px-3 py-2.5 text-xs text-muted-foreground font-medium">价格</th>
+                      <th className="text-right px-3 py-2.5 text-xs text-muted-foreground font-medium">24h</th>
+                      <th className="text-center px-2 py-2.5 text-xs text-muted-foreground font-medium hidden sm:table-cell">7日走势</th>
+                      <th className="text-right px-3 py-2.5 text-xs text-muted-foreground font-medium hidden md:table-cell">24h成交额</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.meme.length === 0 ? (
-                      <tr><td colSpan={6} className="text-center py-8 text-[#8899aa]">暂无数据</td></tr>
+                      <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">暂无数据</td></tr>
                     ) : (
                       data.meme.map((coin, i) => {
                         const isUp = coin.change24h >= 0;
                         const noData = coin.price === 0;
                         return (
                           <tr key={`${coin.symbol}-${i}`} className="border-b border-[rgba(255,107,0,0.04)] hover:bg-[rgba(255,107,0,0.03)] transition-colors">
-                            <td className="px-3 py-2.5 text-xs text-[#667788] font-mono">{i + 1}</td>
+                            <td className="px-3 py-2.5 text-xs text-muted-foreground/70 font-mono">{i + 1}</td>
                             <td className="px-3 py-2.5">
                               <div className="flex items-center gap-2">
                                 <CoinLogo src={coin.logo} symbol={coin.symbol} size={22} />
                                 <div className="flex flex-col">
                                   <div className="flex items-center">
-                                    <span className="text-sm font-bold text-white leading-tight">{coin.name}</span>
+                                    <span className="text-sm font-bold text-foreground leading-tight">{coin.name}</span>
                                     <CategoryBadge symbol={coin.symbol} />
                                   </div>
-                                  <span className="text-[10px] text-[#667788]">{coin.symbol}</span>
+                                  <span className="text-[10px] text-muted-foreground/70">{coin.symbol}</span>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-3 py-2.5 text-right font-mono font-bold text-white text-sm">
-                              {noData ? <span className="text-[#556677]">-</span> : formatPrice(coin.price)}
+                            <td className="px-3 py-2.5 text-right font-mono font-bold text-foreground text-sm">
+                              {noData ? <span className="text-muted-foreground/50">-</span> : formatPrice(coin.price)}
                             </td>
                             <td className="px-3 py-2.5 text-right">
                               {noData ? (
-                                <span className="text-[#556677] text-xs">-</span>
+                                <span className="text-muted-foreground/50 text-xs">-</span>
                               ) : (
                                 <div className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-bold font-mono ${
                                   isUp ? 'text-[#ff4444] bg-[rgba(255,68,68,0.08)]' : 'text-[#00cc66] bg-[rgba(0,204,102,0.08)]'
@@ -673,8 +673,8 @@ export default function CryptoInvestment() {
                                 <MiniSparkline data={coin.sparkline7d || []} isUp={isUp} width={72} height={24} />
                               </div>
                             </td>
-                            <td className="px-3 py-2.5 text-right text-xs text-[#8899aa] font-mono hidden md:table-cell">
-                              {noData ? <span className="text-[#556677]">-</span> : formatVolume(coin.volume24h || 0)}
+                            <td className="px-3 py-2.5 text-right text-xs text-muted-foreground font-mono hidden md:table-cell">
+                              {noData ? <span className="text-muted-foreground/50">-</span> : formatVolume(coin.volume24h || 0)}
                             </td>
                           </tr>
                         );
@@ -698,10 +698,10 @@ export default function CryptoInvestment() {
                 <h3 className="text-lg font-bold text-[#ffd700] mb-1" style={{ fontFamily: "'Orbitron', sans-serif" }}>
                   投资建议
                 </h3>
-                <p className="text-xs text-[#8899aa]">基于BTC主导率自动生成，仅供参考</p>
+                <p className="text-xs text-muted-foreground">基于BTC主导率自动生成，仅供参考</p>
               </div>
             </div>
-            <p className="text-xl sm:text-2xl font-bold text-white leading-relaxed">
+            <p className="text-xl sm:text-2xl font-bold text-foreground leading-relaxed">
               {data.advice}
             </p>
           </div>
@@ -712,10 +712,10 @@ export default function CryptoInvestment() {
 
         {/* === 风险提示 === */}
         <div className="text-center py-4 border-t border-[rgba(0,212,255,0.06)]">
-          <p className="text-xs text-[#556677]">
+          <p className="text-xs text-muted-foreground/50">
             数据来源：CoinGecko · 每小时自动更新 · 仅供参考，不构成投资建议
           </p>
-          <p className="text-xs text-[#445566] mt-1">
+          <p className="text-xs text-muted-foreground/40 mt-1">
             永续合约风险极高，请严格控制仓位和止损 · HUNTER ALPHA v7.3
           </p>
         </div>

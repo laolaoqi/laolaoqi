@@ -490,6 +490,167 @@ function PermissionManagement() {
           <p className="text-sm">暂无匹配用户</p>
         </div>
       )}
+
+      {/* ===== 页面访问权限控制 ===== */}
+      <PageAccessControl />
+    </div>
+  );
+}
+
+// ===================================================================
+// Page Access Control — 页面访问权限控制
+// ===================================================================
+function PageAccessControl() {
+  const { data: config, isLoading, refetch } = trpc.admin.getPageAccessConfig.useQuery();
+  const updateAccess = trpc.admin.updatePageAccess.useMutation({
+    onSuccess: () => { refetch(); toast.success('页面权限已更新'); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const openAll = trpc.admin.openAllPages.useMutation({
+    onSuccess: () => { refetch(); toast.success('已一键开放所有页面'); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const restrictAll = trpc.admin.restrictAllPages.useMutation({
+    onSuccess: () => { refetch(); toast.success('已一键限制所有页面'); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  if (isLoading) return <LoadingSpinner />;
+  if (!config) return null;
+
+  const { rules, isOpenAll } = config;
+
+  const handleToggle = (pagePath: string, field: 'guest' | 'user', currentValue: number) => {
+    const rule = rules.find((r: any) => r.pagePath === pagePath);
+    if (!rule) return;
+    const newVal = currentValue === 1 ? 0 : 1;
+    updateAccess.mutate({
+      pagePath,
+      guestAccess: field === 'guest' ? newVal : rule.guestAccess,
+      userAccess: field === 'user' ? newVal : rule.userAccess,
+    });
+  };
+
+  return (
+    <div className="mt-8 space-y-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-red-500">页面访问权限控制</h2>
+          <p className="text-xs text-red-500/50 mt-1">控制游客和注册用户可访问的页面（管理员后台始终仅限管理员）</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            className={`h-8 text-xs ${
+              isOpenAll
+                ? 'bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25'
+                : 'bg-green-500 text-white hover:bg-green-600'
+            }`}
+            onClick={() => openAll.mutate()}
+            disabled={openAll.isPending || isOpenAll}
+          >
+            <Eye size={14} className="mr-1" />
+            {isOpenAll ? '✓ 已全站开放' : '一键全站开放'}
+          </Button>
+          <Button
+            size="sm"
+            className="h-8 text-xs bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25"
+            onClick={() => {
+              if (confirm('确定要限制所有页面吗？游客和注册用户将无法访问任何页面。')) {
+                restrictAll.mutate();
+              }
+            }}
+            disabled={restrictAll.isPending}
+          >
+            <EyeOff size={14} className="mr-1" /> 一键全站限制
+          </Button>
+        </div>
+      </div>
+
+      {/* Status indicator */}
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${
+        isOpenAll ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+      }`}>
+        {isOpenAll ? (
+          <><Eye size={14} /> 当前状态：全站开放 — 所有用户（含游客）可访问所有页面（不含管理员后台）</>
+        ) : (
+          <><AlertTriangle size={14} /> 当前状态：自定义权限 — 部分页面已限制访问</>
+        )}
+      </div>
+
+      {/* Page access table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-red-500/60 text-xs border-b border-red-500/10">
+              <th className="text-left py-2 px-3">页面</th>
+              <th className="text-left py-2 px-3">路径</th>
+              <th className="text-center py-2 px-3">
+                <div className="flex items-center justify-center gap-1">
+                  <Globe size={12} /> 游客访问
+                </div>
+              </th>
+              <th className="text-center py-2 px-3">
+                <div className="flex items-center justify-center gap-1">
+                  <Users size={12} /> 注册用户
+                </div>
+              </th>
+              <th className="text-center py-2 px-3">
+                <div className="flex items-center justify-center gap-1">
+                  <Shield size={12} /> 管理员
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rules.map((rule: any) => (
+              <tr key={rule.pagePath} className="border-b border-red-500/5 hover:bg-red-500/3">
+                <td className="py-3 px-3">
+                  <span className="text-foreground font-medium">{rule.pageLabel}</span>
+                </td>
+                <td className="py-3 px-3">
+                  <code className="text-xs text-red-500/50 bg-red-500/5 px-1.5 py-0.5 rounded font-mono">{rule.pagePath}</code>
+                </td>
+                <td className="py-3 px-3 text-center">
+                  <button
+                    onClick={() => handleToggle(rule.pagePath, 'guest', rule.guestAccess)}
+                    disabled={updateAccess.isPending}
+                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+                      rule.guestAccess === 1
+                        ? 'bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25'
+                        : 'bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25'
+                    }`}
+                  >
+                    {rule.guestAccess === 1 ? <><Eye size={11} /> 允许</> : <><EyeOff size={11} /> 禁止</>}
+                  </button>
+                </td>
+                <td className="py-3 px-3 text-center">
+                  <button
+                    onClick={() => handleToggle(rule.pagePath, 'user', rule.userAccess)}
+                    disabled={updateAccess.isPending}
+                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+                      rule.userAccess === 1
+                        ? 'bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25'
+                        : 'bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25'
+                    }`}
+                  >
+                    {rule.userAccess === 1 ? <><Eye size={11} /> 允许</> : <><EyeOff size={11} /> 禁止</>}
+                  </button>
+                </td>
+                <td className="py-3 px-3 text-center">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                    <ShieldCheck size={11} /> 始终允许
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="text-xs text-red-500/30 mt-2">
+        提示：管理员后台（/admin）始终仅限管理员访问，不受以上设置影响。点击“允许/禁止”按钮可切换对应用户类型的访问权限。
+      </div>
     </div>
   );
 }

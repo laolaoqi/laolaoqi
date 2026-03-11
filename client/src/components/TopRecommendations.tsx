@@ -387,7 +387,7 @@ export default function TopRecommendations({ recommendations }: Props) {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <div className="flex items-center gap-2">
               <Lock size={14} className="text-[#00d4ff]" />
-              <span className="text-sm text-white font-medium">
+              <span className="text-sm text-foreground font-medium">
                 {lang === 'zh' ? '注册账号即可查看完整AI推荐数据' : 'Register to view full AI recommendation data'}
               </span>
             </div>

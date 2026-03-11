@@ -104,7 +104,7 @@ function MiniSparkline({ data, isUp, width = 120, height = 40 }: {
   }, [data, width, height]);
 
   if (!data || data.length < 2) {
-    return <div style={{ width, height }} className="flex items-center justify-center text-[10px] text-[#556677]">No Data</div>;
+    return <div style={{ width, height }} className="flex items-center justify-center text-[10px] text-muted-foreground/50">No Data</div>;
   }
 
   const color = isUp ? '#ff4444' : '#00cc66';
@@ -148,7 +148,7 @@ function MiniKline({ data, width = 120, height = 40 }: {
   }, [data]);
 
   if (candles.length < 3) {
-    return <div style={{ width, height }} className="flex items-center justify-center text-[10px] text-[#556677]">No Data</div>;
+    return <div style={{ width, height }} className="flex items-center justify-center text-[10px] text-muted-foreground/50">No Data</div>;
   }
 
   const allPrices = candles.flatMap(c => [c.high, c.low]);
@@ -242,7 +242,7 @@ function BigLineChart({ data, isUp, width, height }: {
     ctx.fillStyle = grad; ctx.fill();
   }, [data, isUp, width, height]);
 
-  return <canvas ref={canvasRef} style={{ width, height }} className="rounded-lg bg-[#0a0e17]" />;
+  return <canvas ref={canvasRef} style={{ width, height }} className="rounded-lg bg-background" />;
 }
 
 // ===================================================================
@@ -390,7 +390,7 @@ function BigCandleChart({ candles, width, height, period }: {
 
   }, [candles, width, height, period]);
 
-  return <canvas ref={canvasRef} style={{ width, height }} className="rounded-lg bg-[#0a0e17]" />;
+  return <canvas ref={canvasRef} style={{ width, height }} className="rounded-lg bg-background" />;
 }
 
 // ===================================================================
@@ -450,13 +450,13 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/85 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-[95%] max-w-[900px] bg-[#151520] border border-[rgba(0,212,255,0.15)] rounded-2xl p-5 sm:p-6 relative"
+        className="w-[95%] max-w-[900px] bg-card border border-[rgba(0,212,255,0.15)] rounded-2xl p-5 sm:p-6 relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-[#222] hover:bg-[#333] flex items-center justify-center text-[#8899aa] hover:text-white transition-colors"
+          className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-muted hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <X size={16} />
         </button>
@@ -465,13 +465,13 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
         <div className="flex items-center gap-3 mb-4">
           <CoinLogo src={coin.logo} symbol={coin.symbol} size={36} />
           <div>
-            <h2 className="text-xl font-bold text-white" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+            <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "'Orbitron', sans-serif" }}>
               {coin.symbol}
             </h2>
-            <p className="text-xs text-[#8899aa]">{coin.name}</p>
+            <p className="text-xs text-muted-foreground">{coin.name}</p>
           </div>
           <div className="ml-4 flex items-center gap-3">
-            <span className="text-2xl font-bold text-white font-mono">{formatPrice(coin.price)}</span>
+            <span className="text-2xl font-bold text-foreground font-mono">{formatPrice(coin.price)}</span>
             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-bold font-mono ${
               isUp ? 'text-[#ff4444] bg-[rgba(255,68,68,0.1)]' : 'text-[#00cc66] bg-[rgba(0,204,102,0.1)]'
             }`}>
@@ -490,7 +490,7 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === tab.key
                   ? 'bg-[#00d4ff] text-black font-bold'
-                  : 'bg-[#1a1a2e] text-[#8899aa] hover:bg-[#222244] hover:text-white'
+                  : 'bg-secondary text-muted-foreground hover:bg-accent hover:text-foreground'
               }`}
             >
               {tab.label}
@@ -504,7 +504,7 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
         </div>
 
         {/* Chart */}
-        <div className="w-full rounded-xl overflow-hidden bg-[#0a0e17] border border-[rgba(0,212,255,0.08)]">
+        <div className="w-full rounded-xl overflow-hidden bg-background border border-[rgba(0,212,255,0.08)]">
           {isLineMode ? (
             // 分时图：用sparkline数据画折线，或用OHLC close价格画折线
             hasOHLC ? (
@@ -517,7 +517,7 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
             ) : sparklineData.length >= 2 ? (
               <BigLineChart data={sparklineData} isUp={isUp} width={850} height={360} />
             ) : (
-              <div className="flex items-center justify-center h-[360px] text-[#556677] text-sm">
+              <div className="flex items-center justify-center h-[360px] text-muted-foreground/50 text-sm">
                 暂无分时数据
               </div>
             )
@@ -530,7 +530,7 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
                 <RefreshCw size={16} className="animate-spin mr-2" /> 正在加载K线数据...
               </div>
             ) : (
-              <div className="flex items-center justify-center h-[360px] text-[#556677] text-sm">
+              <div className="flex items-center justify-center h-[360px] text-muted-foreground/50 text-sm">
                 暂无K线数据
               </div>
             )
@@ -538,7 +538,7 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
         </div>
 
         {/* Chart type indicator */}
-        <div className="flex items-center gap-3 mt-2 text-[10px] text-[#556677]">
+        <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground/50">
           <span>{isLineMode ? '◈ 分时折线图' : '■ OHLC 蜡烛图'}</span>
           {hasOHLC && <span>· {ohlcData!.candles.length} 根K线</span>}
           <span className="ml-auto">
@@ -548,12 +548,12 @@ function CoinModal({ coin, onClose }: { coin: CoinData; onClose: () => void }) {
         </div>
 
         {/* Info row */}
-        <div className="flex flex-wrap gap-4 mt-3 text-xs text-[#8899aa]">
+        <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
           {coin.marketCap ? (
-            <div>市值: <span className="text-white font-mono">{formatMarketCap(coin.marketCap)}</span></div>
+            <div>市值: <span className="text-foreground font-mono">{formatMarketCap(coin.marketCap)}</span></div>
           ) : null}
           {coin.volume24h ? (
-            <div>24h成交额: <span className="text-white font-mono">{formatVolume(coin.volume24h)}</span></div>
+            <div>24h成交额: <span className="text-foreground font-mono">{formatVolume(coin.volume24h)}</span></div>
           ) : null}
           <div>24h涨跌: <span className={`font-mono font-bold ${isUp ? 'text-[#ff4444]' : 'text-[#00cc66]'}`}>
             {isUp ? '+' : ''}{coin.change24h.toFixed(2)}%
@@ -579,12 +579,12 @@ function CoinCard({ coin, index, onClick }: {
       onClick={onClick}
       className={`
         relative rounded-xl p-3 cursor-pointer transition-all duration-200
-        bg-[#13172a] hover:bg-[#1a1f38] border-2
+        bg-card hover:bg-secondary border-2
         ${isAlert
           ? (isUp
             ? 'border-[#ff4444] animate-[pulse-red_1.5s_ease-in-out_infinite]'
             : 'border-[#00cc66] animate-[pulse-green_1.5s_ease-in-out_infinite]')
-          : 'border-[#1e2340] hover:border-[rgba(0,212,255,0.3)]'
+          : 'border-border hover:border-[rgba(0,212,255,0.3)]'
         }
       `}
     >
@@ -598,16 +598,16 @@ function CoinCard({ coin, index, onClick }: {
         <CoinLogo src={coin.logo} symbol={coin.symbol} size={24} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-bold text-white truncate">{coin.symbol}</span>
-            <span className="text-[9px] text-[#556677] font-mono">#{index + 1}</span>
+            <span className="text-sm font-bold text-foreground truncate">{coin.symbol}</span>
+            <span className="text-[9px] text-muted-foreground/50 font-mono">#{index + 1}</span>
           </div>
-          <p className="text-[10px] text-[#667788] truncate">{coin.name}</p>
+          <p className="text-[10px] text-muted-foreground/70 truncate">{coin.name}</p>
         </div>
       </div>
 
       {/* Price */}
       <div className="mb-1">
-        <span className="text-base font-bold text-white font-mono leading-none">
+        <span className="text-base font-bold text-foreground font-mono leading-none">
           {noData ? '-' : formatPriceCompact(coin.price)}
         </span>
       </div>
@@ -615,7 +615,7 @@ function CoinCard({ coin, index, onClick }: {
       {/* Change badge */}
       <div className="mb-2">
         {noData ? (
-          <span className="text-[10px] text-[#556677]">No Data</span>
+          <span className="text-[10px] text-muted-foreground/50">No Data</span>
         ) : (
           <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-bold font-mono ${
             isUp ? 'text-[#ff4444] bg-[rgba(255,68,68,0.1)]' : 'text-[#00cc66] bg-[rgba(0,204,102,0.1)]'
@@ -698,10 +698,10 @@ export default function CryptoPanorama() {
   // Loading
   if (accessLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[#8899aa]">正在验证访问权限...</span>
+          <span className="text-sm text-muted-foreground">正在验证访问权限...</span>
         </div>
       </div>
     );
@@ -710,10 +710,10 @@ export default function CryptoPanorama() {
   // Guest trial expired
   if (guestTrialExpired) {
     return (
-      <div className="min-h-screen bg-[#0a0e17] flex flex-col items-center justify-center gap-6 px-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
         <Shield size={48} className="text-[#00d4ff]" />
-        <h2 className="text-2xl font-bold text-white" style={{ fontFamily: "'Orbitron', sans-serif" }}>TRIAL ENDED</h2>
-        <p className="text-[#8899aa] text-sm text-center max-w-md">免费试用已结束，请注册账号并联系管理员开通权限。</p>
+        <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Orbitron', sans-serif" }}>TRIAL ENDED</h2>
+        <p className="text-muted-foreground text-sm text-center max-w-md">免费试用已结束，请注册账号并联系管理员开通权限。</p>
         <div className="flex gap-3">
           <a href={getLoginUrl()} className="px-4 py-2 rounded-lg bg-[#00d4ff] text-black font-bold text-sm">登录</a>
           <Link href="/"><button className="px-4 py-2 rounded-lg border border-[rgba(0,212,255,0.2)] text-[#00d4ff] text-sm">返回首页</button></Link>
@@ -725,10 +725,10 @@ export default function CryptoPanorama() {
   // No access
   if (isAuthenticated && accessData && !accessData.hasAccess) {
     return (
-      <div className="min-h-screen bg-[#0a0e17] flex flex-col items-center justify-center gap-6 px-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
         <Lock size={48} className="text-[#ff6b00]" />
-        <h2 className="text-2xl font-bold text-white" style={{ fontFamily: "'Orbitron', sans-serif" }}>ACCESS RESTRICTED</h2>
-        <p className="text-[#8899aa] text-sm text-center max-w-md">您的账号尚未获得访问权限，请联系管理员开通。</p>
+        <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Orbitron', sans-serif" }}>ACCESS RESTRICTED</h2>
+        <p className="text-muted-foreground text-sm text-center max-w-md">您的账号尚未获得访问权限，请联系管理员开通。</p>
         <Link href="/"><button className="px-4 py-2 rounded-lg border border-[rgba(0,212,255,0.2)] text-[#00d4ff] text-sm">返回首页</button></Link>
       </div>
     );
@@ -737,7 +737,7 @@ export default function CryptoPanorama() {
   const lastUpdate = data?.timestamp ? new Date(data.timestamp) : null;
 
   return (
-    <div className="min-h-screen bg-[#0a0e17]" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
+    <div className="min-h-screen bg-background" style={{ fontFamily: "'Inter', 'Noto Sans SC', Arial, sans-serif" }}>
       {/* Scan line effect */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]" style={{
         backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.1) 2px, rgba(0,212,255,0.1) 4px)',
@@ -756,7 +756,7 @@ export default function CryptoPanorama() {
       `}</style>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl bg-[rgba(10,14,23,0.95)]">
+      <header className="sticky top-0 z-50 border-b border-[rgba(0,212,255,0.12)] backdrop-blur-xl" style={{ background: 'var(--theme-header-bg)' }}>
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent opacity-60" />
         <div className="max-w-[1600px] mx-auto px-3 lg:px-5">
           <div className="flex items-center h-12 gap-2">
@@ -772,10 +772,10 @@ export default function CryptoPanorama() {
                 <Zap size={14} className="text-white" />
               </div>
               <div>
-                <h1 className="text-sm font-bold text-white tracking-wide" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+                <h1 className="text-sm font-bold text-foreground tracking-wide" style={{ fontFamily: "'Orbitron', sans-serif" }}>
                   CRYPTO PANORAMA
                 </h1>
-                <p className="text-[9px] text-[#8899aa] -mt-0.5">全景看板 · 4×5 Grid · Real-time</p>
+                <p className="text-[9px] text-muted-foreground -mt-0.5">全景看板 · 4×5 Grid · Real-time</p>
               </div>
             </div>
 
@@ -784,19 +784,19 @@ export default function CryptoPanorama() {
             {/* BTC Dominance */}
             {data && (
               <div className="hidden sm:flex items-center gap-1.5 text-xs">
-                <span className="text-[#8899aa]">BTC</span>
+                <span className="text-muted-foreground">BTC</span>
                 <span className="text-[#00d4ff] font-mono font-bold">{data.btcDominance.toFixed(1)}%</span>
               </div>
             )}
 
             {/* Coin count */}
-            <div className="flex items-center gap-1 text-xs text-[#8899aa]">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <span className="font-mono">{allCoins.length}</span>
               <span>coins</span>
             </div>
 
             {/* Clock */}
-            <div className="flex items-center gap-1 text-xs text-[#8899aa]">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock size={11} />
               <span className="font-mono tabular-nums">{now.toLocaleTimeString('zh-CN', { hour12: false })}</span>
             </div>
@@ -813,7 +813,7 @@ export default function CryptoPanorama() {
 
             {/* Last update */}
             {lastUpdate && (
-              <div className="hidden md:flex items-center gap-1 text-[10px] text-[#667788]">
+              <div className="hidden md:flex items-center gap-1 text-[10px] text-muted-foreground/70">
                 <span>更新: {lastUpdate.toLocaleTimeString('zh-CN', { hour12: false })}</span>
               </div>
             )}
@@ -829,7 +829,7 @@ export default function CryptoPanorama() {
           <div className="flex items-center justify-center py-32">
             <div className="flex flex-col items-center gap-4">
               <div className="w-12 h-12 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-[#8899aa]">正在获取全部币种数据...</span>
+              <span className="text-sm text-muted-foreground">正在获取全部币种数据...</span>
             </div>
           </div>
         )}
@@ -850,7 +850,7 @@ export default function CryptoPanorama() {
 
         {/* Legend */}
         {allCoins.length > 0 && (
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-[10px] text-[#667788]">
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-[10px] text-muted-foreground/70">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded border-2 border-[#ff4444] animate-[pulse-red_1.5s_ease-in-out_infinite]" />
               <span>涨幅 ≥ 3% 闪动</span>
@@ -860,7 +860,7 @@ export default function CryptoPanorama() {
               <span>跌幅 ≥ 3% 闪动</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded border-2 border-[#1e2340]" />
+              <div className="w-3 h-3 rounded border-2 border-border" />
               <span>正常波动</span>
             </div>
             <span>·</span>
@@ -872,7 +872,7 @@ export default function CryptoPanorama() {
 
         {/* Footer */}
         <div className="text-center py-4 mt-4 border-t border-[rgba(0,212,255,0.06)]">
-          <p className="text-xs text-[#556677]">
+          <p className="text-xs text-muted-foreground/50">
             数据来源：CoinGecko · 每30秒自动刷新 · 仅供参考，不构成投资建议
           </p>
         </div>

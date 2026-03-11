@@ -108,7 +108,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                     <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                     {cfg.pulse && <div className="absolute inset-0 w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: cfg.color, opacity: 0.4 }} />}
                   </div>
-                  <span className="text-sm text-white font-mono tabular-nums font-bold">{c.localTime}</span>
+                  <span className="text-sm text-foreground font-mono tabular-nums font-bold">{c.localTime}</span>
                   <span className="text-sm px-1.5 py-0.5 rounded font-semibold" style={{ color: cfg.color, backgroundColor: `${cfg.color}25` }}>
                     {t(`status.${c.status}`, lang)}
                   </span>
@@ -136,7 +136,7 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
 
           {/* Language Switcher */}
           <div ref={langRef} className="relative">
-            <button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-[rgba(0,212,255,0.08)] text-red-500/70 hover:text-[#aabbcc] transition-colors">
+            <button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-[rgba(0,212,255,0.08)] text-red-500/70 hover:text-muted-foreground/80 transition-colors">
               <Globe size={13} />
               <span className="text-xs">{LANGS.find(l => l.id === lang)?.flag}</span>
               <ChevronDown size={9} className={`transition-transform ${langOpen ? 'rotate-180' : ''}`} />
@@ -235,8 +235,8 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                 className={`flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded transition-all ${isActive ? 'opacity-100 bg-[rgba(0,212,255,0.08)]' : 'opacity-55 hover:opacity-75'}`}
               >
                 <div className="w-1 h-1 rounded-full" style={{ backgroundColor: cfg.color }} />
-                <span className="text-sm text-white font-mono font-semibold">{t(`market.${c.market}`, lang)}</span>
-                <span className="text-sm text-white/90 font-mono tabular-nums font-bold">{c.localTime}</span>
+                <span className="text-sm text-foreground font-mono font-semibold">{t(`market.${c.market}`, lang)}</span>
+                <span className="text-sm text-foreground/90 font-mono tabular-nums font-bold">{c.localTime}</span>
                 <span className="text-sm font-semibold" style={{ color: cfg.color }}>{t(`status.${c.status}`, lang)}</span>
               </button>
             );

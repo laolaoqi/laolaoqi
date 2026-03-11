@@ -30,7 +30,7 @@ function formatVolume(v: number) {
 
 // SVG K-line chart
 function KLineChart({ data }: { data: any[] }) {
-  if (!data || data.length < 2) return <div className="text-center text-[#556677] py-8">No chart data</div>;
+  if (!data || data.length < 2) return <div className="text-center text-muted-foreground/50 py-8">No chart data</div>;
 
   const width = 800, height = 300, padding = { top: 20, right: 60, bottom: 30, left: 10 };
   const chartW = width - padding.left - padding.right;
@@ -115,7 +115,7 @@ function KLineChart({ data }: { data: any[] }) {
 
 // Intraday line chart
 function IntradayChart({ data }: { data: any[] }) {
-  if (!data || data.length < 2) return <div className="text-center text-[#556677] py-8">No intraday data</div>;
+  if (!data || data.length < 2) return <div className="text-center text-muted-foreground/50 py-8">No intraday data</div>;
 
   const width = 800, height = 200, pad = 30;
   const values = data.map(d => d.close);
@@ -166,7 +166,7 @@ function IntradayChart({ data }: { data: any[] }) {
 function TechnicalIndicator({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="flex items-center justify-between py-1.5 border-b border-[rgba(0,212,255,0.05)]">
-      <span className="text-[11px] text-[#667788]">{label}</span>
+      <span className="text-[11px] text-muted-foreground/70">{label}</span>
       <span className="text-[11px] font-mono tabular-nums" style={{ color }}>{value}</span>
     </div>
   );
@@ -191,7 +191,7 @@ function StockDetailContent() {
     ogDescription: `${stockName}实时行情、K线图、技术指标与基本面数据分析`,
   });
 
-  if (!symbol) return <div className="text-center py-20 text-[#556677]">No symbol provided</div>;
+  if (!symbol) return <div className="text-center py-20 text-muted-foreground/50">No symbol provided</div>;
 
   const isUp = (data?.change || 0) >= 0;
   const priceColor = isUp ? '#00e676' : '#ff3b3b';
@@ -203,7 +203,7 @@ function StockDetailContent() {
 
       <div className="relative z-10 max-w-[1400px] mx-auto px-3 lg:px-5 py-4 w-full">
         {/* Back button */}
-        <Link href="/" className="inline-flex items-center gap-2 text-[#667788] hover:text-[#00d4ff] transition-colors mb-4 text-sm">
+        <Link href="/" className="inline-flex items-center gap-2 text-muted-foreground/70 hover:text-[#00d4ff] transition-colors mb-4 text-sm">
           <ArrowLeft size={16} />
           <span>{lang === 'zh' ? '返回仪表盘' : 'Back to Dashboard'}</span>
         </Link>
@@ -215,15 +215,15 @@ function StockDetailContent() {
           </div>
         ) : !data?.isLive ? (
           <div className="text-center py-20">
-            <div className="text-[#556677] text-lg mb-2">{lang === 'zh' ? '无法获取数据' : 'Unable to fetch data'}</div>
-            <div className="text-[#334455] text-sm">{symbol}</div>
+            <div className="text-muted-foreground/50 text-lg mb-2">{lang === 'zh' ? '无法获取数据' : 'Unable to fetch data'}</div>
+            <div className="text-muted-foreground/40 text-sm">{symbol}</div>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Header */}
             <div className="flex items-end justify-between flex-wrap gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-[#ccddeeff]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+                <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Orbitron', sans-serif" }}>
                   {symbol}
                 </h1>
                 <div className="flex items-center gap-4 mt-2">
@@ -238,10 +238,10 @@ function StockDetailContent() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-4 text-xs text-[#667788]">
-                <div><span className="text-[#556677]">{lang === 'zh' ? '最高' : 'High'}: </span><span className="font-mono text-[#aabbcc]">{formatPrice(data.high)}</span></div>
-                <div><span className="text-[#556677]">{lang === 'zh' ? '最低' : 'Low'}: </span><span className="font-mono text-[#aabbcc]">{formatPrice(data.low)}</span></div>
-                <div><span className="text-[#556677]">{lang === 'zh' ? '成交量' : 'Volume'}: </span><span className="font-mono text-[#aabbcc]">{formatVolume(data.volume)}</span></div>
+              <div className="flex gap-4 text-xs text-muted-foreground/70">
+                <div><span className="text-muted-foreground/50">{lang === 'zh' ? '最高' : 'High'}: </span><span className="font-mono text-muted-foreground/80">{formatPrice(data.high)}</span></div>
+                <div><span className="text-muted-foreground/50">{lang === 'zh' ? '最低' : 'Low'}: </span><span className="font-mono text-muted-foreground/80">{formatPrice(data.low)}</span></div>
+                <div><span className="text-muted-foreground/50">{lang === 'zh' ? '成交量' : 'Volume'}: </span><span className="font-mono text-muted-foreground/80">{formatVolume(data.volume)}</span></div>
               </div>
             </div>
 
@@ -279,14 +279,14 @@ function StockDetailContent() {
                 </div>
                 {/* RSI Gauge */}
                 <div className="mt-3 pt-2 border-t border-[rgba(0,212,255,0.08)]">
-                  <div className="flex items-center justify-between text-[9px] text-[#556677] mb-1">
+                  <div className="flex items-center justify-between text-[9px] text-muted-foreground/50 mb-1">
                     <span>{lang === 'zh' ? '超卖' : 'Oversold'}</span>
                     <span>{lang === 'zh' ? '中性' : 'Neutral'}</span>
                     <span>{lang === 'zh' ? '超买' : 'Overbought'}</span>
                   </div>
                   <div className="h-2 rounded-full bg-gradient-to-r from-[#00e676] via-[#ffaa00] to-[#ff3b3b] relative">
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white border-2 border-[#0a0e17] shadow-lg"
+                      className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white border-2 border-background shadow-lg"
                       style={{ left: `${Math.min(100, Math.max(0, data.technicals?.rsi14 || 50))}%`, transform: 'translate(-50%, -50%)' }}
                     />
                   </div>
