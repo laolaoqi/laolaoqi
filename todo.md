@@ -285,3 +285,8 @@
 - [x] 修复后端统计查询的时间范围过滤（添加开发路径过滤，useMemo→useEffect修复图表渲染）
 - [x] 修复前端时间范围参数传递（添加今日选项，Summary卡片动态显示选择范围的PV/UV）
 - [x] 测试验证不同时间范围返回不同数据（22个visitorStats测试全部通过，浏览器验证图表正常渲染）
+
+## v7.13.2 - 修复访客统计分时段统计数据不正确
+- [x] 排查分时段统计数据不正确的具体表现（根因：Node.js使用America/New_York时区，MySQL使用UTC，导致setHours(0,0,0,0)产生UTC 04:00而非UTC 00:00）
+- [x] 修复后端/前端时间范围过滤逻辑（统一使用UTC午夜时间getUtcMidnight/toUtcDateStr，统一所有函数的devPathFilter为10个条件）
+- [x] 测试验证修复效果（133个测试全部通过，浏览器验证Card 1-4数据一致：今日PV=67/UV=10）

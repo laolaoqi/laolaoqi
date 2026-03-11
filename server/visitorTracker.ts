@@ -166,6 +166,19 @@ export async function recordVisit(params: {
 // Analytics Queries
 // ===================================================================
 
+/** Get UTC midnight for today (or N days ago). Always uses UTC to match MySQL DATE() behavior. */
+function getUtcMidnight(daysAgo: number = 0): Date {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  if (daysAgo > 0) d.setUTCDate(d.getUTCDate() - daysAgo);
+  return d;
+}
+
+/** Format a Date to YYYY-MM-DD using UTC components */
+function toUtcDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 // Common filter to exclude dev/build paths from analytics
 const DEV_PATH_FILTER = sql.raw(`
   AND path NOT LIKE '/src/%'
@@ -180,13 +193,14 @@ const DEV_PATH_FILTER = sql.raw(`
   AND path NOT LIKE '%.map'
 `);
 
-/** Get daily PV/UV for a date range */
+/** Get daily PV/UV for a date range, filling in missing dates with zeros */
 export async function getDailyStats(days: number = 30) {
   const db = await getDb();
   if (!db) return [];
 
-  const since = new Date();
-  since.setDate(since.getDate() - days);
+  // Use UTC midnight for consistency across all analytics functions
+  // "today" (days=1) means from UTC midnight today; "7 days" means from UTC midnight 7 days ago
+  const since = getUtcMidnight(days > 1 ? days - 1 : 0);
 
   // Use raw SQL to avoid only_full_group_by issues
   const rows = await db.execute(
@@ -194,11 +208,28 @@ export async function getDailyStats(days: number = 30) {
   );
 
   const rawRows = Array.isArray(rows) && rows.length > 0 && Array.isArray(rows[0]) ? rows[0] : rows;
-  return (rawRows as any[]).map((r: any) => ({
-    date: String(r.date),
-    pv: Number(r.pv),
-    uv: Number(r.uv),
-  }));
+  const dataMap = new Map<string, { pv: number; uv: number }>();
+  (rawRows as any[]).forEach((r: any) => {
+    // Normalize date to YYYY-MM-DD string
+    const d = r.date instanceof Date ? r.date.toISOString().slice(0, 10) : String(r.date).slice(0, 10);
+    dataMap.set(d, { pv: Number(r.pv), uv: Number(r.uv) });
+  });
+
+  // Fill in all dates in the range with zeros for missing days (using UTC dates)
+  const result: Array<{ date: string; pv: number; uv: number }> = [];
+  const todayUtc = getUtcMidnight(0);
+  
+  for (let d = new Date(since); d <= todayUtc; d.setUTCDate(d.getUTCDate() + 1)) {
+    const dateStr = toUtcDateStr(d);
+    const entry = dataMap.get(dateStr);
+    result.push({
+      date: dateStr,
+      pv: entry?.pv ?? 0,
+      uv: entry?.uv ?? 0,
+    });
+  }
+
+  return result;
 }
 
 /** Get country distribution */
@@ -206,8 +237,7 @@ export async function getCountryStats(days: number = 30) {
   const db = await getDb();
   if (!db) return [];
 
-  const since = new Date();
-  since.setDate(since.getDate() - days);
+  const since = getUtcMidnight(days > 1 ? days - 1 : 0);
 
   const rows = await db
     .select({
@@ -222,8 +252,14 @@ export async function getCountryStats(days: number = 30) {
       sql`${visitorLogs.country} IS NOT NULL`,
       sql`${visitorLogs.path} NOT LIKE '/src/%'`,
       sql`${visitorLogs.path} NOT LIKE '/@%'`,
+      sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
+      sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
+      sql`${visitorLogs.path} NOT LIKE '/client/%'`,
       sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
       sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+      sql`${visitorLogs.path} NOT LIKE '%.css'`,
+      sql`${visitorLogs.path} NOT LIKE '%.js'`,
+      sql`${visitorLogs.path} NOT LIKE '%.map'`,
     ))
     .groupBy(visitorLogs.country, visitorLogs.countryCode)
     .orderBy(desc(sql`visits`))
@@ -237,8 +273,7 @@ export async function getCityStats(days: number = 30) {
   const db = await getDb();
   if (!db) return [];
 
-  const since = new Date();
-  since.setDate(since.getDate() - days);
+  const since = getUtcMidnight(days > 1 ? days - 1 : 0);
 
   const rows = await db
     .select({
@@ -254,8 +289,14 @@ export async function getCityStats(days: number = 30) {
       sql`${visitorLogs.city} IS NOT NULL AND ${visitorLogs.city} != ''`,
       sql`${visitorLogs.path} NOT LIKE '/src/%'`,
       sql`${visitorLogs.path} NOT LIKE '/@%'`,
+      sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
+      sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
+      sql`${visitorLogs.path} NOT LIKE '/client/%'`,
       sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
       sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+      sql`${visitorLogs.path} NOT LIKE '%.css'`,
+      sql`${visitorLogs.path} NOT LIKE '%.js'`,
+      sql`${visitorLogs.path} NOT LIKE '%.map'`,
     ))
     .groupBy(visitorLogs.city, visitorLogs.country, visitorLogs.countryCode)
     .orderBy(desc(sql`visits`))
@@ -269,8 +310,7 @@ export async function getTopPages(days: number = 30) {
   const db = await getDb();
   if (!db) return [];
 
-  const since = new Date();
-  since.setDate(since.getDate() - days);
+  const since = getUtcMidnight(days > 1 ? days - 1 : 0);
 
   const rows = await db
     .select({
@@ -305,15 +345,27 @@ export async function getDeviceStats(days: number = 30) {
   const db = await getDb();
   if (!db) return { devices: [], browsers: [], oses: [] };
 
-  const since = new Date();
-  since.setDate(since.getDate() - days);
+  const since = getUtcMidnight(days > 1 ? days - 1 : 0);
+
+  const devPathFilter = [
+    sql`${visitorLogs.path} NOT LIKE '/src/%'`,
+    sql`${visitorLogs.path} NOT LIKE '/@%'`,
+    sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
+    sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
+    sql`${visitorLogs.path} NOT LIKE '/client/%'`,
+    sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
+    sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+    sql`${visitorLogs.path} NOT LIKE '%.css'`,
+    sql`${visitorLogs.path} NOT LIKE '%.js'`,
+    sql`${visitorLogs.path} NOT LIKE '%.map'`,
+  ];
 
   const [devices, browsers, oses] = await Promise.all([
     db.select({
       name: visitorLogs.deviceType,
       count: count().as('count'),
     }).from(visitorLogs)
-      .where(gte(visitorLogs.createdAt, since))
+      .where(and(gte(visitorLogs.createdAt, since), ...devPathFilter))
       .groupBy(visitorLogs.deviceType)
       .orderBy(desc(sql`count`)),
 
@@ -321,7 +373,7 @@ export async function getDeviceStats(days: number = 30) {
       name: visitorLogs.browser,
       count: count().as('count'),
     }).from(visitorLogs)
-      .where(gte(visitorLogs.createdAt, since))
+      .where(and(gte(visitorLogs.createdAt, since), ...devPathFilter))
       .groupBy(visitorLogs.browser)
       .orderBy(desc(sql`count`)),
 
@@ -329,7 +381,7 @@ export async function getDeviceStats(days: number = 30) {
       name: visitorLogs.os,
       count: count().as('count'),
     }).from(visitorLogs)
-      .where(gte(visitorLogs.createdAt, since))
+      .where(and(gte(visitorLogs.createdAt, since), ...devPathFilter))
       .groupBy(visitorLogs.os)
       .orderBy(desc(sql`count`)),
   ]);
@@ -361,8 +413,14 @@ export async function getRecentVisitors(limit: number = 50) {
     .where(and(
       sql`${visitorLogs.path} NOT LIKE '/src/%'`,
       sql`${visitorLogs.path} NOT LIKE '/@%'`,
+      sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
+      sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
+      sql`${visitorLogs.path} NOT LIKE '/client/%'`,
       sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
       sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+      sql`${visitorLogs.path} NOT LIKE '%.css'`,
+      sql`${visitorLogs.path} NOT LIKE '%.js'`,
+      sql`${visitorLogs.path} NOT LIKE '%.map'`,
     ))
     .orderBy(desc(visitorLogs.createdAt))
     .limit(limit);
@@ -375,15 +433,20 @@ export async function getTodaySummary() {
   const db = await getDb();
   if (!db) return { todayPV: 0, todayUV: 0, totalPV: 0, totalUV: 0, topCountry: null };
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = getUtcMidnight(0);
 
-  // Reusable dev path filter for Drizzle where clauses
+  // Reusable dev path filter for Drizzle where clauses — must match DEV_PATH_FILTER
   const devPathFilter = [
     sql`${visitorLogs.path} NOT LIKE '/src/%'`,
     sql`${visitorLogs.path} NOT LIKE '/@%'`,
+    sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
+    sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
+    sql`${visitorLogs.path} NOT LIKE '/client/%'`,
     sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
     sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+    sql`${visitorLogs.path} NOT LIKE '%.css'`,
+    sql`${visitorLogs.path} NOT LIKE '%.js'`,
+    sql`${visitorLogs.path} NOT LIKE '%.map'`,
   ];
 
   const [todayStats, totalStats, topCountry] = await Promise.all([
@@ -421,8 +484,7 @@ export async function getHourlyStats() {
   const db = await getDb();
   if (!db) return [];
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = getUtcMidnight(0);
 
   // Use raw SQL to avoid Drizzle ORM GROUP BY expression mismatch with only_full_group_by
   const rows = await db.execute(

@@ -45,6 +45,54 @@ describe("Visitor Statistics", () => {
       const result = await getDailyStats();
       expect(Array.isArray(result)).toBe(true);
     });
+
+    it("should fill in missing dates with zeros for 7-day range", async () => {
+      // Mock returns empty data (no visits)
+      const result = await getDailyStats(7);
+      // Should have at least 7 entries (one per day) even with no data
+      expect(result.length).toBeGreaterThanOrEqual(7);
+      // All entries should have pv and uv of 0
+      result.forEach(entry => {
+        expect(entry).toHaveProperty("date");
+        expect(entry).toHaveProperty("pv");
+        expect(entry).toHaveProperty("uv");
+        expect(entry.pv).toBe(0);
+        expect(entry.uv).toBe(0);
+      });
+    });
+
+    it("should fill in missing dates with zeros for 30-day range", async () => {
+      const result = await getDailyStats(30);
+      // Should have at least 30 entries
+      expect(result.length).toBeGreaterThanOrEqual(30);
+    });
+
+    it("should return exactly 1 entry for 1-day range (today only)", async () => {
+      const result = await getDailyStats(1);
+      // 1 day range = today only, should return exactly 1 entry
+      expect(result.length).toBe(1);
+    });
+
+    it("should have dates in YYYY-MM-DD format", async () => {
+      const result = await getDailyStats(7);
+      result.forEach(entry => {
+        expect(entry.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      });
+    });
+
+    it("should have dates in ascending order", async () => {
+      const result = await getDailyStats(7);
+      for (let i = 1; i < result.length; i++) {
+        expect(result[i].date >= result[i - 1].date).toBe(true);
+      }
+    });
+
+    it("different day values should produce different result lengths", async () => {
+      const result7 = await getDailyStats(7);
+      const result30 = await getDailyStats(30);
+      // 30-day range should have more entries than 7-day range
+      expect(result30.length).toBeGreaterThan(result7.length);
+    });
   });
 
   describe("getCountryStats", () => {
@@ -165,19 +213,34 @@ describe("Visitor Statistics", () => {
     });
   });
 
-  describe("time range parameter validation", () => {
+  describe("date filling validation", () => {
     it("getDailyStats with 1 day should work for today view", async () => {
-      // This tests the new "today" option
       const result = await getDailyStats(1);
       expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThanOrEqual(1);
     });
 
-    it("different day values should all be accepted", async () => {
+    it("all day values should produce filled date arrays", async () => {
       const dayValues = [1, 7, 14, 30, 90, 365];
       for (const days of dayValues) {
         const result = await getDailyStats(days);
         expect(Array.isArray(result)).toBe(true);
+        // Each entry should have the correct shape
+        result.forEach(entry => {
+          expect(entry).toHaveProperty("date");
+          expect(entry).toHaveProperty("pv");
+          expect(entry).toHaveProperty("uv");
+          expect(typeof entry.date).toBe("string");
+          expect(typeof entry.pv).toBe("number");
+          expect(typeof entry.uv).toBe("number");
+        });
       }
+    });
+
+    it("90-day range should have more entries than 7-day range", async () => {
+      const result7 = await getDailyStats(7);
+      const result90 = await getDailyStats(90);
+      expect(result90.length).toBeGreaterThan(result7.length);
     });
   });
 });
