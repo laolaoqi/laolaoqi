@@ -171,3 +171,34 @@ export const cryptoBoardCache = mysqlTable("crypto_board_cache", {
 });
 
 export type CryptoBoardCacheRow = typeof cryptoBoardCache.$inferSelect;
+
+/**
+ * Visitor logs — tracks every page visit with IP geolocation
+ * Used by admin analytics dashboard
+ */
+export const visitorLogs = mysqlTable("visitor_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  ip: varchar("ip", { length: 45 }).notNull(),           // IPv4 or IPv6
+  path: varchar("path", { length: 512 }).notNull(),       // visited URL path
+  method: varchar("method", { length: 10 }).default("GET").notNull(),
+  userAgent: text("userAgent"),
+  referer: varchar("referer", { length: 1024 }),
+  // Geolocation from IP-API
+  country: varchar("country", { length: 100 }),
+  countryCode: varchar("countryCode", { length: 10 }),
+  region: varchar("region", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  lat: float("lat"),
+  lon: float("lon"),
+  isp: varchar("isp", { length: 200 }),
+  // Device info parsed from UA
+  deviceType: varchar("deviceType", { length: 20 }),      // desktop / mobile / tablet / bot
+  browser: varchar("browser", { length: 50 }),
+  os: varchar("os", { length: 50 }),
+  // User association (nullable for anonymous visitors)
+  userId: int("userId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type VisitorLog = typeof visitorLogs.$inferSelect;
+export type InsertVisitorLog = typeof visitorLogs.$inferInsert;

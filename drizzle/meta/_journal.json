@@ -43,6 +43,13 @@
       "when": 1772164722147,
       "tag": "0005_sturdy_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1773191473291,
+      "tag": "0006_true_mandrill",
+      "breakpoints": true
     }
   ]
 }

@@ -12,12 +12,13 @@ import {
   Plus, Trash2, Edit, Eye, EyeOff, Upload,
   Save, X, Key, BarChart3, Clock, CheckCircle2,
   XCircle, Calendar, AlertTriangle, UserCheck, UserX,
-  ChevronDown
+  ChevronDown, Globe, Monitor, Smartphone, Tablet, Bot,
+  MapPin, TrendingUp, Activity, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-type Tab = 'overview' | 'users' | 'permissions' | 'announcements';
+type Tab = 'overview' | 'users' | 'permissions' | 'announcements' | 'visitors';
 
 export default function AdminPage() {
   const { user, isAuthenticated, loading } = useAuth({ redirectOnUnauthenticated: true });
@@ -53,6 +54,7 @@ export default function AdminPage() {
     { key: 'permissions', label: '权限管理', icon: <Key size={14} /> },
     { key: 'users', label: '用户管理', icon: <Users size={14} /> },
     { key: 'announcements', label: '公告管理', icon: <Megaphone size={14} /> },
+    { key: 'visitors', label: '访客统计', icon: <Globe size={14} /> },
   ];
 
   return (
@@ -103,6 +105,7 @@ export default function AdminPage() {
         {tab === 'permissions' && <PermissionManagement />}
         {tab === 'users' && <UserManagement />}
         {tab === 'announcements' && <AnnouncementManagement />}
+        {tab === 'visitors' && <VisitorAnalytics />}
       </div>
     </div>
   );
@@ -781,6 +784,452 @@ function AnnouncementManagement() {
       </div>
     </div>
   );
+}
+
+// ===================================================================
+// Visitor Analytics — 访客统计可视化面板
+// ===================================================================
+function VisitorAnalytics() {
+  const [days, setDays] = useState(30);
+  const { data: summary, isLoading: summaryLoading } = trpc.admin.visitorSummary.useQuery();
+  const { data: dailyStats } = trpc.admin.visitorDailyStats.useQuery({ days });
+  const { data: hourlyStats } = trpc.admin.visitorHourlyStats.useQuery();
+  const { data: countryStats } = trpc.admin.visitorCountryStats.useQuery({ days });
+  const { data: cityStats } = trpc.admin.visitorCityStats.useQuery({ days });
+  const { data: topPages } = trpc.admin.visitorTopPages.useQuery({ days });
+  const { data: deviceStats } = trpc.admin.visitorDeviceStats.useQuery({ days });
+  const { data: recentVisitors } = trpc.admin.visitorRecentList.useQuery({ limit: 50 });
+  const utils = trpc.useUtils();
+
+  const refreshAll = () => {
+    utils.admin.visitorSummary.invalidate();
+    utils.admin.visitorDailyStats.invalidate();
+    utils.admin.visitorHourlyStats.invalidate();
+    utils.admin.visitorCountryStats.invalidate();
+    utils.admin.visitorCityStats.invalidate();
+    utils.admin.visitorTopPages.invalidate();
+    utils.admin.visitorDeviceStats.invalidate();
+    utils.admin.visitorRecentList.invalidate();
+    toast.success('数据已刷新');
+  };
+
+  if (summaryLoading) return <LoadingSpinner />;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-red-500 flex items-center gap-2">
+          <Activity size={20} /> 访客统计分析
+        </h2>
+        <div className="flex items-center gap-3">
+          <select
+            value={days}
+            onChange={e => setDays(Number(e.target.value))}
+            className="bg-red-500/5 border border-red-500/20 rounded px-3 py-1.5 text-xs text-red-400 focus:outline-none"
+          >
+            <option value={7}>近7天</option>
+            <option value={14}>近14天</option>
+            <option value={30}>近30天</option>
+            <option value={90}>近90天</option>
+            <option value={365}>近一年</option>
+          </select>
+          <button onClick={refreshAll} className="p-2 rounded hover:bg-red-500/10 text-red-500/60 hover:text-red-500 transition-colors">
+            <RefreshCw size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: '今日PV', value: summary?.todayPV ?? 0, icon: <Eye size={20} />, color: 'text-cyan-400' },
+          { label: '今日UV', value: summary?.todayUV ?? 0, icon: <Users size={20} />, color: 'text-green-400' },
+          { label: '累计PV', value: summary?.totalPV ?? 0, icon: <TrendingUp size={20} />, color: 'text-blue-400' },
+          { label: '累计UV', value: summary?.totalUV ?? 0, icon: <Globe size={20} />, color: 'text-purple-400' },
+          { label: '今日热门地区', value: summary?.topCountry ?? '-', icon: <MapPin size={20} />, color: 'text-orange-400', isText: true },
+        ].map((s, i) => (
+          <div key={i} className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
+            <div className={`mb-2 ${s.color}`}>{s.icon}</div>
+            <div className={`font-bold text-foreground ${'isText' in s ? 'text-lg' : 'text-2xl'}`}>
+              {'isText' in s ? s.value : Number(s.value).toLocaleString()}
+            </div>
+            <div className="text-xs text-red-500/60">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Daily PV/UV Chart */}
+      <div className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
+        <h3 className="text-sm font-bold text-red-500 mb-4">每日访问趋势</h3>
+        <BarLineChart data={dailyStats || []} />
+      </div>
+
+      {/* Hourly Distribution */}
+      <div className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
+        <h3 className="text-sm font-bold text-red-500 mb-4">今日小时分布</h3>
+        <HourlyChart data={hourlyStats || []} />
+      </div>
+
+      {/* Country + City Distribution */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
+          <h3 className="text-sm font-bold text-red-500 mb-3 flex items-center gap-1">
+            <Globe size={14} /> 国家/地区分布
+          </h3>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {(countryStats || []).map((c, i) => {
+              const maxVisits = countryStats?.[0]?.visits ?? 1;
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs w-6 text-red-500/40 text-right">#{i + 1}</span>
+                  <span className="text-xs font-mono w-6 text-center">{countryCodeToFlag(c.countryCode || '')}</span>
+                  <span className="text-xs text-foreground w-24 truncate">{c.country || '未知'}</span>
+                  <div className="flex-1 h-4 bg-red-500/5 rounded overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-cyan-500/60 to-cyan-400/30 rounded"
+                      style={{ width: `${(Number(c.visits) / Number(maxVisits)) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-cyan-400 w-12 text-right">{Number(c.visits).toLocaleString()}</span>
+                  <span className="text-[10px] text-red-500/40 w-10 text-right">{Number(c.uniqueIps)} IP</span>
+                </div>
+              );
+            })}
+            {(!countryStats || countryStats.length === 0) && (
+              <div className="text-center py-6 text-red-500/40 text-sm">暂无数据</div>
+            )}
+          </div>
+        </div>
+
+        <div className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
+          <h3 className="text-sm font-bold text-red-500 mb-3 flex items-center gap-1">
+            <MapPin size={14} /> 城市分布 TOP 20
+          </h3>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {(cityStats || []).slice(0, 20).map((c, i) => {
+              const maxVisits = cityStats?.[0]?.visits ?? 1;
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs w-6 text-red-500/40 text-right">#{i + 1}</span>
+                  <span className="text-xs font-mono w-6 text-center">{countryCodeToFlag(c.countryCode || '')}</span>
+                  <span className="text-xs text-foreground w-28 truncate">{c.city || '未知'}</span>
+                  <div className="flex-1 h-4 bg-red-500/5 rounded overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-green-500/60 to-green-400/30 rounded"
+                      style={{ width: `${(Number(c.visits) / Number(maxVisits)) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-green-400 w-12 text-right">{Number(c.visits).toLocaleString()}</span>
+                  <span className="text-[10px] text-red-500/40 w-10 text-right">{Number(c.uniqueIps)} IP</span>
+                </div>
+              );
+            })}
+            {(!cityStats || cityStats.length === 0) && (
+              <div className="text-center py-6 text-red-500/40 text-sm">暂无数据</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Top Pages + Device Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
+          <h3 className="text-sm font-bold text-red-500 mb-3">热门页面</h3>
+          <div className="space-y-2">
+            {(topPages || []).map((p, i) => (
+              <div key={i} className="flex items-center gap-3 py-1">
+                <span className="text-xs w-6 text-red-500/40 text-right">#{i + 1}</span>
+                <span className="text-xs text-cyan-400 flex-1 truncate font-mono">{p.path}</span>
+                <span className="text-xs text-foreground w-12 text-right">{Number(p.visits).toLocaleString()}</span>
+                <span className="text-[10px] text-red-500/40 w-10 text-right">{Number(p.uniqueIps)} IP</span>
+              </div>
+            ))}
+            {(!topPages || topPages.length === 0) && (
+              <div className="text-center py-6 text-red-500/40 text-sm">暂无数据</div>
+            )}
+          </div>
+        </div>
+
+        <div className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
+          <h3 className="text-sm font-bold text-red-500 mb-3">设备 / 浏览器 / 操作系统</h3>
+          <div className="space-y-4">
+            {/* Devices */}
+            <div>
+              <div className="text-[10px] text-red-500/50 mb-1.5 uppercase tracking-wider">设备类型</div>
+              <div className="flex gap-2 flex-wrap">
+                {(deviceStats?.devices || []).map((d, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-red-500/5 border border-red-500/10">
+                    {d.name === 'desktop' ? <Monitor size={12} className="text-blue-400" /> :
+                     d.name === 'mobile' ? <Smartphone size={12} className="text-green-400" /> :
+                     d.name === 'tablet' ? <Tablet size={12} className="text-purple-400" /> :
+                     d.name === 'bot' ? <Bot size={12} className="text-yellow-400" /> :
+                     <Monitor size={12} className="text-red-500/40" />}
+                    <span className="text-xs text-foreground">{d.name || '未知'}</span>
+                    <span className="text-xs text-red-500/50">{Number(d.count).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Browsers */}
+            <div>
+              <div className="text-[10px] text-red-500/50 mb-1.5 uppercase tracking-wider">浏览器</div>
+              <div className="flex gap-2 flex-wrap">
+                {(deviceStats?.browsers || []).map((b, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-red-500/5 border border-red-500/10">
+                    <span className="text-xs text-foreground">{b.name || '未知'}</span>
+                    <span className="text-xs text-red-500/50">{Number(b.count).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* OS */}
+            <div>
+              <div className="text-[10px] text-red-500/50 mb-1.5 uppercase tracking-wider">操作系统</div>
+              <div className="flex gap-2 flex-wrap">
+                {(deviceStats?.oses || []).map((o, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-red-500/5 border border-red-500/10">
+                    <span className="text-xs text-foreground">{o.name || '未知'}</span>
+                    <span className="text-xs text-red-500/50">{Number(o.count).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Visitors Table */}
+      <div className="border border-red-500/10 rounded-lg p-4 bg-red-500/3">
+        <h3 className="text-sm font-bold text-red-500 mb-3">最近访客记录</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-red-500/10">
+                <th className="text-left py-2 px-2 text-red-500/60 font-medium">时间</th>
+                <th className="text-left py-2 px-2 text-red-500/60 font-medium">IP</th>
+                <th className="text-left py-2 px-2 text-red-500/60 font-medium">地区</th>
+                <th className="text-left py-2 px-2 text-red-500/60 font-medium">城市</th>
+                <th className="text-left py-2 px-2 text-red-500/60 font-medium">页面</th>
+                <th className="text-left py-2 px-2 text-red-500/60 font-medium">设备</th>
+                <th className="text-left py-2 px-2 text-red-500/60 font-medium">浏览器</th>
+                <th className="text-left py-2 px-2 text-red-500/60 font-medium">系统</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(recentVisitors || []).map((v, i) => (
+                <tr key={v.id || i} className="border-b border-red-500/5 hover:bg-red-500/5 transition-colors">
+                  <td className="py-2 px-2 text-red-500/60 whitespace-nowrap">
+                    {v.createdAt ? new Date(v.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
+                  </td>
+                  <td className="py-2 px-2 text-cyan-400 font-mono">{v.ip}</td>
+                  <td className="py-2 px-2 text-foreground">
+                    {countryCodeToFlag(v.countryCode || '')} {v.country || '-'}
+                  </td>
+                  <td className="py-2 px-2 text-foreground">{v.city || '-'}</td>
+                  <td className="py-2 px-2 text-cyan-400/80 font-mono max-w-[200px] truncate">{v.path}</td>
+                  <td className="py-2 px-2 text-foreground">
+                    {v.deviceType === 'desktop' ? <Monitor size={12} className="inline text-blue-400" /> :
+                     v.deviceType === 'mobile' ? <Smartphone size={12} className="inline text-green-400" /> :
+                     v.deviceType === 'tablet' ? <Tablet size={12} className="inline text-purple-400" /> :
+                     v.deviceType === 'bot' ? <Bot size={12} className="inline text-yellow-400" /> :
+                     <span>-</span>}
+                  </td>
+                  <td className="py-2 px-2 text-foreground">{v.browser || '-'}</td>
+                  <td className="py-2 px-2 text-foreground">{v.os || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(!recentVisitors || recentVisitors.length === 0) && (
+            <div className="text-center py-8 text-red-500/40 text-sm">暂无访客记录</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===================================================================
+// Canvas Charts for Visitor Analytics
+// ===================================================================
+
+/** Country code to flag emoji */
+function countryCodeToFlag(code: string): string {
+  if (!code || code.length !== 2) return '🌐';
+  const c = code.toUpperCase();
+  return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65);
+}
+
+/** Daily PV/UV bar+line chart */
+function BarLineChart({ data }: { data: Array<{ date: string; pv: number; uv: number }> }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useMemo(() => {
+    if (!canvasRef.current || !data.length) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = { top: 20, right: 50, bottom: 40, left: 50 };
+    const cw = w - pad.left - pad.right;
+    const ch = h - pad.top - pad.bottom;
+
+    const maxPV = Math.max(...data.map(d => Number(d.pv)), 1);
+    const maxUV = Math.max(...data.map(d => Number(d.uv)), 1);
+    const maxVal = Math.max(maxPV, maxUV);
+    const barW = Math.max(4, (cw / data.length) * 0.6);
+    const gap = cw / data.length;
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,50,50,0.06)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.top + (ch / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(w - pad.right, y);
+      ctx.stroke();
+      // Y labels
+      ctx.fillStyle = 'rgba(255,50,50,0.35)';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(Math.round(maxVal * (1 - i / 4)).toString(), pad.left - 6, y + 3);
+    }
+
+    // PV bars
+    data.forEach((d, i) => {
+      const x = pad.left + i * gap + (gap - barW) / 2;
+      const barH = (Number(d.pv) / maxVal) * ch;
+      const y = pad.top + ch - barH;
+      ctx.fillStyle = 'rgba(0,180,255,0.25)';
+      ctx.fillRect(x, y, barW, barH);
+    });
+
+    // UV line
+    ctx.beginPath();
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 2;
+    data.forEach((d, i) => {
+      const x = pad.left + i * gap + gap / 2;
+      const y = pad.top + ch - (Number(d.uv) / maxVal) * ch;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // UV dots
+    data.forEach((d, i) => {
+      const x = pad.left + i * gap + gap / 2;
+      const y = pad.top + ch - (Number(d.uv) / maxVal) * ch;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#00ff88';
+      ctx.fill();
+    });
+
+    // X labels (show every N labels to avoid overlap)
+    const labelStep = Math.max(1, Math.floor(data.length / 10));
+    ctx.fillStyle = 'rgba(255,50,50,0.35)';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    data.forEach((d, i) => {
+      if (i % labelStep !== 0 && i !== data.length - 1) return;
+      const x = pad.left + i * gap + gap / 2;
+      const label = String(d.date).slice(5); // MM-DD
+      ctx.fillText(label, x, h - pad.bottom + 16);
+    });
+
+    // Legend
+    ctx.fillStyle = 'rgba(0,180,255,0.5)';
+    ctx.fillRect(w - pad.right - 80, 6, 10, 10);
+    ctx.fillStyle = 'rgba(255,50,50,0.5)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('PV', w - pad.right - 66, 15);
+    ctx.fillStyle = '#00ff88';
+    ctx.beginPath();
+    ctx.arc(w - pad.right - 35, 11, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,50,50,0.5)';
+    ctx.fillText('UV', w - pad.right - 26, 15);
+  }, [data]);
+
+  if (!data.length) return <div className="text-center py-8 text-red-500/40 text-sm">暂无数据</div>;
+
+  return <canvas ref={canvasRef} className="w-full" style={{ height: 260 }} />;
+}
+
+/** Hourly distribution bar chart */
+function HourlyChart({ data }: { data: Array<{ hour: number; pv: number; uv: number }> }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useMemo(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = { top: 15, right: 20, bottom: 30, left: 40 };
+    const cw = w - pad.left - pad.right;
+    const ch = h - pad.top - pad.bottom;
+
+    // Fill all 24 hours
+    const hours = Array.from({ length: 24 }, (_, i) => {
+      const found = data.find(d => Number(d.hour) === i);
+      return { hour: i, pv: found ? Number(found.pv) : 0, uv: found ? Number(found.uv) : 0 };
+    });
+
+    const maxVal = Math.max(...hours.map(h => h.pv), 1);
+    const barW = Math.max(4, (cw / 24) * 0.7);
+    const gap = cw / 24;
+
+    // Bars
+    hours.forEach((h, i) => {
+      const x = pad.left + i * gap + (gap - barW) / 2;
+      const barH = (h.pv / maxVal) * ch;
+      const y = pad.top + ch - barH;
+      const gradient = ctx.createLinearGradient(x, y, x, y + barH);
+      gradient.addColorStop(0, 'rgba(0,212,255,0.6)');
+      gradient.addColorStop(1, 'rgba(0,212,255,0.1)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y, barW, barH);
+    });
+
+    // X labels
+    ctx.fillStyle = 'rgba(255,50,50,0.35)';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    hours.forEach((h, i) => {
+      if (i % 3 !== 0) return;
+      const x = pad.left + i * gap + gap / 2;
+      ctx.fillText(`${h.hour}:00`, x, pad.top + ch + 16);
+    });
+
+    // Y labels
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 3; i++) {
+      const y = pad.top + (ch / 3) * i;
+      ctx.fillText(Math.round(maxVal * (1 - i / 3)).toString(), pad.left - 6, y + 3);
+    }
+  }, [data]);
+
+  return <canvas ref={canvasRef} className="w-full" style={{ height: 180 }} />;
 }
 
 function LoadingSpinner() {

@@ -1,0 +1,21 @@
+CREATE TABLE `visitor_logs` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`ip` varchar(45) NOT NULL,
+	`path` varchar(512) NOT NULL,
+	`method` varchar(10) NOT NULL DEFAULT 'GET',
+	`userAgent` text,
+	`referer` varchar(1024),
+	`country` varchar(100),
+	`countryCode` varchar(10),
+	`region` varchar(100),
+	`city` varchar(100),
+	`lat` float,
+	`lon` float,
+	`isp` varchar(200),
+	`deviceType` varchar(20),
+	`browser` varchar(50),
+	`os` varchar(50),
+	`userId` int,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `visitor_logs_id` PRIMARY KEY(`id`)
+);

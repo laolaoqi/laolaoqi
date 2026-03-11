@@ -10,6 +10,7 @@ import { getCryptoBoardData, runCryptoBoardJob, startCryptoBoardScheduler, loadC
 import { getSimPortfolioData, runSimRebalance, startSimInvestmentScheduler } from "./simInvestment";
 import { z } from "zod";
 import { nanoid } from "nanoid";
+import { getDailyStats, getCountryStats, getCityStats, getTopPages, getDeviceStats, getRecentVisitors, getTodaySummary, getHourlyStats } from "./visitorTracker";
 
 // ===================================================================
 // 缓存系统
@@ -399,6 +400,60 @@ export const appRouter = router({
         const expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
         await batchUpdateCryptoBoardAccess(input.userIds, input.access, expiresAt, input.note);
         return { success: true, count: input.userIds.length };
+      }),
+
+    // ===== 访客统计 =====
+
+    // 今日概览
+    visitorSummary: adminProcedure.query(async () => {
+      return await getTodaySummary();
+    }),
+
+    // 每日PV/UV统计
+    visitorDailyStats: adminProcedure
+      .input(z.object({ days: z.number().min(1).max(365).default(30) }))
+      .query(async ({ input }) => {
+        return await getDailyStats(input.days);
+      }),
+
+    // 小时分布（今日）
+    visitorHourlyStats: adminProcedure.query(async () => {
+      return await getHourlyStats();
+    }),
+
+    // 国家分布
+    visitorCountryStats: adminProcedure
+      .input(z.object({ days: z.number().min(1).max(365).default(30) }))
+      .query(async ({ input }) => {
+        return await getCountryStats(input.days);
+      }),
+
+    // 城市分布
+    visitorCityStats: adminProcedure
+      .input(z.object({ days: z.number().min(1).max(365).default(30) }))
+      .query(async ({ input }) => {
+        return await getCityStats(input.days);
+      }),
+
+    // 热门页面
+    visitorTopPages: adminProcedure
+      .input(z.object({ days: z.number().min(1).max(365).default(30) }))
+      .query(async ({ input }) => {
+        return await getTopPages(input.days);
+      }),
+
+    // 设备/浏览器/OS统计
+    visitorDeviceStats: adminProcedure
+      .input(z.object({ days: z.number().min(1).max(365).default(30) }))
+      .query(async ({ input }) => {
+        return await getDeviceStats(input.days);
+      }),
+
+    // 最近访客列表
+    visitorRecentList: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).default(50) }))
+      .query(async ({ input }) => {
+        return await getRecentVisitors(input.limit);
       }),
   }),
 

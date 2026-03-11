@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { seoPrerender } from "../seoPrerender";
+import { recordVisit } from "../visitorTracker";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -41,6 +42,35 @@ async function startServer() {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    next();
+  });
+  // Visitor tracking middleware (record page visits with IP geolocation)
+  app.use((req, res, next) => {
+    // Only track actual page navigation (GET requests to page routes)
+    // Exclude: API calls, Vite HMR/dev files, static assets, source files
+    if (
+      req.method === 'GET' &&
+      !req.path.startsWith('/api/') &&
+      !req.path.startsWith('/@') &&
+      !req.path.startsWith('/node_modules/') &&
+      !req.path.startsWith('/src/') &&
+      !req.path.startsWith('/__vite') &&
+      !req.path.startsWith('/client/') &&
+      !req.path.startsWith('/.manus') &&
+      !req.path.match(/\.(js|mjs|ts|tsx|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|map|webp|webm|mp4|json|xml|txt|html|webmanifest)$/) &&
+      !req.path.includes('__vite') &&
+      !req.path.includes('hot-update')
+    ) {
+      const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.headers['x-real-ip'] as string || req.socket.remoteAddress || '0.0.0.0';
+      // Fire and forget — don't block the response
+      recordVisit({
+        ip,
+        path: req.path,
+        method: req.method,
+        userAgent: req.headers['user-agent'],
+        referer: (req.headers['referer'] || req.headers['referrer'] || '') as string,
+      }).catch(() => {});
+    }
     next();
   });
   // SEO prerender for search engine bots (must be before other routes)
