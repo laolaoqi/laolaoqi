@@ -157,6 +157,30 @@ function getPageMeta(path: string): PageMeta {
     };
   }
 
+  // A-Share Simulation
+  if (path === '/ashare-sim') {
+    return {
+      title: 'A股模拟投资 - 猎手阿尔法 HUNTER ALPHA | AI智能选股模拟实盘',
+      description: '猎手阿尔法A股模拟投资系统，¥1,000,000虚拟本金，基于AI多因子策略模型自动选股调仓，每日9:00更新策略，红涨绿跌。',
+      canonical: `${SITE_URL}/ashare-sim`,
+      h1: 'A股模拟投资 - AI智能选股模拟实盘',
+      content: `
+        <section>
+          <h2>AI多因子策略模型选股</h2>
+          <p>基于猎手阿尔法的多因子评分系统，从沪深300+全市场活跃股中自动筛选优质标的，综合技术面、基本面和资金面指标进行评分排序。</p>
+        </section>
+        <section>
+          <h2>¥1,000,000虚拟本金</h2>
+          <p>初始本金100万元人民币，根据模式评分（进攻/防御/震荡）动态配置仓位，每日9:00（北京时间）自动调仓。</p>
+        </section>
+        <section>
+          <h2>实时持仓与交易记录</h2>
+          <p>实时展示当前持仓股票、买入价、现价、盈亏率，以及完整的交易历史和资产曲线。红涨绿跌，符合A股惯例。</p>
+        </section>
+      `,
+    };
+  }
+
   // About
   if (path === '/about') {
     return {
@@ -282,6 +306,7 @@ function renderPrerenderedHTML(meta: PageMeta): string {
         <li><a href="/">港股</a></li>
         <li><a href="/">美股</a></li>
         <li><a href="/crypto-investment">数字货币投资看板</a></li>
+        <li><a href="/ashare-sim">A股模拟投资</a></li>
         <li><a href="/about">关于我们</a></li>
       </ul>
     </nav>
@@ -299,6 +324,7 @@ function renderPrerenderedHTML(meta: PageMeta): string {
       <a href="/">首页</a> |
 <a href="/crypto-investment">数字货币投资看板</a> |
        <a href="/crypto-panorama">全景看板</a> |
+       <a href="/ashare-sim">A股模拟投资</a> |
        <a href="/about">关于我们</a>
     </nav>
   </footer>

@@ -24,6 +24,13 @@
     <priority>0.85</priority>
   </url>
 
+  <!-- A-Share Simulation -->
+  <url>
+    <loc>https://www.llq555.vip/ashare-sim</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
   <!-- About Page -->
   <url>
     <loc>https://www.llq555.vip/about</loc>

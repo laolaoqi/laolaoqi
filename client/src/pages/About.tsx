@@ -93,10 +93,15 @@ function AboutContent() {
         >
           {/* Back button */}
           <motion.div variants={itemVariants}>
-            <Link href="/" className="inline-flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-base font-medium">
-              <ArrowLeft size={18} />
-              返回首页
-            </Link>
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href="/" className="inline-flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-base font-medium">
+                <ArrowLeft size={18} />
+                返回首页
+              </Link>
+              <a href="/crypto-investment" className="text-sm text-[#ff6b00]/80 hover:text-[#ff6b00] transition-colors font-medium">₿ 投资看板</a>
+              <span className="text-red-400/30">·</span>
+              <a href="/ashare-sim" className="text-sm text-[#ff4444]/80 hover:text-[#ff4444] transition-colors font-medium">🇨🇳 A股模拟投资</a>
+            </div>
           </motion.div>
 
           {/* Title */}

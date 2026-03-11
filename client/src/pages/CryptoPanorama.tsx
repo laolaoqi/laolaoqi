@@ -781,6 +781,14 @@ export default function CryptoPanorama() {
 
             <div className="flex-1" />
 
+            {/* Quick nav links */}
+            <Link href="/ashare-sim">
+              <button className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg bg-gradient-to-r from-[rgba(255,68,68,0.08)] to-[rgba(255,136,0,0.08)] border border-[rgba(255,68,68,0.2)] text-[#ff4444] hover:from-[rgba(255,68,68,0.15)] hover:to-[rgba(255,136,0,0.15)] transition-all text-[10px] font-bold">
+                <span>🇨🇳</span>
+                <span>A股模拟</span>
+              </button>
+            </Link>
+
             {/* BTC Dominance */}
             {data && (
               <div className="hidden sm:flex items-center gap-1.5 text-xs">

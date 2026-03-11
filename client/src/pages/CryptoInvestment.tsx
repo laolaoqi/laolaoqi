@@ -461,6 +461,13 @@ export default function CryptoInvestment() {
               </button>
             </Link>
 
+            <Link href="/ashare-sim">
+              <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[rgba(255,68,68,0.12)] to-[rgba(255,136,0,0.12)] border border-[rgba(255,68,68,0.25)] text-[#ff4444] hover:from-[rgba(255,68,68,0.2)] hover:to-[rgba(255,136,0,0.2)] transition-all text-xs font-bold">
+                <span>🇨🇳</span>
+                <span>A股模拟</span>
+              </button>
+            </Link>
+
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Clock size={12} />
               <span className="font-mono tabular-nums">{now.toLocaleTimeString('zh-CN', { hour12: false })}</span>

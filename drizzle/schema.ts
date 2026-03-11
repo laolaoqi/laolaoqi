@@ -232,3 +232,75 @@ export const siteSettings = mysqlTable("site_settings", {
 });
 
 export type SiteSetting = typeof siteSettings.$inferSelect;
+
+/**
+ * A-Share Simulated Portfolio Config — ¥1,000,000 initial capital
+ * Mirrors crypto sim_config but for A-share market
+ */
+export const simAshareConfig = mysqlTable("sim_ashare_config", {
+  id: int("id").autoincrement().primaryKey(),
+  initialCapital: float("initialCapital").default(1000000).notNull(), // ¥1,000,000 CNY
+  startDate: timestamp("startDate").defaultNow().notNull(),
+  isActive: int("isActive").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SimAshareConfig = typeof simAshareConfig.$inferSelect;
+
+/**
+ * A-Share Simulated Portfolio — tracks virtual stock positions
+ */
+export const simAsharePortfolio = mysqlTable("sim_ashare_portfolio", {
+  id: int("id").autoincrement().primaryKey(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),       // e.g. 600036.SS
+  name: varchar("name", { length: 100 }).notNull(),
+  category: varchar("category", { length: 20 }).notNull(),   // blueChip / growth / value
+  industry: varchar("industry", { length: 50 }),
+  entryPrice: float("entryPrice").notNull(),                  // avg entry price CNY
+  currentPrice: float("currentPrice").notNull(),              // latest price CNY
+  quantity: int("quantity").notNull(),                         // number of shares (lots of 100)
+  costBasis: float("costBasis").notNull(),                    // total cost CNY
+  currentValue: float("currentValue").notNull(),              // current value CNY
+  pnl: float("pnl").default(0).notNull(),                    // unrealized P&L CNY
+  pnlPercent: float("pnlPercent").default(0).notNull(),       // unrealized P&L %
+  weight: float("weight").default(0).notNull(),               // portfolio weight %
+  score: float("score").default(0),                           // strategy score at buy time
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SimAsharePortfolio = typeof simAsharePortfolio.$inferSelect;
+
+/**
+ * A-Share Simulated Trades — buy/sell history log
+ */
+export const simAshareTrades = mysqlTable("sim_ashare_trades", {
+  id: int("id").autoincrement().primaryKey(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  action: varchar("action", { length: 10 }).notNull(),       // BUY / SELL
+  price: float("price").notNull(),                            // execution price CNY
+  quantity: int("quantity").notNull(),                         // number of shares
+  value: float("value").notNull(),                            // total value CNY
+  reason: varchar("reason", { length: 500 }),                 // why this trade
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SimAshareTrade = typeof simAshareTrades.$inferSelect;
+
+/**
+ * A-Share Simulated Snapshots — track portfolio value over time
+ */
+export const simAshareSnapshots = mysqlTable("sim_ashare_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  totalValue: float("totalValue").notNull(),                  // total portfolio value CNY
+  cashBalance: float("cashBalance").notNull(),                // remaining cash CNY
+  investedValue: float("investedValue").notNull(),            // value in positions CNY
+  totalPnl: float("totalPnl").default(0).notNull(),           // total P&L CNY
+  totalPnlPercent: float("totalPnlPercent").default(0).notNull(), // total P&L %
+  positionCount: int("positionCount").default(0).notNull(),
+  strategy: varchar("strategy", { length: 50 }),              // current strategy mode
+  snapshotTime: varchar("snapshotTime", { length: 10 }).notNull(), // "09:00"
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SimAshareSnapshot = typeof simAshareSnapshots.$inferSelect;

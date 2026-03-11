@@ -157,7 +157,7 @@ async function fetchScreenerStocks(scrId: string, count = 50): Promise<ScreenerQ
 // 美股：纳斯达克100全部成分股 + 动态Screener (~101+动态扩展)
 // 加密：主流 + DeFi + L2 (30+只)
 // ===================================================================
-interface StockDef {
+export interface StockDef {
   symbol: string;
   nameZh: string;
   nameEn: string;
@@ -167,7 +167,7 @@ interface StockDef {
   approxDividend?: number;
 }
 
-const STOCK_UNIVERSE: Record<string, StockDef[]> = {
+export const STOCK_UNIVERSE: Record<string, StockDef[]> = {
   cn: [
     // === 沪深300全覆盖 (CSI 300 Full Coverage — 300 stocks) ===
     { symbol: '000001.SZ', nameZh: '平安银行', nameEn: 'PAB', industry: '银行', approxPE: 5.5, approxPB: 0.5, approxDividend: 5.0 },

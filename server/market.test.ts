@@ -261,7 +261,7 @@ describe("market.heatmap", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns heatmap sectors for cn market", async () => {
+  it("returns heatmap sectors for cn market", async () => {  // increased timeout for full stock pool
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       json: () => Promise.resolve(mockYahooResponse),
@@ -284,7 +284,7 @@ describe("market.heatmap", () => {
     }
 
     vi.unstubAllGlobals();
-  });
+  }, 30000);
 
   it("returns different sectors for us market", async () => {
     const mockFetch = vi.fn().mockResolvedValue({

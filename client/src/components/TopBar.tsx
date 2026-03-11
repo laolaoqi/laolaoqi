@@ -193,6 +193,15 @@ export default function TopBar({ isLive, lastUpdate, onRefresh }: TopBarProps) {
                         <span>{lang === 'zh' ? '投资看板' : 'Crypto Board'}</span>
                       </button>
                     </a>
+                    <a href="/ashare-sim">
+                      <button
+                        onClick={() => setUserOpen(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-[rgba(239,68,68,0.08)] transition-colors border-b border-[rgba(0,212,255,0.08)]"
+                      >
+                        <span className="text-sm">🇨🇳</span>
+                        <span>{lang === 'zh' ? 'A股模拟投资' : 'A-Share Sim'}</span>
+                      </button>
+                    </a>
                     <a href="/about">
                       <button
                         onClick={() => setUserOpen(false)}

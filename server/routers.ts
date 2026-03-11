@@ -5,9 +5,10 @@ import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_
 import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 import { listUsers, updateUserRole, updateCryptoBoardAccess, batchUpdateCryptoBoardAccess, checkCryptoBoardAccess, getUserStats, createAnnouncement, getActiveAnnouncements, getAllAnnouncements, updateAnnouncement, deleteAnnouncement, saveStrategyResults, getLatestRecommendations, getLatestSentiment, cleanOldStrategyData } from "./db";
-import { runAllStrategies, runStrategyForMarket } from "./strategyEngine";
+import { runAllStrategies, runStrategyForMarket, STOCK_UNIVERSE } from "./strategyEngine";
 import { getCryptoBoardData, runCryptoBoardJob, startCryptoBoardScheduler, loadCacheFromDB, fetchOHLC, getCoinGeckoId } from "./cryptoBoard";
 import { getSimPortfolioData, runSimRebalance, startSimInvestmentScheduler } from "./simInvestment";
+import { getSimAshareData, runAshareRebalance, startSimAshareScheduler } from "./simAshare";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { getDailyStats, getCountryStats, getCityStats, getTopPages, getDeviceStats, getRecentVisitors, getTodaySummary, getHourlyStats } from "./visitorTracker";
@@ -30,7 +31,7 @@ function setCache<T>(key: string, data: T): void {
 
 const INDEX_CACHE_TTL = 60_000;       // 指数 60秒
 const RECS_CACHE_TTL = 30 * 60_000;   // 推荐 30分钟
-const HEATMAP_CACHE_TTL = 5 * 60_000; // 热力图 5分钟
+const HEATMAP_CACHE_TTL = 15 * 60_000; // 热力图 15分钟（覆盖完整股票池，数据量大）
 const AI_SUMMARY_CACHE_TTL = 15 * 60_000; // AI摘要 15分钟
 const STOCK_DETAIL_CACHE_TTL = 60_000; // 个股详情 60秒
 
@@ -140,45 +141,73 @@ const MARKET_STOCKS: Record<MarketId, StockConfig[]> = {
 };
 
 // ===================================================================
-// 热力图板块配置
+// 热力图板块配置 — 从 STOCK_UNIVERSE 自动构建行业分组
+// 覆盖完整股票池：A股300+只、港股82只、美股101只、加密30只
 // ===================================================================
 interface SectorConfig { nameZh: string; nameEn: string; symbols: string[]; }
 
+// 行业中英文映射表
+const INDUSTRY_EN_MAP: Record<string, string> = {
+  '银行': 'Banking', '地产': 'Real Estate', '通信设备': 'Telecom Equipment', '面板': 'Display',
+  '机械': 'Machinery', '券商': 'Brokerage', '化工': 'Chemical', '家电': 'Home Appliance',
+  '矿业': 'Mining', '医药': 'Pharma', '白酒': 'Liquor', '军工': 'Defense',
+  '建材': 'Construction', '汽车': 'Auto', '养殖': 'Farming', '食品': 'Food',
+  'IT': 'IT', '服务器': 'Server', '煤炭': 'Coal', '电力': 'Power',
+  '广告': 'Advertising', '芯片': 'Chip', '汽车零部件': 'Auto Parts', '锂电': 'Lithium Battery',
+  '快递': 'Express', '光伏': 'Solar', 'AI': 'AI', '安防': 'Security',
+  '电子': 'Electronics', '保险': 'Insurance', '钢铁': 'Steel', '能源': 'Energy',
+  '新能源': 'New Energy', '新能源车': 'EV', '风电': 'Wind Power', '通信': 'Telecom',
+  '互联网': 'Internet', '半导体': 'Semiconductor', '消费电子': 'Consumer Tech',
+  '短视频': 'Short Video', '本地生活': 'Local Services', '电商': 'E-Commerce',
+  '博彩': 'Gaming', '啤酒': 'Beer', '珠宝': 'Jewelry', '运动': 'Sports',
+  '纺织': 'Textile', '乳业': 'Dairy', '生物医药': 'Biotech', '燃气': 'Gas',
+  '物管': 'Property Mgmt', '餐饮': 'Catering', '医疗': 'Healthcare',
+  '石油': 'Oil', '玻璃': 'Glass', '铝业': 'Aluminum', '电脑': 'Computer',
+  '声学': 'Acoustics', '光学': 'Optics', '旅游': 'Tourism', '游戏': 'Gaming',
+  '工具': 'Tools', '科技': 'Tech', '软件': 'Software', '社交': 'Social',
+  '零售': 'Retail', '流媒体': 'Streaming', '半导体设备': 'Semi Equipment',
+  '模拟芯片': 'Analog Chip', '芯片设计': 'Chip Design', '电源芯片': 'Power IC',
+  'EDA': 'EDA', 'SaaS': 'SaaS', '监控': 'Monitoring', '数据': 'Data',
+  '网络安全': 'Cybersecurity', '外卖': 'Delivery', '支付': 'Payment',
+  '医疗机器人': 'Medical Robot', '比特币': 'Bitcoin', 'AI/数据': 'AI/Data',
+  'RNA疗法': 'RNA Therapy', '医疗设备': 'Medical Device', '宠物医疗': 'Vet Care',
+  '医疗器械': 'Med Device', '通信设备2': 'Telecom Equip', '网络': 'Networking',
+  '人力资源': 'HR', '核电': 'Nuclear', '油服': 'Oil Service', '酒店': 'Hotel',
+  '广告科技': 'Ad Tech', '饮料': 'Beverage', '基建': 'Infrastructure',
+  '信息服务': 'Info Services', '存储': 'Storage', '金融': 'Finance',
+  'L1': 'L1 Chain', 'L2': 'L2', 'BTC L2': 'BTC L2', '交易所': 'Exchange',
+  'Meme': 'Meme', '跨链': 'Cross-chain', '预言机': 'Oracle', 'DeFi': 'DeFi',
+  '动态筛选': 'Dynamic Scan',
+};
+
+// 从 STOCK_UNIVERSE 动态构建行业板块分组
+function buildSectorsFromUniverse(market: string): SectorConfig[] {
+  const stocks = STOCK_UNIVERSE[market];
+  if (!stocks) return [];
+  
+  const industryMap = new Map<string, string[]>();
+  for (const s of stocks) {
+    const ind = s.industry || '其他';
+    if (!industryMap.has(ind)) industryMap.set(ind, []);
+    industryMap.get(ind)!.push(s.symbol);
+  }
+  
+  // Sort sectors by stock count descending
+  const sectors: SectorConfig[] = Array.from(industryMap.entries()).map(([industry, symbols]) => ({
+    nameZh: industry,
+    nameEn: INDUSTRY_EN_MAP[industry] || industry,
+    symbols,
+  }));
+  sectors.sort((a, b) => b.symbols.length - a.symbols.length);
+  return sectors;
+}
+
+// Pre-build sectors for all markets
 const MARKET_SECTORS: Record<MarketId, SectorConfig[]> = {
-  cn: [
-    { nameZh: '银行', nameEn: 'Banking', symbols: ['600036.SS', '601318.SS', '601166.SS'] },
-    { nameZh: '白酒', nameEn: 'Liquor', symbols: ['600519.SS', '000858.SZ'] },
-    { nameZh: '新能源', nameEn: 'New Energy', symbols: ['300750.SZ', '601012.SS'] },
-    { nameZh: '科技', nameEn: 'Tech', symbols: ['002594.SZ', '000333.SZ'] },
-    { nameZh: '电力', nameEn: 'Power', symbols: ['600900.SS'] },
-    { nameZh: '有色', nameEn: 'Mining', symbols: ['601899.SS'] },
-    { nameZh: '医药', nameEn: 'Pharma', symbols: ['603259.SS'] },
-    { nameZh: '地产', nameEn: 'Real Estate', symbols: ['000002.SZ'] },
-  ],
-  hk: [
-    { nameZh: '互联网', nameEn: 'Internet', symbols: ['0700.HK', '9988.HK', '3690.HK'] },
-    { nameZh: '消费电子', nameEn: 'Consumer Tech', symbols: ['1810.HK'] },
-    { nameZh: '金融', nameEn: 'Finance', symbols: ['2318.HK', '0388.HK'] },
-    { nameZh: '通信', nameEn: 'Telecom', symbols: ['0941.HK'] },
-    { nameZh: '消费', nameEn: 'Consumer', symbols: ['2020.HK'] },
-    { nameZh: '短视频', nameEn: 'Short Video', symbols: ['1024.HK'] },
-  ],
-  us: [
-    { nameZh: '科技巨头', nameEn: 'Big Tech', symbols: ['AAPL', 'MSFT', 'GOOGL', 'META'] },
-    { nameZh: '半导体', nameEn: 'Semiconductor', symbols: ['NVDA', 'TSM'] },
-    { nameZh: '电商', nameEn: 'E-Commerce', symbols: ['AMZN'] },
-    { nameZh: '新能源车', nameEn: 'EV', symbols: ['TSLA'] },
-    { nameZh: '综合', nameEn: 'Conglomerate', symbols: ['BRK-B'] },
-    { nameZh: '医药', nameEn: 'Pharma', symbols: ['LLY'] },
-  ],
-  crypto: [
-    { nameZh: 'L1公链', nameEn: 'L1 Chains', symbols: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'ADA-USD', 'AVAX-USD'] },
-    { nameZh: '交易所', nameEn: 'Exchange', symbols: ['BNB-USD'] },
-    { nameZh: '支付', nameEn: 'Payment', symbols: ['XRP-USD'] },
-    { nameZh: 'Meme', nameEn: 'Meme', symbols: ['DOGE-USD'] },
-    { nameZh: '跨链', nameEn: 'Cross-chain', symbols: ['DOT-USD'] },
-    { nameZh: '预言机', nameEn: 'Oracle', symbols: ['LINK-USD'] },
-  ],
+  cn: buildSectorsFromUniverse('cn'),
+  hk: buildSectorsFromUniverse('hk'),
+  us: buildSectorsFromUniverse('us'),
+  crypto: buildSectorsFromUniverse('crypto'),
 };
 
 // ===================================================================
@@ -714,12 +743,18 @@ export const appRouter = router({
         const sectors = MARKET_SECTORS[input.market];
         const allSymbols = sectors.flatMap(s => s.symbols);
 
-        // Try to fetch real data from Yahoo
+        // Fetch real data from Yahoo — batch in groups of 15 with delay
         let quoteMap: Record<string, { changePercent: number; price: number; volume: number }> = {};
-        try {
-          // Batch fetch in groups of 10
-          for (let i = 0; i < allSymbols.length; i += 10) {
-            const batch = allSymbols.slice(i, i + 10);
+        const BATCH_SIZE = 15;
+        const BATCH_DELAY = 300; // ms between batches to avoid throttling
+        let fetchedCount = 0;
+        let failCount = 0;
+        
+        console.log(`[Heatmap] Fetching ${allSymbols.length} symbols for ${input.market} market...`);
+        
+        for (let i = 0; i < allSymbols.length; i += BATCH_SIZE) {
+          const batch = allSymbols.slice(i, i + BATCH_SIZE);
+          try {
             const result = await fetchYahooQuote(batch);
             const quotes = result?.quoteResponse?.result || [];
             for (const q of quotes) {
@@ -728,19 +763,28 @@ export const appRouter = router({
                 price: q.regularMarketPrice || 0,
                 volume: q.regularMarketVolume || 0,
               };
+              fetchedCount++;
+            }
+          } catch (err: any) {
+            failCount += batch.length;
+            // On failure, generate placeholder data for this batch
+            for (const sym of batch) {
+              if (!quoteMap[sym]) {
+                quoteMap[sym] = {
+                  changePercent: (Math.random() - 0.45) * 6,
+                  price: 100 + Math.random() * 200,
+                  volume: Math.random() * 1e9,
+                };
+              }
             }
           }
-        } catch (err: any) {
-          console.error('[Heatmap] Yahoo quote failed:', err?.message);
-          // Generate mock data
-          for (const sym of allSymbols) {
-            quoteMap[sym] = {
-              changePercent: (Math.random() - 0.45) * 6,
-              price: 100 + Math.random() * 200,
-              volume: Math.random() * 1e9,
-            };
+          // Add delay between batches to avoid API throttling
+          if (i + BATCH_SIZE < allSymbols.length) {
+            await new Promise(r => setTimeout(r, BATCH_DELAY));
           }
         }
+        
+        console.log(`[Heatmap] ${input.market}: fetched ${fetchedCount}/${allSymbols.length} symbols (${failCount} failed)`);
 
         const data = sectors.map(sector => {
           const stockData = sector.symbols.map(sym => {
@@ -1164,7 +1208,7 @@ export const appRouter = router({
   }),
 
   // ===================================================================
-  // 模拟投资看板
+  // 模拟投资看板（数字货币）
   // ===================================================================
   simInvestment: router({
     // 获取模拟投资数据（需要权限）
@@ -1179,6 +1223,26 @@ export const appRouter = router({
     // 手动触发调仓（管理员）
     rebalance: adminProcedure.mutation(async () => {
       await runSimRebalance();
+      return { success: true, timestamp: Date.now() };
+    }),
+  }),
+
+  // ===================================================================
+  // 模拟投资看板（A股）
+  // ===================================================================
+  simAshare: router({
+    // 获取A股模拟投资数据（需要权限）
+    getData: protectedProcedure.query(async ({ ctx }) => {
+      const access = await checkCryptoBoardAccess(ctx.user.id);
+      if (!access.hasAccess) {
+        throw new Error(access.isExpired ? '权限已过期' : '无访问权限');
+      }
+      return await getSimAshareData();
+    }),
+
+    // 手动触发调仓（管理员）
+    rebalance: adminProcedure.mutation(async () => {
+      await runAshareRebalance();
       return { success: true, timestamp: Date.now() };
     }),
   }),
@@ -1238,6 +1302,9 @@ startCryptoBoardScheduler();
 
 // Start simulated investment scheduler
 startSimInvestmentScheduler();
+
+// Start A-share simulated investment scheduler
+startSimAshareScheduler();
 
 // Initialize page access rules
 initPageAccessRules();

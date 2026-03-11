@@ -268,6 +268,10 @@ function Dashboard() {
                     {lang === 'zh' ? '⚡ 全景看板' : '⚡ Panorama'}
                   </a>
                   <span className="text-red-400/30">·</span>
+                  <a href="/ashare-sim" className="text-sm text-[#ff4444]/80 hover:text-[#ff4444] transition-colors font-medium">
+                    {lang === 'zh' ? '🇨🇳 A股模拟投资' : '🇨🇳 A-Share Sim'}
+                  </a>
+                  <span className="text-red-400/30">·</span>
                   <a href="/about" className="text-sm text-[#00d4ff]/70 hover:text-[#00d4ff] transition-colors font-medium">
                     {lang === 'zh' ? '网站介绍 & 数据模型说明' : 'About & Data Model'}
                   </a>
