@@ -8,8 +8,8 @@ import HudPanel from './HudPanel';
 import { useApp } from '@/contexts/AppContext';
 import { t, type Lang } from '@/lib/i18n';
 import { trpc } from '@/lib/trpc';
-import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowDownUp, ArrowUpNarrowWide, ArrowDownNarrowWide, ChevronDown, ChevronUp } from 'lucide-react';
 
 const DEFAULT_VISIBLE = 8;
 
@@ -124,21 +124,73 @@ function HeatMapSkeleton() {
   );
 }
 
+type SortMode = 'default' | 'asc' | 'desc';
+
 export default function HeatMap() {
   const { lang, market } = useApp();
   const [expanded, setExpanded] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>('default');
 
   const { data, isLoading } = trpc.market.heatmap.useQuery(
     { market },
     { refetchInterval: 5 * 60 * 1000, retry: 2 }
   );
 
-  const allSectors: SectorBlock[] = data?.data || [];
+  const rawSectors: SectorBlock[] = data?.data || [];
+
+  // Sort sectors by changePercent
+  const allSectors = useMemo(() => {
+    if (sortMode === 'default') return rawSectors;
+    return [...rawSectors].sort((a, b) =>
+      sortMode === 'desc'
+        ? b.changePercent - a.changePercent
+        : a.changePercent - b.changePercent
+    );
+  }, [rawSectors, sortMode]);
+
   const hasMore = allSectors.length > DEFAULT_VISIBLE;
   const visibleSectors = expanded ? allSectors : allSectors.slice(0, DEFAULT_VISIBLE);
 
+  // Cycle through sort modes: default → desc → asc → default
+  const cycleSortMode = () => {
+    setSortMode(prev => {
+      if (prev === 'default') return 'desc';
+      if (prev === 'desc') return 'asc';
+      return 'default';
+    });
+  };
+
+  const sortLabel = sortMode === 'default'
+    ? (lang === 'zh' ? '排序' : 'Sort')
+    : sortMode === 'desc'
+      ? (lang === 'zh' ? '涨幅↓' : 'Change ↓')
+      : (lang === 'zh' ? '涨幅↑' : 'Change ↑');
+
+  const SortIcon = sortMode === 'default'
+    ? ArrowDownUp
+    : sortMode === 'desc'
+      ? ArrowDownNarrowWide
+      : ArrowUpNarrowWide;
+
   return (
     <HudPanel title={t('panel.heatmap', lang)}>
+      {/* Sort button - top right */}
+      {rawSectors.length > 0 && (
+        <div className="flex justify-end mb-2 -mt-1">
+          <button
+            onClick={cycleSortMode}
+            className={`flex items-center gap-1 px-3 py-1 rounded text-xs font-medium transition-all duration-200 border ${
+              sortMode !== 'default'
+                ? 'text-[#00d4ff] border-[#00d4ff]/50 bg-[rgba(0,212,255,0.12)]'
+                : 'text-[#8899aa]/70 border-[#8899aa]/20 bg-transparent hover:text-[#00d4ff] hover:border-[#00d4ff]/30 hover:bg-[rgba(0,212,255,0.05)]'
+            }`}
+          >
+            <SortIcon size={13} />
+            {sortLabel}
+          </button>
+        </div>
+      )}
+
       {isLoading && allSectors.length === 0 ? (
         <HeatMapSkeleton />
       ) : allSectors.length === 0 ? (
