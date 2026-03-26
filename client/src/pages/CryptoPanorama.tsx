@@ -8,7 +8,7 @@ import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
 import { Link } from 'wouter';
-import { ArrowLeft, RefreshCw, Zap, Clock, TrendingUp, TrendingDown, X, Shield, Lock, LogIn } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Zap, Clock, TrendingUp, TrendingDown, X, Shield, Lock, LogIn, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, BarChart2 } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSEO } from '@/hooks/useSEO';
 
@@ -685,11 +685,39 @@ export default function CryptoPanorama() {
     return () => clearInterval(timer);
   }, []);
 
+  // Sort state: 'default' | 'change-desc' | 'change-asc' | 'price-desc' | 'price-asc'
+  const [sortMode, setSortMode] = useState<'default' | 'change-desc' | 'change-asc' | 'price-desc' | 'price-asc'>('default');
+
+  // Cycle sort mode for a given dimension
+  const cycleSortMode = useCallback((dimension: 'change' | 'price') => {
+    setSortMode(prev => {
+      if (dimension === 'change') {
+        if (prev === 'change-desc') return 'change-asc';
+        if (prev === 'change-asc') return 'default';
+        return 'change-desc';
+      } else {
+        if (prev === 'price-desc') return 'price-asc';
+        if (prev === 'price-asc') return 'default';
+        return 'price-desc';
+      }
+    });
+  }, []);
+
   // Merge all coins into a single array
   const allCoins = useMemo(() => {
     if (!data) return [];
-    return [...(data.mainstream || []), ...(data.meme || [])];
-  }, [data]);
+    const merged = [...(data.mainstream || []), ...(data.meme || [])];
+    if (sortMode === 'default') return merged;
+    return [...merged].sort((a, b) => {
+      switch (sortMode) {
+        case 'change-desc': return b.change24h - a.change24h;
+        case 'change-asc': return a.change24h - b.change24h;
+        case 'price-desc': return b.price - a.price;
+        case 'price-asc': return a.price - b.price;
+        default: return 0;
+      }
+    });
+  }, [data, sortMode]);
 
   // Modal state
   const [selectedCoin, setSelectedCoin] = useState<CoinData | null>(null);
@@ -777,6 +805,43 @@ export default function CryptoPanorama() {
                 </h1>
                 <p className="text-[9px] text-muted-foreground -mt-0.5">全景看板 · 4×5 Grid · Real-time</p>
               </div>
+            </div>
+
+            {/* Sort buttons */}
+            <div className="flex items-center gap-1 ml-2">
+              <button
+                onClick={() => cycleSortMode('change')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold transition-all ${
+                  sortMode.startsWith('change')
+                    ? 'bg-[rgba(0,212,255,0.15)] border-[#00d4ff] text-[#00d4ff] shadow-[0_0_8px_rgba(0,212,255,0.2)]'
+                    : 'bg-transparent border-[rgba(0,212,255,0.15)] text-muted-foreground hover:border-[rgba(0,212,255,0.3)] hover:text-[#00d4ff]'
+                }`}
+              >
+                {sortMode === 'change-desc' ? <ArrowDown size={10} /> : sortMode === 'change-asc' ? <ArrowUp size={10} /> : <ArrowUpDown size={10} />}
+                <span className="hidden sm:inline">涨跌幅</span>
+                <BarChart2 size={10} className="sm:hidden" />
+              </button>
+              <button
+                onClick={() => cycleSortMode('price')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold transition-all ${
+                  sortMode.startsWith('price')
+                    ? 'bg-[rgba(255,107,0,0.15)] border-[#ff6b00] text-[#ff6b00] shadow-[0_0_8px_rgba(255,107,0,0.2)]'
+                    : 'bg-transparent border-[rgba(0,212,255,0.15)] text-muted-foreground hover:border-[rgba(255,107,0,0.3)] hover:text-[#ff6b00]'
+                }`}
+              >
+                {sortMode === 'price-desc' ? <ArrowDown size={10} /> : sortMode === 'price-asc' ? <ArrowUp size={10} /> : <ArrowUpDown size={10} />}
+                <span className="hidden sm:inline">价格</span>
+                <DollarSign size={10} className="sm:hidden" />
+              </button>
+              {sortMode !== 'default' && (
+                <button
+                  onClick={() => setSortMode('default')}
+                  className="flex items-center gap-0.5 px-1.5 py-1 rounded-lg border border-[rgba(255,68,68,0.2)] text-[#ff4444] hover:bg-[rgba(255,68,68,0.1)] transition-all text-[10px]"
+                  title="重置排序"
+                >
+                  <X size={10} />
+                </button>
+              )}
             </div>
 
             <div className="flex-1" />
