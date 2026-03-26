@@ -77,7 +77,7 @@ export function useMarketData(refreshInterval = 30000) {
     const modeScores = calculateModeScores(indices);
     const weights = calculateWeights(modeScores);
     const sentiment = calculateSentiment(indices);
-    const newsDigest = generateNewsDigest(sentiment, modeScores);
+    const newsDigest = generateNewsDigest(sentiment, modeScores, market);
     const riskControl = getRiskControl(modeScores);
 
     return {

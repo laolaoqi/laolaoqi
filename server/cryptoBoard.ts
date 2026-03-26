@@ -441,7 +441,7 @@ export async function fetchOHLC(coinId: string, days: number): Promise<OHLCCandl
 // ===================================================================
 // Scheduler — load DB cache on start, then fetch fresh data
 // ===================================================================
-const CRYPTO_BOARD_INTERVAL = 60 * 60 * 1000; // 1 hour
+const CRYPTO_BOARD_INTERVAL = 5 * 60 * 1000; // 5 minutes — crypto trades 24/7, need frequent updates
 
 export function startCryptoBoardScheduler() {
   // Immediately load from DB cache so data is available right away
@@ -470,5 +470,5 @@ export function startCryptoBoardScheduler() {
     runCryptoBoardJob();
   }, CRYPTO_BOARD_INTERVAL);
 
-  console.log('[CryptoBoard] Scheduler registered: DB cache in 5s, fresh fetch in 15s, then every 1h');
+  console.log('[CryptoBoard] Scheduler registered: DB cache in 5s, fresh fetch in 15s, then every 5min');
 }

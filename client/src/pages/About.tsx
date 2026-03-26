@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft, Download, Lock, TrendingUp, BarChart3, Brain,
   Shield, Activity, Target, Layers, Database, Cpu, LineChart,
-  Zap, AlertTriangle, BookOpen, Bitcoin, Users, Clock
+  Zap, AlertTriangle, BookOpen, Bitcoin, Users, Clock, Landmark
 } from 'lucide-react';
 import { useState } from 'react';
 import { useSEO } from '@/hooks/useSEO';
@@ -110,12 +110,13 @@ function AboutContent() {
               <div className="space-y-4">
                 <p className="text-base text-foreground/90 leading-relaxed">
                   <strong className="text-red-400">HUNTER ALPHA（猎手阿尔法）</strong>是一个基于人工智能和量化分析的全球投资筛选与推荐平台。
-                  系统覆盖<strong>A股（沪深300全覆盖）、港股、美股、加密货币</strong>四大市场，通过多维度数据采集、策略引擎评分和AI智能分析，
+                  系统覆盖<strong>A股（沪深300全覆盖）、港股（恒生指数82只）、美股（NASDAQ-100）、加密货币</strong>四大市场，通过多维度数据采集、策略引擎评分和AI智能分析，
                   为投资者提供实时的市场洞察和标的推荐。
                 </p>
                 <p className="text-base text-foreground/80 leading-relaxed">
-                  v2.0版本新增<strong>数字货币投资看板</strong>（主流币vs空气币永续合约对比）、<strong>模拟投资系统</strong>（$10,000虚拟本金自动调仓）、
-                  <strong>管理员权限系统</strong>（投资看板访问控制+时间期限管理），并将A股候选池从99只扩展到完整的沪深300成分股（300只）。
+                  v2.0版本新增<strong>数字货币投资看板</strong>（主流币vs空气币永续合约对比）、<strong>加密货币模拟投资</strong>（$10,000虚拟本金自动调仓）、
+                  <strong>A股模拟投资</strong>（¥100万虚拟本金，基于Top10推荐选股，周度盈亏统计）、
+                  <strong>管理员权限系统</strong>（投资看板访问控制+时间期限管理）。A股数据源已升级为新浪财经实时API，确保行情数据准确可靠。
                 </p>
                 <p className="text-sm text-foreground/60 leading-relaxed">
                   所有数据和推荐仅供参考，不构成投资建议。
@@ -129,14 +130,15 @@ function AboutContent() {
             <HudPanel title="平台核心功能">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[
-                  { icon: TrendingUp, title: '实时行情监控', desc: '覆盖全球4大市场主要指数和546只候选标的的实时行情数据，每30秒自动刷新' },
+                  { icon: TrendingUp, title: '实时行情监控', desc: '覆盖全球4大市场主要指数和511只候选标的的实时行情数据，A股使用新浪财经API确保准确' },
                   { icon: Brain, title: 'AI智能选股', desc: '基于6维度量化策略引擎，自动筛选评分Top 10推荐标的，每5分钟更新' },
                   { icon: BarChart3, title: '市场热力图', desc: '按行业板块聚合的涨跌热力图，直观展示市场资金流向和板块轮动' },
                   { icon: Activity, title: '恐惧贪婪指数', desc: '综合涨跌比、资金流、市场情绪等多指标的综合情绪指数（0-100）' },
                   { icon: Shield, title: '风险控制面板', desc: '实时止损线、仓位建议、风险预警等风控指标，保护投资安全' },
                   { icon: Target, title: 'AI市场摘要', desc: '基于LLM大语言模型的智能市场分析报告，每15分钟更新' },
                   { icon: Bitcoin, title: '数字货币投资看板', desc: '主流币前10 vs 空气币永续合约前13，含Logo、7日K线、BTC主导率投资建议' },
-                  { icon: LineChart, title: '模拟投资系统', desc: '$10,000虚拟本金，每天6:00/22:00自动调仓，展示持仓、收益率和交易记录' },
+                  { icon: LineChart, title: '加密货币模拟投资', desc: '$10,000虚拟本金，每天6:00/22:00自动调仓，展示持仓、收益率和交易记录' },
+                  { icon: Landmark, title: 'A股模拟投资', desc: '¥100万虚拟本金，基于Top10推荐选股，每日9:00调仓，周度盈亏统计（周一~周五）' },
                   { icon: Users, title: '管理员权限系统', desc: '用户统计、投资看板访问权限管理、时间期限控制、公告管理' },
                 ].map((item, i) => (
                   <div key={i} className="p-4 rounded-lg border border-[rgba(0,212,255,0.12)] bg-[rgba(0,212,255,0.03)] hover:border-[rgba(0,212,255,0.25)] transition-all">
@@ -173,10 +175,16 @@ function AboutContent() {
                       </thead>
                       <tbody className="text-foreground/80">
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
-                          <td className="py-2.5 px-3 font-medium">股票实时行情</td>
+                          <td className="py-2.5 px-3 font-medium">A股实时行情</td>
+                          <td className="py-2.5 px-3">新浪财经实时API</td>
+                          <td className="py-2.5 px-3">30秒</td>
+                          <td className="py-2.5 px-3">上证/深证/创业板指数 + 沪深300个股实时价格、涨跌幅、成交量</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2.5 px-3 font-medium">港股/美股行情</td>
                           <td className="py-2.5 px-3">Yahoo Finance v8 Chart API</td>
                           <td className="py-2.5 px-3">30秒</td>
-                          <td className="py-2.5 px-3">价格、涨跌幅、成交量、日内走势</td>
+                          <td className="py-2.5 px-3">恒生指数82只成分股 + NASDAQ-100个股价格、涨跌幅、成交量</td>
                         </tr>
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
                           <td className="py-2.5 px-3 font-medium">技术指标</td>
@@ -199,13 +207,13 @@ function AboutContent() {
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
                           <td className="py-2.5 px-3 font-medium">加密货币行情</td>
                           <td className="py-2.5 px-3">CoinGecko API</td>
-                          <td className="py-2.5 px-3">1小时</td>
+                          <td className="py-2.5 px-3">5分钟</td>
                           <td className="py-2.5 px-3">主流币+空气币价格、市值、24h涨跌、7日K线、Logo</td>
                         </tr>
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
                           <td className="py-2.5 px-3 font-medium">BTC主导率</td>
                           <td className="py-2.5 px-3">CoinGecko Global API</td>
-                          <td className="py-2.5 px-3">1小时</td>
+                          <td className="py-2.5 px-3">5分钟</td>
                           <td className="py-2.5 px-3">BTC市值占比，用于生成投资建议（防御/过渡/山寨季/空气季）</td>
                         </tr>
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
@@ -226,13 +234,14 @@ function AboutContent() {
                   </h3>
                   <p className="text-base text-foreground/80 leading-relaxed mb-4">
                     策略引擎是平台的核心模块，负责从候选股票池中筛选出综合评分最高的Top 10推荐标的。
-                    引擎每5分钟自动运行一次，覆盖<strong>A股(300只沪深300成分股)</strong>、<strong>港股(44只)</strong>、<strong>美股(172只)</strong>、<strong>加密货币(30只)</strong>共<strong>546只</strong>候选标的。
+                    引擎每5分钟自动运行一次，覆盖<strong>A股(300只沪深300成分股，新浪API)</strong>、<strong>港股(82只恒生指数成分股)</strong>、<strong>美股(99只NASDAQ-100)</strong>、<strong>加密货币(30只)</strong>共<strong>511只</strong>候选标的。
+                    A股Top10推荐基于前一日收盘行情评分，每日开盘前更新。
                   </p>
                   <div className="bg-[rgba(0,212,255,0.03)] border border-[rgba(0,212,255,0.1)] rounded-lg p-4">
                     <h4 className="text-base font-bold text-foreground mb-3">运行流程</h4>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-0 text-sm">
                       {[
-                        { step: '1', label: '数据采集', desc: 'Yahoo v8 / CoinGecko' },
+                        { step: '1', label: '数据采集', desc: '新浪/Yahoo/CoinGecko' },
                         { step: '2', label: '指标计算', desc: 'MA/RSI/资金流' },
                         { step: '3', label: '多维评分', desc: '6维度加权' },
                         { step: '4', label: '排序筛选', desc: 'Top 10' },
@@ -320,7 +329,7 @@ function AboutContent() {
                   </h3>
                   <p className="text-base text-foreground/80 leading-relaxed mb-4">
                     独立的数字货币投资看板，对比主流币蓝筹和空气币永续合约，基于BTC主导率自动生成投资建议。
-                    数据每小时从CoinGecko自动更新，零AI token消耗。
+                    数据每5分钟从CoinGecko自动更新，零AI token消耗。舆情摘要以加密货币市场信息为主。
                   </p>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
@@ -394,16 +403,17 @@ function AboutContent() {
                   </div>
                 </div>
 
-                {/* Simulated Investment */}
+                {/* Simulated Investment Systems */}
                 <div>
                   <h3 className="text-lg font-bold text-red-400 flex items-center gap-2 mb-3">
                     <Clock size={20} /> 模拟投资系统
                   </h3>
                   <p className="text-base text-foreground/80 leading-relaxed mb-4">
-                    基于投资建议的自动模拟投资系统，每天早上6:00和晚上22:00（北京时间）自动运行调仓。
-                    初始本金$10,000，根据BTC主导率策略分配仓位，目标持仓收益最大化。
+                    平台提供两套独立的模拟投资系统，分别覆盖加密货币和A股市场，均基于平台策略模型自动调仓。
                   </p>
-                  <div className="overflow-x-auto">
+
+                  <h4 className="text-base font-bold text-[#ffd700] mb-3">加密货币模拟投资</h4>
+                  <div className="overflow-x-auto mb-4">
                     <table className="w-full text-sm border-collapse">
                       <thead>
                         <tr className="border-b border-[rgba(0,212,255,0.15)]">
@@ -422,15 +432,45 @@ function AboutContent() {
                         </tr>
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
                           <td className="py-2 px-3 font-medium">仓位策略</td>
-                          <td className="py-2 px-3">防御期: 主流70%+现金30% | 过渡期: 主流50%+空气25%+现金25% | 山寨季: 主流30%+空气50%+现金20% | 空气季: 主流20%+空气60%+现金20%</td>
+                          <td className="py-2 px-3">根据BTC主导率4档策略自动分配（防御/过渡/山寨季/空气季）</td>
                         </tr>
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
                           <td className="py-2 px-3 font-medium">选币逻辑</td>
-                          <td className="py-2 px-3">按24h涨幅+成交额综合排序，选前3只</td>
+                          <td className="py-2 px-3">托24h涨幅+成交额综合排序，选前3只</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <h4 className="text-base font-bold text-red-400 mb-3">🇨🇳 A股模拟投资</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-[rgba(0,212,255,0.15)]">
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">参数</th>
+                          <th className="text-left py-2 px-3 text-red-400 font-bold">设置</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-foreground/80">
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2 px-3 font-medium">初始本金</td>
+                          <td className="py-2 px-3">¥1,000,000 人民币</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2 px-3 font-medium">调仓频率</td>
+                          <td className="py-2 px-3">每天上午9:00（北京时间）自动调仓</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2 px-3 font-medium">选股逻辑</td>
+                          <td className="py-2 px-3">严格从核心推荐Top10中选股，体现模型选股准确性和推荐有效性</td>
+                        </tr>
+                        <tr className="border-b border-[rgba(0,212,255,0.06)]">
+                          <td className="py-2 px-3 font-medium">盈亏统计</td>
+                          <td className="py-2 px-3">周度统计：周一9:00起点 → 周五15:00结束，下周一重新计算</td>
                         </tr>
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
                           <td className="py-2 px-3 font-medium">展示内容</td>
-                          <td className="py-2 px-3">总资产、盈亏率、持仓明细（币种/数量/成本/现价/盈亏）、交易记录（时间/操作/币种/金额）</td>
+                          <td className="py-2 px-3">总资产、盈亏率、周度盈亏、持仓明细、交易记录、资产曲线</td>
                         </tr>
                       </tbody>
                     </table>
@@ -505,9 +545,9 @@ function AboutContent() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {[
-                      { market: '🇨🇳 A股', count: '300只', examples: '沪深300全覆盖：招商银行、贵州茅台、宁德时代、比亚迪等', sectors: '银行、白酒、新能源、医药、科技、消费' },
-                      { market: '🇭🇰 港股', count: '44只', examples: '腾讯、阿里巴巴、美团、小米、中国平安等', sectors: '互联网、金融、消费、医药、地产' },
-                      { market: '🇺🇸 美股', count: '172只', examples: 'Apple、Microsoft、NVIDIA、Tesla、Amazon等', sectors: '科技、半导体、支付、医药、消费' },
+                      { market: '🇨🇳 A股', count: '300只', examples: '沪深300全覆盖：招商银行、贵州茅台、宁德时代、比亚迪等（新浪API）', sectors: '银行、白酒、新能源、医药、科技、消费' },
+                      { market: '🇭🇰 港股', count: '82只', examples: '恒生指数成分股：腾讯、阿里、美团、小米、平安等', sectors: '互联网、金融、消费、医药、地产' },
+                      { market: '🇺🇸 美股', count: '99只', examples: 'NASDAQ-100：Apple、Microsoft、NVIDIA、Tesla等', sectors: '科技、半导体、支付、医药、消费' },
                       { market: '₿ 加密', count: '30+13只', examples: '策略引擎30只 + 投资看板13只空气币', sectors: '主流币、DeFi、Layer2、永续合约' },
                     ].map((item, i) => (
                       <div key={i} className="p-3 rounded-lg border border-[rgba(0,212,255,0.12)] bg-[rgba(0,212,255,0.03)]">
@@ -619,7 +659,7 @@ function getPDFHTML(): string {
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>HUNTER ALPHA 数据模型说明 v2.0</title>
+  <title>HUNTER ALPHA 数据模型说明 v3.0</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; color: #333; line-height: 1.8; padding: 40px; max-width: 800px; margin: 0 auto; }
@@ -642,26 +682,27 @@ function getPDFHTML(): string {
 </head>
 <body>
   <h1>HUNTER ALPHA 数据模型说明</h1>
-  <p class="subtitle">猎手阿尔法 · AI选股指南 — 技术文档 v2.0</p>
+  <p class="subtitle">猎手阿尔法 · AI选股指南 — 技术文档 v3.0</p>
 
   <h2>一、平台简介</h2>
-  <p>HUNTER ALPHA（猎手阿尔法）是一个基于人工智能和量化分析的全球投资筛选与推荐平台。系统覆盖A股（沪深300全覆盖）、港股、美股、加密货币四大市场，通过多维度数据采集、策略引擎评分和AI智能分析，为投资者提供实时的市场洞察和标的推荐。</p>
-  <p>v2.0版本新增数字货币投资看板（主流币vs空气币永续合约）、模拟投资系统（$10,000虚拟本金自动调仓）、管理员权限系统（投资看板访问控制+时间期限管理），并将A股候选池扩展到完整的沪深300成分股（300只）。</p>
+  <p>HUNTER ALPHA（猎手阿尔法）是一个基于人工智能和量化分析的全球投资筛选与推荐平台。系统覆盖A股（沪深300全覆盖，新浪财经API）、港股（82只恒生指数成分股）、美股（99只NASDAQ-100）、加密货币四大市场，共511只候选标的。</p>
+  <p>v3.0版本新增：A股数据切换至新浪财经API（实时准确）、A股模拟投资系统（¥100万本金，从核心推荐Top10选股，周度盈亏统计）、加密货币数据刷新频率提升至5分钟、热力图增强（默认8板块+展开按钮+个股详情）、舆情摘要分市场定制。</p>
 
   <h2>二、数据来源</h2>
   <table>
     <tr><th>数据类型</th><th>来源</th><th>更新频率</th><th>说明</th></tr>
-    <tr><td>股票实时行情</td><td>Yahoo Finance v8 Chart API</td><td>30秒</td><td>价格、涨跌幅、成交量</td></tr>
+    <tr><td>A股实时行情</td><td>新浪财经 API (hq.sinajs.cn)</td><td>30秒</td><td>沪深300指数+个股价格、涨跌幅、成交量</td></tr>
+    <tr><td>港股/美股行情</td><td>Yahoo Finance v8 Chart API</td><td>30秒</td><td>恒生指数82只 + NASDAQ-100 99只</td></tr>
     <tr><td>技术指标</td><td>自研计算引擎</td><td>5分钟</td><td>MA5/MA20、RSI14、MACD</td></tr>
     <tr><td>基本面数据</td><td>预设+API补充</td><td>定期更新</td><td>PE/PB/股息率/市值</td></tr>
     <tr><td>资金流向</td><td>成交量分析推算</td><td>5分钟</td><td>基于量价关系推算</td></tr>
-    <tr><td>加密货币行情</td><td>CoinGecko API</td><td>1小时</td><td>主流币+空气币价格、市值、K线</td></tr>
-    <tr><td>BTC主导率</td><td>CoinGecko Global API</td><td>1小时</td><td>用于生成投资建议</td></tr>
+    <tr><td>加密货币行情</td><td>CoinGecko API</td><td>5分钟</td><td>主流币+空气币价格、市值、K线</td></tr>
+    <tr><td>BTC主导率</td><td>CoinGecko Global API</td><td>5分钟</td><td>用于生成投资建议</td></tr>
     <tr><td>AI分析</td><td>LLM大语言模型</td><td>15分钟</td><td>智能市场分析摘要</td></tr>
   </table>
 
   <h2>三、策略引擎架构</h2>
-  <p>策略引擎每5分钟自动运行，覆盖A股(300只沪深300)、港股(44只)、美股(172只)、加密货币(30只)共546只候选标的。</p>
+  <p>策略引擎每5分钟自动运行，覆盖A股(300只沪深300，新浪API)、港股(82只恒生指数)、美股(99只NASDAQ-100)、加密货币(30只)共511只候选标的。A股Top10推荐基于前一日收盘行情评分，当日开盘前发布。</p>
   <p>
     <span class="flow-step">1.数据采集</span><span class="flow-arrow">→</span>
     <span class="flow-step">2.指标计算</span><span class="flow-arrow">→</span>
@@ -693,13 +734,23 @@ function getPDFHTML(): string {
   </table>
 
   <h2>六、模拟投资系统</h2>
-  <p>基于投资建议的自动模拟投资系统，初始本金$10,000，每天6:00和22:00（北京时间）自动调仓。</p>
+  <p>平台提供两套独立的模拟投资系统，分别覆盖加密货币和A股市场，均基于平台策略模型自动调仓。</p>
+  <h3>加密货币模拟投资</h3>
   <table>
     <tr><th>参数</th><th>设置</th></tr>
     <tr><td>初始本金</td><td>$10,000 USD</td></tr>
     <tr><td>调仓频率</td><td>每天2次（06:00 / 22:00 北京时间）</td></tr>
     <tr><td>仓位策略</td><td>根据BTC主导率4档策略自动分配</td></tr>
-    <tr><td>选币逻辑</td><td>按24h涨幅+成交额综合排序，选前3只</td></tr>
+    <tr><td>选币逻辑</td><td>托24h涨幅+成交额综合排序，选前3只</td></tr>
+  </table>
+  <h3>🇨🇳 A股模拟投资</h3>
+  <table>
+    <tr><th>参数</th><th>设置</th></tr>
+    <tr><td>初始本金</td><td>¥1,000,000 人民币</td></tr>
+    <tr><td>调仓频率</td><td>每天上午9:00（北京时间）自动调仓</td></tr>
+    <tr><td>选股逻辑</td><td>严格从核心推荐Top10中选股，体现模型选股准确性</td></tr>
+    <tr><td>盈亏统计</td><td>周度统计：周一9:00起点 → 周五15:00结束，下周一重新计算</td></tr>
+    <tr><td>展示内容</td><td>总资产、盈亏率、周度盈亏、持仓明细、交易记录、资产曲线</td></tr>
   </table>
 
   <h2>七、信号系统</h2>
@@ -713,11 +764,11 @@ function getPDFHTML(): string {
 
   <h2>八、市场覆盖范围</h2>
   <table>
-    <tr><th>市场</th><th>候选数</th><th>代表标的</th><th>覆盖行业</th></tr>
-    <tr><td>🇨🇳 A股</td><td>300只</td><td>沪深300全覆盖：招商银行、贵州茅台、宁德时代等</td><td>银行、白酒、新能源、医药、科技</td></tr>
-    <tr><td>🇭🇰 港股</td><td>44只</td><td>腾讯、阿里巴巴、美团、小米等</td><td>互联网、金融、消费、医药</td></tr>
-    <tr><td>🇺🇸 美股</td><td>172只</td><td>Apple、Microsoft、NVIDIA、Tesla等</td><td>科技、半导体、支付、医药</td></tr>
-    <tr><td>₿ 加密</td><td>30+13只</td><td>BTC、ETH、BNB + TRUMP、WLD、HYPE等</td><td>主流币、DeFi、永续合约</td></tr>
+    <tr><th>市场</th><th>候选数</th><th>数据来源</th><th>代表标的</th><th>覆盖行业</th></tr>
+    <tr><td>🇨🇳 A股</td><td>300只</td><td>新浪财经 API</td><td>沪深300全覆盖：招商银行、贵州茅台、宁德时代等</td><td>银行、白酒、新能源、医药、科技</td></tr>
+    <tr><td>🇭🇰 港股</td><td>82只</td><td>Yahoo Finance</td><td>恒生指数成分股：腾讯、阿里、美团、小米等</td><td>互联网、金融、消费、医药</td></tr>
+    <tr><td>🇺🇸 美股</td><td>99只</td><td>Yahoo Finance</td><td>NASDAQ-100：Apple、Microsoft、NVIDIA、Tesla等</td><td>科技、半导体、支付、医药</td></tr>
+    <tr><td>₿ 加密</td><td>30+13只</td><td>CoinGecko</td><td>BTC、ETH、BNB + TRUMP、WLD、HYPE等</td><td>主流币、DeFi、永续合约</td></tr>
   </table>
 
   <h2>九、风险提示</h2>
@@ -732,7 +783,7 @@ function getPDFHTML(): string {
   </div>
 
   <div class="footer">
-    <p>HUNTER ALPHA v2.0 — AI选股指南 · 数据模型说明文档</p>
+    <p>HUNTER ALPHA v3.0 — AI选股指南 · 数据模型说明文档</p>
     <p>生成时间: ${new Date().toLocaleDateString('zh-CN')} | 数据仅供参考，不构成投资建议</p>
   </div>
 </body>

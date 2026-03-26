@@ -304,3 +304,26 @@ export const simAshareSnapshots = mysqlTable("sim_ashare_snapshots", {
 });
 
 export type SimAshareSnapshot = typeof simAshareSnapshots.$inferSelect;
+
+// Weekly P&L tracking for A-share simulation
+// Each week: Mon 9:00 (start) → Fri 15:00 (end)
+export const simAshareWeekly = mysqlTable("sim_ashare_weekly", {
+  id: int("id").autoincrement().primaryKey(),
+  weekLabel: varchar("weekLabel", { length: 20 }).notNull(),     // e.g. "2026-W13"
+  weekStartDate: varchar("weekStartDate", { length: 10 }).notNull(), // e.g. "2026-03-23"
+  weekEndDate: varchar("weekEndDate", { length: 10 }).notNull(),     // e.g. "2026-03-27"
+  startValue: float("startValue").notNull(),                     // portfolio value at Mon 9:00
+  endValue: float("endValue"),                                   // portfolio value at Fri 15:00 (null if week not ended)
+  weeklyPnl: float("weeklyPnl"),                                 // end - start (null if week not ended)
+  weeklyPnlPercent: float("weeklyPnlPercent"),                   // (end-start)/start*100
+  startCash: float("startCash").notNull(),
+  endCash: float("endCash"),
+  startPositionCount: int("startPositionCount").default(0).notNull(),
+  endPositionCount: int("endPositionCount"),
+  strategy: varchar("strategy", { length: 50 }),
+  isComplete: int("isComplete").default(0).notNull(),            // 0=in progress, 1=complete
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SimAshareWeekly = typeof simAshareWeekly.$inferSelect;

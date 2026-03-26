@@ -54,6 +54,121 @@ export interface MarketSentimentResult {
 }
 
 // ===================================================================
+// Sina Finance API (for accurate CN A-share data)
+// ===================================================================
+function yahooToSina(symbol: string): string {
+  if (symbol.endsWith('.SS')) return 'sh' + symbol.replace('.SS', '');
+  if (symbol.endsWith('.SZ')) return 'sz' + symbol.replace('.SZ', '');
+  return symbol;
+}
+
+interface SinaQuote {
+  name: string;
+  open: number;
+  prevClose: number;
+  price: number;
+  high: number;
+  low: number;
+  volume: number;
+  amount: number;
+}
+
+async function fetchSinaBatch(symbols: string[]): Promise<Map<string, SinaQuote>> {
+  const result = new Map<string, SinaQuote>();
+  const BATCH = 40;
+  for (let i = 0; i < symbols.length; i += BATCH) {
+    const batch = symbols.slice(i, i + BATCH);
+    const sinaSymbols = batch.map(yahooToSina);
+    try {
+      const url = `https://hq.sinajs.cn/list=${sinaSymbols.join(',')}`;
+      const resp = await fetch(url, {
+        headers: { 'Referer': 'https://finance.sina.com.cn', 'User-Agent': UA },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (resp.status !== 200) continue;
+      const buf = await resp.arrayBuffer();
+      const text = new TextDecoder('gbk').decode(buf);
+      const lines = text.split('\n').filter(l => l.trim());
+      for (let j = 0; j < lines.length; j++) {
+        const m = lines[j].match(/hq_str_(\w+)="([^"]*)"/); 
+        if (!m || !m[2]) continue;
+        const parts = m[2].split(',');
+        if (parts.length < 32) continue;
+        const price = parseFloat(parts[3]) || 0;
+        if (price > 0 && j < batch.length) {
+          result.set(batch[j], {
+            name: parts[0],
+            open: parseFloat(parts[1]) || 0,
+            prevClose: parseFloat(parts[2]) || 0,
+            price,
+            high: parseFloat(parts[4]) || 0,
+            low: parseFloat(parts[5]) || 0,
+            volume: parseFloat(parts[8]) || 0,
+            amount: parseFloat(parts[9]) || 0,
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error(`[Strategy/Sina] Batch fetch failed:`, err?.message);
+    }
+    if (i + BATCH < symbols.length) await new Promise(r => setTimeout(r, 200));
+  }
+  return result;
+}
+
+// Build candidates from Sina data (for CN market)
+async function fetchCNcandidatesViaSina(
+  defs: StockDef[],
+): Promise<StockCandidate[]> {
+  console.log(`[Strategy] Fetching ${defs.length} CN stocks via Sina Finance API...`);
+  const sinaData = await fetchSinaBatch(defs.map(d => d.symbol));
+  console.log(`[Strategy] Sina returned data for ${sinaData.size}/${defs.length} stocks`);
+  
+  const candidates: StockCandidate[] = [];
+  for (const def of defs) {
+    const q = sinaData.get(def.symbol);
+    if (!q || q.price <= 0) continue;
+    
+    const change = q.price - q.prevClose;
+    const changePercent = q.prevClose > 0 ? (change / q.prevClose) * 100 : 0;
+    
+    // Volume ratio approximation: compare current volume with average
+    // If volume > amount/price suggests active trading
+    const capitalFlow = changePercent > 0 ? Math.abs(changePercent) * 0.5 : -Math.abs(changePercent) * 0.5;
+    
+    // Use prevClose as reference for technical indicators
+    // Since we don't have historical data from Sina, use simplified calculations
+    const ma5 = q.prevClose; // approximate
+    const ma20 = q.prevClose; // approximate
+    const rsi14 = changePercent > 0 ? 50 + changePercent * 3 : 50 + changePercent * 3;
+    
+    candidates.push({
+      symbol: def.symbol,
+      code: def.symbol.replace('.SS', '').replace('.SZ', ''),
+      nameZh: def.nameZh,
+      nameEn: def.nameEn,
+      industry: def.industry,
+      market: 'cn',
+      price: q.price,
+      change,
+      changePercent,
+      pe: def.approxPE || null,
+      pb: def.approxPB || null,
+      dividendYield: def.approxDividend || null,
+      capitalFlow: Math.round(capitalFlow * 100) / 100,
+      marketCap: 0,
+      volume: q.volume,
+      fiftyTwoWeekHigh: q.high * 1.2, // approximate
+      fiftyTwoWeekLow: q.low * 0.8, // approximate
+      ma5,
+      ma20,
+      rsi14: Math.min(90, Math.max(10, rsi14)),
+    });
+  }
+  return candidates;
+}
+
+// ===================================================================
 // Yahoo Finance v8 Chart API (no auth required)
 // ===================================================================
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -1021,7 +1136,11 @@ export async function runStrategyForMarket(market: string): Promise<{ stocks: Sc
 
   console.log(`[Strategy] Running strategy for ${market}, ${universe.length} candidates...`);
 
-  const candidates = await fetchAndBuildCandidates(universe, market);
+  // For CN market, use Sina Finance API (accurate real-time data)
+  // For other markets, use Yahoo Finance API
+  const candidates = market === 'cn'
+    ? await fetchCNcandidatesViaSina(universe)
+    : await fetchAndBuildCandidates(universe, market);
 
   if (candidates.length === 0) {
     console.warn(`[Strategy] No valid candidates for ${market}`);

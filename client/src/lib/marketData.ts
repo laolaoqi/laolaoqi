@@ -142,9 +142,59 @@ export function calculateSentiment(indices: IndexData[]): MarketSentiment {
   return { riseCount, flatCount, fallCount: total - riseCount - flatCount, limitUp: Math.round(30 + riseRatio * 100), limitDown: Math.round(50 - riseRatio * 40) };
 }
 
-// 舆情摘要
-export function generateNewsDigest(sentiment: MarketSentiment, scores: ModeScore): NewsDigest {
+// 舆情摘要 — 根据市场类型生成专属内容
+export function generateNewsDigest(sentiment: MarketSentiment, scores: ModeScore, market?: string): NewsDigest {
   const riseRatio = sentiment.riseCount / (sentiment.riseCount + sentiment.flatCount + sentiment.fallCount);
+
+  // 加密货币市场专属舆情
+  if (market === 'crypto') {
+    let mainTone: string;
+    if (riseRatio > 0.6) mainTone = '加密市场情绪回暖，BTC多头占据主导，山寨币联动上涨';
+    else if (riseRatio > 0.4) mainTone = `加密市场震荡整理，涨跌比${(riseRatio * 100).toFixed(1)}%，观望情绪浓厚`;
+    else mainTone = '加密市场弱势运行，恐慌情绪蔓延，注意控制风险';
+    let capitalTrend = scores.attack > 50
+      ? '链上资金流入活跃，稳定币市值上升，DeFi TVL回升，市场风险偏好提升'
+      : '链上资金流出迹象，稳定币市值下降，市场风险偏好降低，防御为主';
+    let strategy: string;
+    if (scores.defense > 60) strategy = '仓位降至30-50%，主持BTC/ETH等主流币，减少山寨币暂露';
+    else if (scores.attack > 60) strategy = '积极加仓至60-80%，关注L1/L2、AI赛道龙头，Meme币适当配置';
+    else strategy = '维持中性仓位50-60%，BTC占比40%+，均衡配置主流币与山寨币';
+    return { mainTone, capitalTrend, strategy };
+  }
+
+  // 港股市场专属舆情
+  if (market === 'hk') {
+    let mainTone: string;
+    if (riseRatio > 0.6) mainTone = '港股市场情绪回暖，多头占据主导，科技股领涨';
+    else if (riseRatio > 0.4) mainTone = `港股震荡分化，涨跌比${(riseRatio * 100).toFixed(1)}%，南向资金态度谨慎`;
+    else mainTone = '港股弱势运行，空头压制明显，注意防范风险';
+    let capitalTrend = scores.attack > 50
+      ? '南向资金结构性流入，主力布局科技、消费龙头'
+      : '南向资金谨慎观望，资金偏好高股息防御标的';
+    let strategy: string;
+    if (scores.defense > 60) strategy = '控制仓位30-50%，关注高股息国企、电信股，等待企稳信号';
+    else if (scores.attack > 60) strategy = '积极加仓至60-80%，重点布局互联网、新能源车等成长股';
+    else strategy = '维持中性仓位50-60%，均衡配置科技成长与高股息价值';
+    return { mainTone, capitalTrend, strategy };
+  }
+
+  // 美股市场专属舆情
+  if (market === 'us') {
+    let mainTone: string;
+    if (riseRatio > 0.6) mainTone = '美股市场情绪回暖，科技股领涨，多头占据主导';
+    else if (riseRatio > 0.4) mainTone = `美股震荡分化，涨跌比${(riseRatio * 100).toFixed(1)}%，市场观望情绪浓厚`;
+    else mainTone = '美股弱势运行，空头压制明显，注意美联储政策动向';
+    let capitalTrend = scores.attack > 50
+      ? '机构资金积极布局AI、半导体赛道，科技股资金流入显著'
+      : '机构资金偏向防御，公用事业、医疗保健板块受青睐';
+    let strategy: string;
+    if (scores.defense > 60) strategy = '控制仓位30-50%，关注防御性板块，跟踪美联储议息动向';
+    else if (scores.attack > 60) strategy = '积极加仓至60-80%，重点布局AI、半导体、云计算龙头';
+    else strategy = '维持中性仓位50-60%，均衡配置科技成长与价值股';
+    return { mainTone, capitalTrend, strategy };
+  }
+
+  // A股市场（默认）
   let mainTone: string;
   if (riseRatio > 0.6) mainTone = '市场情绪回暖，赚钱效应显著，多头占据主导';
   else if (riseRatio > 0.4) mainTone = `市场震荡分化，涨跌比${(riseRatio * 100).toFixed(1)}%，机构态度谨慎`;

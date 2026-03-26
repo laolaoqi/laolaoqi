@@ -59,6 +59,131 @@ async function fetchYahooQuote(symbols: string[]) {
 }
 
 // ===================================================================
+// 新浪财经 API — A股实时行情（主数据源）
+// 数据格式: 名称,今开,昨收,现价,最高,最低,买一,卖一,成交量,成交额,...
+// 指数: sh000001(上证), sz399001(深证), sz399006(创业板)
+// 个股: sh600036(招商银行), sz000001(平安银行)
+// ===================================================================
+function yahooToSina(symbol: string): string {
+  // Convert Yahoo symbol to Sina symbol
+  if (symbol.endsWith('.SS')) return 'sh' + symbol.replace('.SS', '');
+  if (symbol.endsWith('.SZ')) return 'sz' + symbol.replace('.SZ', '');
+  // Index symbols
+  if (symbol === '000001.SS') return 'sh000001';
+  if (symbol === '399001.SZ') return 'sz399001';
+  if (symbol === '399006.SZ') return 'sz399006';
+  return symbol;
+}
+
+interface SinaQuoteData {
+  name: string;
+  open: number;
+  prevClose: number;
+  price: number;
+  high: number;
+  low: number;
+  volume: number;
+  amount: number;
+  date: string;
+  time: string;
+}
+
+function parseSinaLine(line: string): { symbol: string; data: SinaQuoteData } | null {
+  // var hq_str_sh000001="上证指数,3924.96,3931.84,3889.08,...";
+  const m = line.match(/hq_str_(\w+)="([^"]*)"/); 
+  if (!m || !m[2]) return null;
+  const parts = m[2].split(',');
+  if (parts.length < 32) return null;
+  return {
+    symbol: m[1],
+    data: {
+      name: parts[0],
+      open: parseFloat(parts[1]) || 0,
+      prevClose: parseFloat(parts[2]) || 0,
+      price: parseFloat(parts[3]) || 0,
+      high: parseFloat(parts[4]) || 0,
+      low: parseFloat(parts[5]) || 0,
+      volume: parseFloat(parts[8]) || 0,
+      amount: parseFloat(parts[9]) || 0,
+      date: parts[30] || '',
+      time: parts[31] || '',
+    },
+  };
+}
+
+async function fetchSinaQuotes(symbols: string[]): Promise<Map<string, SinaQuoteData>> {
+  const result = new Map<string, SinaQuoteData>();
+  // Sina supports up to ~50 symbols per request
+  const BATCH = 40;
+  for (let i = 0; i < symbols.length; i += BATCH) {
+    const batch = symbols.slice(i, i + BATCH);
+    const sinaSymbols = batch.map(yahooToSina);
+    try {
+      const url = `https://hq.sinajs.cn/list=${sinaSymbols.join(',')}`;
+      const resp = await fetch(url, {
+        headers: {
+          'Referer': 'https://finance.sina.com.cn',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (resp.status !== 200) continue;
+      // Response is GBK encoded
+      const buf = await resp.arrayBuffer();
+      const text = new TextDecoder('gbk').decode(buf);
+      const lines = text.split('\n').filter(l => l.trim());
+      for (let j = 0; j < lines.length; j++) {
+        const parsed = parseSinaLine(lines[j]);
+        if (parsed && parsed.data.price > 0) {
+          // Map back to Yahoo symbol
+          result.set(batch[j], parsed.data);
+        }
+      }
+    } catch (err: any) {
+      console.error(`[Sina] Batch fetch failed:`, err?.message);
+    }
+    if (i + BATCH < symbols.length) await new Promise(r => setTimeout(r, 200));
+  }
+  return result;
+}
+
+// Fetch A-share index data from Sina (primary) with Yahoo fallback
+async function fetchCNIndexData(cfg: IndexConfig) {
+  try {
+    const sinaData = await fetchSinaQuotes([cfg.symbol]);
+    const q = sinaData.get(cfg.symbol);
+    if (q && q.price > 0) {
+      const change = q.price - q.prevClose;
+      const changePercent = q.prevClose ? (change / q.prevClose) * 100 : 0;
+      // Also fetch chart data from Yahoo for the mini chart (Sina doesn't provide intraday series)
+      let chartData: { time: number; value: number }[] = [];
+      try {
+        const yahooResult = await fetchYahooChart(cfg.symbol, '5m', '1d');
+        if (yahooResult?.chart?.result?.[0]) {
+          const d = yahooResult.chart.result[0];
+          const ts = d.timestamp || [];
+          const closes = d.indicators?.quote?.[0]?.close || [];
+          for (let i = 0; i < ts.length; i++) {
+            if (closes[i] != null && !isNaN(closes[i])) chartData.push({ time: ts[i], value: closes[i] });
+          }
+        }
+      } catch { /* chart is optional */ }
+      return {
+        symbol: cfg.symbol,
+        nameZh: cfg.nameZh, nameEn: cfg.nameEn, nameJa: cfg.nameJa, nameKo: cfg.nameKo, nameAr: cfg.nameAr,
+        price: q.price, change, changePercent,
+        high: q.high, low: q.low, volume: q.volume,
+        chartData,
+      };
+    }
+  } catch (err: any) {
+    console.error(`[Sina] CN index ${cfg.symbol} failed:`, err?.message);
+  }
+  // Fallback to Yahoo
+  return fetchIndexData(cfg);
+}
+
+// ===================================================================
 // 市场配置 — 按市场分类
 // ===================================================================
 type MarketId = 'cn' | 'hk' | 'us' | 'crypto';
@@ -666,8 +791,10 @@ export const appRouter = router({
         }
 
         // Default: use Yahoo Finance for non-crypto markets (or as fallback)
+        // For CN market, use Sina Finance API (more accurate for A-share data)
         const configs = MARKET_INDICES[input.market].map(c => ({ ...c, market: input.market }));
-        const results = await Promise.allSettled(configs.map(cfg => fetchIndexData(cfg)));
+        const fetchFn = input.market === 'cn' ? fetchCNIndexData : fetchIndexData;
+        const results = await Promise.allSettled(configs.map(cfg => fetchFn(cfg)));
         const data = results.map((r, i) => {
           if (r.status === 'fulfilled' && r.value) return { ...r.value, market: configs[i].market };
           return null;
@@ -743,44 +870,60 @@ export const appRouter = router({
         const sectors = MARKET_SECTORS[input.market];
         const allSymbols = sectors.flatMap(s => s.symbols);
 
-        // Fetch real data from Yahoo — batch in groups of 15 with delay
+        // Fetch real data — use Sina for CN market (accurate), Yahoo for others
         let quoteMap: Record<string, { changePercent: number; price: number; volume: number }> = {};
-        const BATCH_SIZE = 15;
-        const BATCH_DELAY = 300; // ms between batches to avoid throttling
         let fetchedCount = 0;
         let failCount = 0;
         
         console.log(`[Heatmap] Fetching ${allSymbols.length} symbols for ${input.market} market...`);
-        
-        for (let i = 0; i < allSymbols.length; i += BATCH_SIZE) {
-          const batch = allSymbols.slice(i, i + BATCH_SIZE);
+
+        if (input.market === 'cn') {
+          // Use Sina Finance API for A-share stocks (accurate real-time data)
           try {
-            const result = await fetchYahooQuote(batch);
-            const quotes = result?.quoteResponse?.result || [];
-            for (const q of quotes) {
-              quoteMap[q.symbol] = {
-                changePercent: q.regularMarketChangePercent || 0,
-                price: q.regularMarketPrice || 0,
-                volume: q.regularMarketVolume || 0,
-              };
-              fetchedCount++;
-            }
-          } catch (err: any) {
-            failCount += batch.length;
-            // On failure, generate placeholder data for this batch
-            for (const sym of batch) {
-              if (!quoteMap[sym]) {
-                quoteMap[sym] = {
-                  changePercent: (Math.random() - 0.45) * 6,
-                  price: 100 + Math.random() * 200,
-                  volume: Math.random() * 1e9,
-                };
+            const sinaData = await fetchSinaQuotes(allSymbols);
+            for (const sym of allSymbols) {
+              const q = sinaData.get(sym);
+              if (q && q.price > 0) {
+                const change = q.prevClose ? ((q.price - q.prevClose) / q.prevClose) * 100 : 0;
+                quoteMap[sym] = { changePercent: change, price: q.price, volume: q.volume };
+                fetchedCount++;
               }
             }
+          } catch (err: any) {
+            console.error('[Heatmap] Sina CN fetch failed:', err?.message);
           }
-          // Add delay between batches to avoid API throttling
-          if (i + BATCH_SIZE < allSymbols.length) {
-            await new Promise(r => setTimeout(r, BATCH_DELAY));
+        } else {
+          // Use Yahoo Finance API for HK/US/Crypto markets
+          const BATCH_SIZE = 15;
+          const BATCH_DELAY = 300;
+          for (let i = 0; i < allSymbols.length; i += BATCH_SIZE) {
+            const batch = allSymbols.slice(i, i + BATCH_SIZE);
+            try {
+              const result = await fetchYahooQuote(batch);
+              const quotes = result?.quoteResponse?.result || [];
+              for (const q of quotes) {
+                quoteMap[q.symbol] = {
+                  changePercent: q.regularMarketChangePercent || 0,
+                  price: q.regularMarketPrice || 0,
+                  volume: q.regularMarketVolume || 0,
+                };
+                fetchedCount++;
+              }
+            } catch (err: any) {
+              failCount += batch.length;
+              for (const sym of batch) {
+                if (!quoteMap[sym]) {
+                  quoteMap[sym] = {
+                    changePercent: (Math.random() - 0.45) * 6,
+                    price: 100 + Math.random() * 200,
+                    volume: Math.random() * 1e9,
+                  };
+                }
+              }
+            }
+            if (i + BATCH_SIZE < allSymbols.length) {
+              await new Promise(r => setTimeout(r, BATCH_DELAY));
+            }
           }
         }
         

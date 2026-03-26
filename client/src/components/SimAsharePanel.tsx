@@ -157,10 +157,11 @@ export default function SimAsharePanel() {
     );
   }
 
-  const { summary, positions, trades, snapshots, config } = data;
+  const { summary, positions, trades, snapshots, config, weeklyPnl, weeklyHistory } = data;
   // A-share convention: red = profit, green = loss
   const pnlColor = summary.totalPnl >= 0 ? '#ff4444' : '#00e676';
   const PnlIcon = summary.totalPnl >= 0 ? TrendingUp : TrendingDown;
+  const weekPnlColor = weeklyPnl && (weeklyPnl.weeklyPnl ?? 0) >= 0 ? '#ff4444' : '#00e676';
 
   return (
     <div className="rounded-xl border border-[rgba(255,68,68,0.15)] bg-card/80 overflow-hidden">
@@ -235,6 +236,97 @@ export default function SimAsharePanel() {
           </div>
         </div>
       </div>
+
+      {/* Weekly P&L Section */}
+      {weeklyPnl && (
+        <div className="px-5 sm:px-6 py-4 border-b border-[rgba(255,68,68,0.08)]">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="w-4 h-4 text-[#ffd700]" />
+            <span className="text-sm font-bold text-[#ffd700]" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+              本周盈亏
+            </span>
+            <span className="text-[10px] text-muted-foreground/50">
+              {weeklyPnl.weekLabel} ({weeklyPnl.weekStartDate} ~ {weeklyPnl.weekEndDate})
+            </span>
+            {!weeklyPnl.isComplete && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">进行中</span>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg bg-secondary/60 border border-[rgba(255,68,68,0.08)] p-3">
+              <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">周初资产</div>
+              <div className="text-base font-bold text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                {fmtCNY(weeklyPnl.startValue)}
+              </div>
+            </div>
+            <div className="rounded-lg bg-secondary/60 border border-[rgba(255,68,68,0.08)] p-3">
+              <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">
+                {weeklyPnl.isComplete ? '周末资产' : '当前资产'}
+              </div>
+              <div className="text-base font-bold text-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                {fmtCNY(weeklyPnl.endValue ?? summary.totalValue)}
+              </div>
+            </div>
+            <div className="rounded-lg bg-secondary/60 border border-[rgba(255,68,68,0.08)] p-3">
+              <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-1">本周盈亏</div>
+              <div className="flex items-center gap-1">
+                {(weeklyPnl.weeklyPnl ?? 0) >= 0
+                  ? <TrendingUp className="w-4 h-4" style={{ color: weekPnlColor }} />
+                  : <TrendingDown className="w-4 h-4" style={{ color: weekPnlColor }} />
+                }
+                <span className="text-base font-bold" style={{ color: weekPnlColor, fontFamily: "'JetBrains Mono', monospace" }}>
+                  {fmtPct(weeklyPnl.weeklyPnlPercent ?? 0)}
+                </span>
+              </div>
+              <div className="text-[10px] mt-0.5" style={{ color: weekPnlColor }}>
+                {(weeklyPnl.weeklyPnl ?? 0) >= 0 ? '+' : ''}{fmtCNY(weeklyPnl.weeklyPnl ?? 0)}
+              </div>
+            </div>
+          </div>
+
+          {/* Weekly History */}
+          {weeklyHistory && weeklyHistory.length > 1 && (
+            <div className="mt-3">
+              <div className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mb-2">历史周度盈亏</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">
+                      <th className="text-left py-1.5 pr-2">周</th>
+                      <th className="text-right py-1.5 pr-2">周初</th>
+                      <th className="text-right py-1.5 pr-2">周末</th>
+                      <th className="text-right py-1.5 pr-2">盈亏</th>
+                      <th className="text-right py-1.5">收益率</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {weeklyHistory.slice(0, 8).map((w, i) => {
+                      const wColor = (w.weeklyPnl ?? 0) >= 0 ? '#ff4444' : '#00e676';
+                      return (
+                        <tr key={i} className="border-t border-[rgba(255,68,68,0.04)]">
+                          <td className="py-1.5 pr-2 text-muted-foreground">{w.weekLabel}</td>
+                          <td className="py-1.5 pr-2 text-right text-muted-foreground/80" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                            {fmtCNY(w.startValue)}
+                          </td>
+                          <td className="py-1.5 pr-2 text-right text-muted-foreground/80" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                            {fmtCNY(w.endValue ?? 0)}
+                          </td>
+                          <td className="py-1.5 pr-2 text-right" style={{ fontFamily: "'JetBrains Mono', monospace", color: wColor }}>
+                            {(w.weeklyPnl ?? 0) >= 0 ? '+' : ''}{fmtCNY(w.weeklyPnl ?? 0)}
+                          </td>
+                          <td className="py-1.5 text-right font-bold" style={{ fontFamily: "'JetBrains Mono', monospace", color: wColor }}>
+                            {fmtPct(w.weeklyPnlPercent ?? 0)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Equity Curve */}
       {snapshots.length >= 2 && (
@@ -384,8 +476,8 @@ export default function SimAsharePanel() {
       {/* Footer info */}
       <div className="px-5 sm:px-6 py-3 bg-card/40 border-t border-[rgba(255,68,68,0.06)]">
         <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground/40">
-          <span>⏰ 调仓时间：每日 09:00（北京时间）</span>
-          <span>💰 初始本金：¥{(config.initialCapital / 10000).toFixed(0)}万 · 策略：基于A股模式评分自动配置</span>
+          <span>⏰ 调仓：每日09:00 · 周结算：周一09:00 ~ 周五15:00</span>
+          <span>💰 初始本金：¥{(config.initialCapital / 10000).toFixed(0)}万 · 策略：基于TOP10推荐选股</span>
         </div>
         <div className="mt-1 text-[10px] text-muted-foreground/30">
           ⚠️ 模拟投资仅供参考，不构成投资建议。A股红涨绿跌。
