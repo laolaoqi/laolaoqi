@@ -151,26 +151,27 @@ interface StockPick {
 }
 
 // ===================================================================
-// Select top stocks from strategy engine results
+// Select stocks ONLY from core Top10 recommendations
+// This ensures A-share sim portfolio buys match the Top10 display,
+// demonstrating the accuracy and effectiveness of our stock picks.
 // ===================================================================
 async function getTopStocks(): Promise<{ blueChips: StockPick[]; growthStocks: StockPick[]; advanceRatio: number; marketState: string }> {
-  // First try database recommendations (from strategy engine)
-  let allStocks: StockPick[] = [];
+  let top10Stocks: StockPick[] = [];
   let advanceRatio = 50;
   let marketState = 'neutral';
 
   try {
-    // Run strategy for CN market to get fresh data
+    // 1. Get market sentiment from strategy engine
     const result = await runStrategyForMarket('cn');
     advanceRatio = result.sentiment.advanceRatio;
     marketState = result.sentiment.marketState;
 
-    // Get ALL scored candidates (not just top 10)
-    // The strategy engine returns top 10, but we need more for portfolio
-    // Use the DB recommendations as primary source
+    // 2. ONLY use the Top10 recommendations from database
+    //    These are the same stocks shown in the "核心推荐TOP10" panel
     const dbRecs = await getLatestRecommendations('cn');
     if (dbRecs.length > 0) {
-      allStocks = dbRecs.map(r => ({
+      // Take only the top 10 (sorted by score descending in DB)
+      top10Stocks = dbRecs.slice(0, 10).map(r => ({
         symbol: r.symbol,
         name: r.nameZh,
         industry: r.industry || '',
@@ -180,36 +181,35 @@ async function getTopStocks(): Promise<{ blueChips: StockPick[]; growthStocks: S
         changePercent: r.changePercent,
         category: BLUE_CHIP_INDUSTRIES.has(r.industry || '') ? 'blueChip' as const : 'growth' as const,
       }));
+      console.log(`[SimAshare] Using Top10 recommendations: ${top10Stocks.map(s => s.name).join(', ')}`);
     }
 
-    // Also include the fresh strategy results
-    for (const s of result.stocks) {
-      if (!allStocks.find(a => a.symbol === s.symbol)) {
-        allStocks.push({
-          symbol: s.symbol,
-          name: s.nameZh,
-          industry: s.industry,
-          price: s.price,
-          score: s.score,
-          signal: s.signal,
-          changePercent: s.changePercent,
-          category: BLUE_CHIP_INDUSTRIES.has(s.industry) ? 'blueChip' : 'growth',
-        });
-      }
+    // 3. If DB has no recommendations yet, use fresh strategy results (top 10 only)
+    if (top10Stocks.length === 0 && result.stocks.length > 0) {
+      top10Stocks = result.stocks.slice(0, 10).map(s => ({
+        symbol: s.symbol,
+        name: s.nameZh,
+        industry: s.industry,
+        price: s.price,
+        score: s.score,
+        signal: s.signal,
+        changePercent: s.changePercent,
+        category: BLUE_CHIP_INDUSTRIES.has(s.industry) ? 'blueChip' : 'growth',
+      }));
+      console.log(`[SimAshare] Using fresh strategy Top10: ${top10Stocks.map(s => s.name).join(', ')}`);
     }
   } catch (err: any) {
-    console.error('[SimAshare] Failed to get strategy data:', err?.message);
+    console.error('[SimAshare] Failed to get Top10 data:', err?.message);
   }
 
-  // If no data from strategy engine, use STOCK_UNIVERSE defaults
-  if (allStocks.length === 0) {
+  // Fallback: if no Top10 available, pick a few from STOCK_UNIVERSE
+  if (top10Stocks.length === 0) {
     const cnStocks = STOCK_UNIVERSE.cn || [];
-    // Pick top stocks by industry diversity
-    allStocks = cnStocks.slice(0, 30).map(s => ({
+    top10Stocks = cnStocks.slice(0, 10).map(s => ({
       symbol: s.symbol,
       name: s.nameZh,
       industry: s.industry,
-      price: 0, // Will be fetched during rebalance
+      price: 0,
       score: 60,
       signal: 'hold',
       changePercent: 0,
@@ -218,10 +218,11 @@ async function getTopStocks(): Promise<{ blueChips: StockPick[]; growthStocks: S
   }
 
   // Sort by score descending
-  allStocks.sort((a, b) => b.score - a.score);
+  top10Stocks.sort((a, b) => b.score - a.score);
 
-  const blueChips = allStocks.filter(s => s.category === 'blueChip').slice(0, 5);
-  const growthStocks = allStocks.filter(s => s.category === 'growth').slice(0, 5);
+  // Split into blue chip and growth from the Top10
+  const blueChips = top10Stocks.filter(s => s.category === 'blueChip');
+  const growthStocks = top10Stocks.filter(s => s.category === 'growth');
 
   return { blueChips, growthStocks, advanceRatio, marketState };
 }

@@ -1,0 +1,130 @@
+{
+  "query": "SELECT path, COUNT(*) as cnt FROM visitor_logs GROUP BY path ORDER BY cnt DESC LIMIT 30;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2mMUWCgRrKyXnec.aaf1d676ebc8 --database aQmoownM6bhHeHmnLNrAci --execute SELECT path, COUNT(*) as cnt FROM visitor_logs GROUP BY path ORDER BY cnt DESC LIMIT 30;",
+  "rows": [
+    {
+      "path": "/",
+      "cnt": "66"
+    },
+    {
+      "path": "/admin",
+      "cnt": "37"
+    },
+    {
+      "path": "/src/pages/NotFound.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/AISummary.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/HudPanel.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/SimPortfolioPanel.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/contexts/AppContext.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/ThemeSwitcher.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/TopBar.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/_core/hooks/useAuth.ts",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/ui/tooltip.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/pages/StockDetail.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/crypto-investment",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/pages/CryptoInvestment.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/pages/Admin.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/AnnouncementBoard.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/pages/Home.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/ui/button.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/App.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/contexts/ThemeContext.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/const.ts",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/NewsDigest.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/ui/sonner.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/RiskControl.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/FearGreedGauge.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/pages/About.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/lib/i18n.ts",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/lib/marketData.ts",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/WeightAllocation.tsx",
+      "cnt": "3"
+    },
+    {
+      "path": "/src/components/ErrorBoundary.tsx",
+      "cnt": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "path\tcnt\n/\t66\n/admin\t37\n/src/pages/NotFound.tsx\t3\n/src/components/AISummary.tsx\t3\n/src/components/HudPanel.tsx\t3\n/src/components/SimPortfolioPanel.tsx\t3\n/src/contexts/AppContext.tsx\t3\n/src/components/ThemeSwitcher.tsx\t3\n/src/components/TopBar.tsx\t3\n/src/_core/hooks/useAuth.ts\t3\n/src/components/ui/tooltip.tsx\t3\n/src/pages/StockDetail.tsx\t3\n/crypto-investment\t3\n/src/pages/CryptoInvestment.tsx\t3\n/src/pages/Admin.tsx\t3\n/src/components/AnnouncementBoard.tsx\t3\n/src/pages/Home.tsx\t3\n/src/components/ui/button.tsx\t3\n/src/App.tsx\t3\n/src/contexts/ThemeContext.tsx\t3\n/src/const.ts\t3\n/src/components/NewsDigest.tsx\t3\n/src/components/ui/sonner.tsx\t3\n/src/components/RiskControl.tsx\t3\n/src/components/FearGreedGauge.tsx\t3\n/src/pages/About.tsx\t3\n/src/lib/i18n.ts\t3\n/src/lib/marketData.ts\t3\n/src/components/WeightAllocation.tsx\t3\n/src/components/ErrorBoundary.tsx\t3\n",
+  "stderr": "",
+  "execution_time_ms": 1860
+}

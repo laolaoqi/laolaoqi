@@ -7,7 +7,7 @@ import { visitorLogs, type InsertVisitorLog } from "../drizzle/schema";
 import { sql, eq, gte, and, desc, count, countDistinct } from "drizzle-orm";
 
 // ===================================================================
-// IP Geolocation (ip-api.com — free, 45 req/min, no key needed)
+// IP Geolocation (ipinfo.io — free tier: 50k/month, no key needed)
 // ===================================================================
 interface GeoResult {
   country: string;
@@ -33,7 +33,6 @@ async function lookupGeo(ip: string): Promise<GeoResult | null> {
   if (cached && Date.now() - cached.ts < GEO_CACHE_TTL) return cached.data;
 
   try {
-    // Primary: ipinfo.io (free tier: 50k/month, no key needed)
     const resp = await fetch(`https://ipinfo.io/${ip}/json`, {
       signal: AbortSignal.timeout(8000),
     });
@@ -57,7 +56,6 @@ async function lookupGeo(ip: string): Promise<GeoResult | null> {
     return null;
   } catch (err) {
     console.warn(`[VisitorTracker] Geo lookup failed for ${ip}:`, (err as Error).message || err);
-    // Cache failure for 5 minutes to avoid hammering
     geoCache.set(ip, { data: null, ts: Date.now() - GEO_CACHE_TTL + 5 * 60 * 1000 });
     return null;
   }
@@ -88,7 +86,6 @@ function countryCodeToName(code: string): string {
 function parseUA(ua: string | undefined): { deviceType: string; browser: string; os: string } {
   if (!ua) return { deviceType: 'unknown', browser: 'unknown', os: 'unknown' };
 
-  // Device type
   let deviceType = 'desktop';
   const uaLower = ua.toLowerCase();
   if (/bot|crawler|spider|slurp|googlebot|bingbot|baiduspider|yandex/i.test(ua)) {
@@ -99,7 +96,6 @@ function parseUA(ua: string | undefined): { deviceType: string; browser: string;
     deviceType = 'tablet';
   }
 
-  // Browser
   let browser = 'Other';
   if (uaLower.includes('edg/')) browser = 'Edge';
   else if (uaLower.includes('opr/') || uaLower.includes('opera')) browser = 'Opera';
@@ -108,7 +104,6 @@ function parseUA(ua: string | undefined): { deviceType: string; browser: string;
   else if (uaLower.includes('safari') && !uaLower.includes('chrome')) browser = 'Safari';
   else if (uaLower.includes('msie') || uaLower.includes('trident')) browser = 'IE';
 
-  // OS
   let os = 'Other';
   if (uaLower.includes('windows')) os = 'Windows';
   else if (uaLower.includes('mac os')) os = 'macOS';
@@ -163,7 +158,7 @@ export async function recordVisit(params: {
 }
 
 // ===================================================================
-// Analytics Queries
+// Analytics Queries — Unified Path Filtering
 // ===================================================================
 
 /** Get UTC midnight for today (or N days ago). Always uses UTC to match MySQL DATE() behavior. */
@@ -179,30 +174,91 @@ function toUtcDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-// Common filter to exclude dev/build paths from analytics
+// ===================================================================
+// UNIFIED PATH FILTER — used by ALL analytics queries
+// MUST match the recording middleware in server/_core/index.ts exactly
+// This ensures statistics are consistent with recent visitor records
+// ===================================================================
+
+/** Raw SQL filter for db.execute() queries (appended with AND) */
 const DEV_PATH_FILTER = sql.raw(`
   AND path NOT LIKE '/src/%'
   AND path NOT LIKE '/@%'
   AND path NOT LIKE '/node_modules/%'
   AND path NOT LIKE '/__vite%'
   AND path NOT LIKE '/client/%'
+  AND path NOT LIKE '/.manus%'
+  AND path NOT LIKE '/api/%'
   AND path NOT LIKE '%.tsx'
   AND path NOT LIKE '%.ts'
   AND path NOT LIKE '%.css'
   AND path NOT LIKE '%.js'
+  AND path NOT LIKE '%.mjs'
   AND path NOT LIKE '%.map'
+  AND path NOT LIKE '%.png'
+  AND path NOT LIKE '%.jpg'
+  AND path NOT LIKE '%.jpeg'
+  AND path NOT LIKE '%.gif'
+  AND path NOT LIKE '%.svg'
+  AND path NOT LIKE '%.ico'
+  AND path NOT LIKE '%.woff'
+  AND path NOT LIKE '%.woff2'
+  AND path NOT LIKE '%.ttf'
+  AND path NOT LIKE '%.webp'
+  AND path NOT LIKE '%.webm'
+  AND path NOT LIKE '%.mp4'
+  AND path NOT LIKE '%.json'
+  AND path NOT LIKE '%.xml'
+  AND path NOT LIKE '%.txt'
+  AND path NOT LIKE '%.html'
+  AND path NOT LIKE '%.webmanifest'
+  AND path NOT LIKE '%hot-update%'
 `);
+
+/** Drizzle ORM filter array for .where(and(...)) queries — same conditions as DEV_PATH_FILTER */
+function getDrizzlePathFilter() {
+  return [
+    sql`${visitorLogs.path} NOT LIKE '/src/%'`,
+    sql`${visitorLogs.path} NOT LIKE '/@%'`,
+    sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
+    sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
+    sql`${visitorLogs.path} NOT LIKE '/client/%'`,
+    sql`${visitorLogs.path} NOT LIKE '/.manus%'`,
+    sql`${visitorLogs.path} NOT LIKE '/api/%'`,
+    sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
+    sql`${visitorLogs.path} NOT LIKE '%.ts'`,
+    sql`${visitorLogs.path} NOT LIKE '%.css'`,
+    sql`${visitorLogs.path} NOT LIKE '%.js'`,
+    sql`${visitorLogs.path} NOT LIKE '%.mjs'`,
+    sql`${visitorLogs.path} NOT LIKE '%.map'`,
+    sql`${visitorLogs.path} NOT LIKE '%.png'`,
+    sql`${visitorLogs.path} NOT LIKE '%.jpg'`,
+    sql`${visitorLogs.path} NOT LIKE '%.jpeg'`,
+    sql`${visitorLogs.path} NOT LIKE '%.gif'`,
+    sql`${visitorLogs.path} NOT LIKE '%.svg'`,
+    sql`${visitorLogs.path} NOT LIKE '%.ico'`,
+    sql`${visitorLogs.path} NOT LIKE '%.woff'`,
+    sql`${visitorLogs.path} NOT LIKE '%.woff2'`,
+    sql`${visitorLogs.path} NOT LIKE '%.ttf'`,
+    sql`${visitorLogs.path} NOT LIKE '%.webp'`,
+    sql`${visitorLogs.path} NOT LIKE '%.webm'`,
+    sql`${visitorLogs.path} NOT LIKE '%.mp4'`,
+    sql`${visitorLogs.path} NOT LIKE '%.json'`,
+    sql`${visitorLogs.path} NOT LIKE '%.xml'`,
+    sql`${visitorLogs.path} NOT LIKE '%.txt'`,
+    sql`${visitorLogs.path} NOT LIKE '%.html'`,
+    sql`${visitorLogs.path} NOT LIKE '%.webmanifest'`,
+    sql`${visitorLogs.path} NOT LIKE '%hot-update%'`,
+  ];
+}
 
 /** Get daily PV/UV for a date range, filling in missing dates with zeros */
 export async function getDailyStats(days: number = 30) {
   const db = await getDb();
   if (!db) return [];
 
-  // Use UTC midnight for consistency across all analytics functions
-  // "today" (days=1) means from UTC midnight today; "7 days" means from UTC midnight 7 days ago
   const since = getUtcMidnight(days > 1 ? days - 1 : 0);
 
-  // Use raw SQL to avoid only_full_group_by issues
   const rows = await db.execute(
     sql`SELECT DATE(createdAt) as date, COUNT(*) as pv, COUNT(DISTINCT ip) as uv FROM visitor_logs WHERE createdAt >= ${since} ${DEV_PATH_FILTER} GROUP BY DATE(createdAt) ORDER BY DATE(createdAt)`
   );
@@ -210,12 +266,10 @@ export async function getDailyStats(days: number = 30) {
   const rawRows = Array.isArray(rows) && rows.length > 0 && Array.isArray(rows[0]) ? rows[0] : rows;
   const dataMap = new Map<string, { pv: number; uv: number }>();
   (rawRows as any[]).forEach((r: any) => {
-    // Normalize date to YYYY-MM-DD string
     const d = r.date instanceof Date ? r.date.toISOString().slice(0, 10) : String(r.date).slice(0, 10);
     dataMap.set(d, { pv: Number(r.pv), uv: Number(r.uv) });
   });
 
-  // Fill in all dates in the range with zeros for missing days (using UTC dates)
   const result: Array<{ date: string; pv: number; uv: number }> = [];
   const todayUtc = getUtcMidnight(0);
   
@@ -250,16 +304,7 @@ export async function getCountryStats(days: number = 30) {
     .where(and(
       gte(visitorLogs.createdAt, since),
       sql`${visitorLogs.country} IS NOT NULL`,
-      sql`${visitorLogs.path} NOT LIKE '/src/%'`,
-      sql`${visitorLogs.path} NOT LIKE '/@%'`,
-      sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
-      sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
-      sql`${visitorLogs.path} NOT LIKE '/client/%'`,
-      sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
-      sql`${visitorLogs.path} NOT LIKE '%.ts'`,
-      sql`${visitorLogs.path} NOT LIKE '%.css'`,
-      sql`${visitorLogs.path} NOT LIKE '%.js'`,
-      sql`${visitorLogs.path} NOT LIKE '%.map'`,
+      ...getDrizzlePathFilter(),
     ))
     .groupBy(visitorLogs.country, visitorLogs.countryCode)
     .orderBy(desc(sql`visits`))
@@ -287,16 +332,7 @@ export async function getCityStats(days: number = 30) {
     .where(and(
       gte(visitorLogs.createdAt, since),
       sql`${visitorLogs.city} IS NOT NULL AND ${visitorLogs.city} != ''`,
-      sql`${visitorLogs.path} NOT LIKE '/src/%'`,
-      sql`${visitorLogs.path} NOT LIKE '/@%'`,
-      sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
-      sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
-      sql`${visitorLogs.path} NOT LIKE '/client/%'`,
-      sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
-      sql`${visitorLogs.path} NOT LIKE '%.ts'`,
-      sql`${visitorLogs.path} NOT LIKE '%.css'`,
-      sql`${visitorLogs.path} NOT LIKE '%.js'`,
-      sql`${visitorLogs.path} NOT LIKE '%.map'`,
+      ...getDrizzlePathFilter(),
     ))
     .groupBy(visitorLogs.city, visitorLogs.country, visitorLogs.countryCode)
     .orderBy(desc(sql`visits`))
@@ -321,17 +357,7 @@ export async function getTopPages(days: number = 30) {
     .from(visitorLogs)
     .where(and(
       gte(visitorLogs.createdAt, since),
-      // Filter out dev/build paths that shouldn't appear in analytics
-      sql`${visitorLogs.path} NOT LIKE '/src/%'`,
-      sql`${visitorLogs.path} NOT LIKE '/@%'`,
-      sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
-      sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
-      sql`${visitorLogs.path} NOT LIKE '/client/%'`,
-      sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
-      sql`${visitorLogs.path} NOT LIKE '%.ts'`,
-      sql`${visitorLogs.path} NOT LIKE '%.css'`,
-      sql`${visitorLogs.path} NOT LIKE '%.js'`,
-      sql`${visitorLogs.path} NOT LIKE '%.map'`,
+      ...getDrizzlePathFilter(),
     ))
     .groupBy(visitorLogs.path)
     .orderBy(desc(sql`visits`))
@@ -346,26 +372,14 @@ export async function getDeviceStats(days: number = 30) {
   if (!db) return { devices: [], browsers: [], oses: [] };
 
   const since = getUtcMidnight(days > 1 ? days - 1 : 0);
-
-  const devPathFilter = [
-    sql`${visitorLogs.path} NOT LIKE '/src/%'`,
-    sql`${visitorLogs.path} NOT LIKE '/@%'`,
-    sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
-    sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
-    sql`${visitorLogs.path} NOT LIKE '/client/%'`,
-    sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
-    sql`${visitorLogs.path} NOT LIKE '%.ts'`,
-    sql`${visitorLogs.path} NOT LIKE '%.css'`,
-    sql`${visitorLogs.path} NOT LIKE '%.js'`,
-    sql`${visitorLogs.path} NOT LIKE '%.map'`,
-  ];
+  const pathFilter = getDrizzlePathFilter();
 
   const [devices, browsers, oses] = await Promise.all([
     db.select({
       name: visitorLogs.deviceType,
       count: count().as('count'),
     }).from(visitorLogs)
-      .where(and(gte(visitorLogs.createdAt, since), ...devPathFilter))
+      .where(and(gte(visitorLogs.createdAt, since), ...pathFilter))
       .groupBy(visitorLogs.deviceType)
       .orderBy(desc(sql`count`)),
 
@@ -373,7 +387,7 @@ export async function getDeviceStats(days: number = 30) {
       name: visitorLogs.browser,
       count: count().as('count'),
     }).from(visitorLogs)
-      .where(and(gte(visitorLogs.createdAt, since), ...devPathFilter))
+      .where(and(gte(visitorLogs.createdAt, since), ...pathFilter))
       .groupBy(visitorLogs.browser)
       .orderBy(desc(sql`count`)),
 
@@ -381,7 +395,7 @@ export async function getDeviceStats(days: number = 30) {
       name: visitorLogs.os,
       count: count().as('count'),
     }).from(visitorLogs)
-      .where(and(gte(visitorLogs.createdAt, since), ...devPathFilter))
+      .where(and(gte(visitorLogs.createdAt, since), ...pathFilter))
       .groupBy(visitorLogs.os)
       .orderBy(desc(sql`count`)),
   ]);
@@ -411,16 +425,7 @@ export async function getRecentVisitors(limit: number = 50) {
     })
     .from(visitorLogs)
     .where(and(
-      sql`${visitorLogs.path} NOT LIKE '/src/%'`,
-      sql`${visitorLogs.path} NOT LIKE '/@%'`,
-      sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
-      sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
-      sql`${visitorLogs.path} NOT LIKE '/client/%'`,
-      sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
-      sql`${visitorLogs.path} NOT LIKE '%.ts'`,
-      sql`${visitorLogs.path} NOT LIKE '%.css'`,
-      sql`${visitorLogs.path} NOT LIKE '%.js'`,
-      sql`${visitorLogs.path} NOT LIKE '%.map'`,
+      ...getDrizzlePathFilter(),
     ))
     .orderBy(desc(visitorLogs.createdAt))
     .limit(limit);
@@ -434,37 +439,24 @@ export async function getTodaySummary() {
   if (!db) return { todayPV: 0, todayUV: 0, totalPV: 0, totalUV: 0, topCountry: null };
 
   const today = getUtcMidnight(0);
-
-  // Reusable dev path filter for Drizzle where clauses — must match DEV_PATH_FILTER
-  const devPathFilter = [
-    sql`${visitorLogs.path} NOT LIKE '/src/%'`,
-    sql`${visitorLogs.path} NOT LIKE '/@%'`,
-    sql`${visitorLogs.path} NOT LIKE '/node_modules/%'`,
-    sql`${visitorLogs.path} NOT LIKE '/__vite%'`,
-    sql`${visitorLogs.path} NOT LIKE '/client/%'`,
-    sql`${visitorLogs.path} NOT LIKE '%.tsx'`,
-    sql`${visitorLogs.path} NOT LIKE '%.ts'`,
-    sql`${visitorLogs.path} NOT LIKE '%.css'`,
-    sql`${visitorLogs.path} NOT LIKE '%.js'`,
-    sql`${visitorLogs.path} NOT LIKE '%.map'`,
-  ];
+  const pathFilter = getDrizzlePathFilter();
 
   const [todayStats, totalStats, topCountry] = await Promise.all([
     db.select({
       pv: count().as('pv'),
       uv: countDistinct(visitorLogs.ip).as('uv'),
-    }).from(visitorLogs).where(and(gte(visitorLogs.createdAt, today), ...devPathFilter)),
+    }).from(visitorLogs).where(and(gte(visitorLogs.createdAt, today), ...pathFilter)),
 
     db.select({
       pv: count().as('pv'),
       uv: countDistinct(visitorLogs.ip).as('uv'),
-    }).from(visitorLogs).where(and(...devPathFilter)),
+    }).from(visitorLogs).where(and(...pathFilter)),
 
     db.select({
       country: visitorLogs.country,
       visits: count().as('visits'),
     }).from(visitorLogs)
-      .where(and(gte(visitorLogs.createdAt, today), sql`${visitorLogs.country} IS NOT NULL`, ...devPathFilter))
+      .where(and(gte(visitorLogs.createdAt, today), sql`${visitorLogs.country} IS NOT NULL`, ...pathFilter))
       .groupBy(visitorLogs.country)
       .orderBy(desc(sql`visits`))
       .limit(1),
@@ -486,12 +478,10 @@ export async function getHourlyStats() {
 
   const today = getUtcMidnight(0);
 
-  // Use raw SQL to avoid Drizzle ORM GROUP BY expression mismatch with only_full_group_by
   const rows = await db.execute(
     sql`SELECT HOUR(createdAt) as hour, COUNT(*) as pv, COUNT(DISTINCT ip) as uv FROM visitor_logs WHERE createdAt >= ${today} ${DEV_PATH_FILTER} GROUP BY HOUR(createdAt) ORDER BY HOUR(createdAt)`
   );
 
-  // db.execute returns [[rows], fields] — extract the inner rows array
   const rawRows = Array.isArray(rows) && rows.length > 0 && Array.isArray(rows[0]) ? rows[0] : rows;
   return (rawRows as any[]).map((r: any) => ({
     hour: Number(r.hour),

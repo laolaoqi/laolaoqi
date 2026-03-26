@@ -1,11 +1,17 @@
 // ===================================================================
 // HeatMap — 市场热力图（行业板块涨跌色块可视化）
+// 默认显示8个板块，点击展开显示全部
+// 每个板块内显示：成分股代码+名称+当前价格+涨跌幅
 // ===================================================================
 
 import HudPanel from './HudPanel';
 import { useApp } from '@/contexts/AppContext';
 import { t, type Lang } from '@/lib/i18n';
 import { trpc } from '@/lib/trpc';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+
+const DEFAULT_VISIBLE = 8;
 
 function getHeatColor(change: number): string {
   // 红涨绿跌（中国标准）
@@ -25,12 +31,31 @@ function getTextColor(change: number): string {
   return '#ffffff';
 }
 
+interface StockItem {
+  symbol: string;
+  name: string;
+  changePercent: number;
+  price: number;
+  volume: number;
+}
+
 interface SectorBlock {
   nameZh: string;
   nameEn: string;
   changePercent: number;
   weight: number;
-  stocks: { symbol: string; changePercent: number; price: number; volume: number }[];
+  stocks: StockItem[];
+}
+
+function formatPrice(price: number): string {
+  if (price <= 0) return '-';
+  if (price >= 10000) return `${(price / 10000).toFixed(1)}万`;
+  if (price >= 1000) return price.toFixed(1);
+  return price.toFixed(2);
+}
+
+function cleanSymbol(sym: string): string {
+  return sym.replace('.SS', '').replace('.SZ', '').replace('.HK', '').replace('-USD', '');
 }
 
 function SectorTile({ sector, lang }: { sector: SectorBlock; lang: Lang }) {
@@ -44,7 +69,7 @@ function SectorTile({ sector, lang }: { sector: SectorBlock; lang: Lang }) {
       className="relative rounded-md p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-default group overflow-hidden"
       style={{
         backgroundColor: bgColor,
-        minHeight: `${Math.max(60, sector.weight * 22)}px`,
+        minHeight: `${Math.max(80, sector.weight * 18)}px`,
       }}
     >
       {/* Subtle grid pattern */}
@@ -54,8 +79,8 @@ function SectorTile({ sector, lang }: { sector: SectorBlock; lang: Lang }) {
       }} />
 
       <div className="relative z-10">
-<div className="text-sm font-bold mb-1" style={{ color: textColor }}>{name}</div>
-<div className="text-xl font-black tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color: textColor }}>
+        <div className="text-sm font-bold mb-1" style={{ color: textColor }}>{name}</div>
+        <div className="text-xl font-black tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", color: textColor }}>
           {isUp ? '+' : ''}{sector.changePercent.toFixed(2)}%
         </div>
         <div className="text-xs mt-1 opacity-70" style={{ color: textColor }}>
@@ -63,17 +88,27 @@ function SectorTile({ sector, lang }: { sector: SectorBlock; lang: Lang }) {
         </div>
       </div>
 
-      {/* Hover tooltip with stocks */}
-      <div className="absolute inset-0 bg-black/85 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md p-2 z-20 overflow-auto">
-        <div className="text-xs text-[#00d4ff] font-bold mb-1">{name}</div>
-        {sector.stocks.map(s => (
-          <div key={s.symbol} className="flex justify-between text-xs py-0.5">
-            <span className="text-red-500 font-mono">{s.symbol.replace('.SS', '').replace('.SZ', '').replace('.HK', '').replace('-USD', '')}</span>
-            <span className={s.changePercent >= 0 ? 'text-[#ff3b3b]' : 'text-[#00e676]'} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              {s.changePercent >= 0 ? '+' : ''}{s.changePercent.toFixed(2)}%
-            </span>
-          </div>
-        ))}
+      {/* Hover tooltip: show stocks with name + price + change */}
+      <div className="absolute inset-0 bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-md p-2 z-20 overflow-auto">
+        <div className="text-xs text-[#00d4ff] font-bold mb-1.5 border-b border-[#00d4ff]/20 pb-1">{name}</div>
+        <div className="space-y-0.5">
+          {sector.stocks.map(s => (
+            <div key={s.symbol} className="flex items-center justify-between text-xs py-0.5 gap-1">
+              <div className="flex items-center gap-1 min-w-0 flex-1">
+                <span className="text-[#00d4ff] font-mono text-[10px] shrink-0">{cleanSymbol(s.symbol)}</span>
+                <span className="text-white/80 truncate text-[10px]">{s.name}</span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-white/60 font-mono text-[10px]">{formatPrice(s.price)}</span>
+                <span
+                  className={`font-mono text-[10px] font-semibold ${s.changePercent >= 0 ? 'text-[#ff3b3b]' : 'text-[#00e676]'}`}
+                >
+                  {s.changePercent >= 0 ? '+' : ''}{s.changePercent.toFixed(2)}%
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -82,7 +117,7 @@ function SectorTile({ sector, lang }: { sector: SectorBlock; lang: Lang }) {
 function HeatMapSkeleton() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-      {[1, 2, 3, 4, 5, 6].map(i => (
+      {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
         <div key={i} className="rounded-md bg-[rgba(0,212,255,0.05)] animate-pulse" style={{ height: `${60 + Math.random() * 40}px` }} />
       ))}
     </div>
@@ -91,28 +126,68 @@ function HeatMapSkeleton() {
 
 export default function HeatMap() {
   const { lang, market } = useApp();
+  const [expanded, setExpanded] = useState(false);
 
   const { data, isLoading } = trpc.market.heatmap.useQuery(
     { market },
     { refetchInterval: 5 * 60 * 1000, retry: 2 }
   );
 
-  const sectors: SectorBlock[] = data?.data || [];
+  const allSectors: SectorBlock[] = data?.data || [];
+  const hasMore = allSectors.length > DEFAULT_VISIBLE;
+  const visibleSectors = expanded ? allSectors : allSectors.slice(0, DEFAULT_VISIBLE);
 
   return (
     <HudPanel title={t('panel.heatmap', lang)}>
-      {isLoading && sectors.length === 0 ? (
+      {isLoading && allSectors.length === 0 ? (
         <HeatMapSkeleton />
-      ) : sectors.length === 0 ? (
+      ) : allSectors.length === 0 ? (
         <div className="text-center py-6 text-red-400/80 text-sm">
           {lang === 'zh' ? '暂无热力图数据' : 'No heatmap data available'}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-          {sectors.map(sector => (
-            <SectorTile key={sector.nameEn} sector={sector} lang={lang} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {visibleSectors.map(sector => (
+              <SectorTile key={sector.nameEn} sector={sector} lang={lang} />
+            ))}
+          </div>
+
+          {/* Expand / Collapse button */}
+          {hasMore && (
+            <div className="flex justify-center mt-3">
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border"
+                style={{
+                  color: '#00d4ff',
+                  borderColor: 'rgba(0,212,255,0.3)',
+                  background: 'rgba(0,212,255,0.05)',
+                }}
+                onMouseEnter={e => {
+                  (e.target as HTMLElement).style.background = 'rgba(0,212,255,0.15)';
+                  (e.target as HTMLElement).style.borderColor = 'rgba(0,212,255,0.6)';
+                }}
+                onMouseLeave={e => {
+                  (e.target as HTMLElement).style.background = 'rgba(0,212,255,0.05)';
+                  (e.target as HTMLElement).style.borderColor = 'rgba(0,212,255,0.3)';
+                }}
+              >
+                {expanded ? (
+                  <>
+                    <ChevronUp size={14} />
+                    {lang === 'zh' ? `收起 (显示前${DEFAULT_VISIBLE}个)` : `Collapse (show ${DEFAULT_VISIBLE})`}
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={14} />
+                    {lang === 'zh' ? `展开全部 (共${allSectors.length}个板块)` : `Show all (${allSectors.length} sectors)`}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Legend */}

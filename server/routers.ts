@@ -786,10 +786,17 @@ export const appRouter = router({
         
         console.log(`[Heatmap] ${input.market}: fetched ${fetchedCount}/${allSymbols.length} symbols (${failCount} failed)`);
 
+        // Build symbol→name lookup from STOCK_UNIVERSE
+        const nameMap: Record<string, string> = {};
+        const stocks = STOCK_UNIVERSE[input.market] || [];
+        for (const s of stocks) {
+          nameMap[s.symbol] = s.nameZh;
+        }
+
         const data = sectors.map(sector => {
           const stockData = sector.symbols.map(sym => {
             const q = quoteMap[sym] || { changePercent: 0, price: 0, volume: 0 };
-            return { symbol: sym, changePercent: q.changePercent, price: q.price, volume: q.volume };
+            return { symbol: sym, name: nameMap[sym] || sym, changePercent: q.changePercent, price: q.price, volume: q.volume };
           });
           const avgChange = stockData.length > 0
             ? stockData.reduce((s, d) => s + d.changePercent, 0) / stockData.length
