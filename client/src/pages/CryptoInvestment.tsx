@@ -149,7 +149,7 @@ function CoinLogo({ src, symbol, size = 24 }: { src?: string; symbol: string; si
 // ===================================================================
 function CategoryBadge({ symbol }: { symbol: string }) {
   // Binance Alpha tokens
-  if (['XLAB', 'RWA'].includes(symbol)) {
+  if (['XLAB', 'RWA', 'MM', 'U', 'PINGPONG'].includes(symbol)) {
     return <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(255,215,0,0.12)] text-[#ffd700] font-medium ml-1">Alpha</span>;
   }
   // TRON chain

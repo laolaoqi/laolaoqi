@@ -136,7 +136,7 @@ function AboutContent() {
                   { icon: Activity, title: '恐惧贪婪指数', desc: '综合涨跌比、资金流、市场情绪等多指标的综合情绪指数（0-100）' },
                   { icon: Shield, title: '风险控制面板', desc: '实时止损线、仓位建议、风险预警等风控指标，保护投资安全' },
                   { icon: Target, title: 'AI市场摘要', desc: '基于LLM大语言模型的智能市场分析报告，每15分钟更新' },
-                  { icon: Bitcoin, title: '数字货币投资看板', desc: '主流币前10 vs 空气币永续合约前13，含Logo、7日K线、BTC主导率投资建议' },
+                  { icon: Bitcoin, title: '数字货币投资看板', desc: '主流币前10 vs 空气币/永续合约21只，含Logo、7日K线、BTC主导率投资建议' },
                   { icon: LineChart, title: '加密货币模拟投资', desc: '$10,000虚拟本金，每天6:00/22:00自动调仓，展示持仓、收益率和交易记录' },
                   { icon: Landmark, title: 'A股模拟投资', desc: '¥100万虚拟本金，基于Top10推荐选股，每日9:00调仓，周度盈亏统计（周一~周五）' },
                   { icon: Users, title: '管理员权限系统', desc: '用户统计、投资看板访问权限管理、时间期限控制、公告管理' },
@@ -348,12 +348,12 @@ function AboutContent() {
                         </tr>
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
                           <td className="py-2.5 px-3 font-medium">空气币永续合约</td>
-                          <td className="py-2.5 px-3">TRUMP, WLD, HYPE, ASTER, MYX, COAI, DOGE, CLO, PUMP, SUN</td>
+                          <td className="py-2.5 px-3">TRUMP, WLD, HYPE, ASTER, MYX, COAI, DOGE, CLO, PUMP, SUN, AIA, XAU, XAG, WLFI, BANK</td>
                           <td className="py-2.5 px-3">价格、24h涨跌、成交额、Logo、7日K线</td>
                         </tr>
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
                           <td className="py-2.5 px-3 font-medium">Binance Alpha</td>
-                          <td className="py-2.5 px-3">XLAB, RWA</td>
+                          <td className="py-2.5 px-3">XLAB, RWA, MM, U, PINGPONG</td>
                           <td className="py-2.5 px-3">Binance Alpha新上线代币</td>
                         </tr>
                         <tr className="border-b border-[rgba(0,212,255,0.06)]">
@@ -548,7 +548,7 @@ function AboutContent() {
                       { market: '🇨🇳 A股', count: '300只', examples: '沪深300全覆盖：招商银行、贵州茅台、宁德时代、比亚迪等（新浪API）', sectors: '银行、白酒、新能源、医药、科技、消费' },
                       { market: '🇭🇰 港股', count: '82只', examples: '恒生指数成分股：腾讯、阿里、美团、小米、平安等', sectors: '互联网、金融、消费、医药、地产' },
                       { market: '🇺🇸 美股', count: '99只', examples: 'NASDAQ-100：Apple、Microsoft、NVIDIA、Tesla等', sectors: '科技、半导体、支付、医药、消费' },
-                      { market: '₿ 加密', count: '30+13只', examples: '策略引擎30只 + 投资看板13只空气币', sectors: '主流币、DeFi、Layer2、永续合约' },
+                      { market: '₿ 加密', count: '30+21只', examples: '策略引擎30只 + 投资看板21只空气币/永续合约', sectors: '主流币、DeFi、Layer2、永续合约、Binance Alpha' },
                     ].map((item, i) => (
                       <div key={i} className="p-3 rounded-lg border border-[rgba(0,212,255,0.12)] bg-[rgba(0,212,255,0.03)]">
                         <div className="text-base font-bold text-foreground mb-1">{item.market}</div>
@@ -768,7 +768,7 @@ function getPDFHTML(): string {
     <tr><td>🇨🇳 A股</td><td>300只</td><td>新浪财经 API</td><td>沪深300全覆盖：招商银行、贵州茅台、宁德时代等</td><td>银行、白酒、新能源、医药、科技</td></tr>
     <tr><td>🇭🇰 港股</td><td>82只</td><td>Yahoo Finance</td><td>恒生指数成分股：腾讯、阿里、美团、小米等</td><td>互联网、金融、消费、医药</td></tr>
     <tr><td>🇺🇸 美股</td><td>99只</td><td>Yahoo Finance</td><td>NASDAQ-100：Apple、Microsoft、NVIDIA、Tesla等</td><td>科技、半导体、支付、医药</td></tr>
-    <tr><td>₿ 加密</td><td>30+13只</td><td>CoinGecko</td><td>BTC、ETH、BNB + TRUMP、WLD、HYPE等</td><td>主流币、DeFi、永续合约</td></tr>
+    <tr><td>₿ 加密</td><td>30+21只</td><td>CoinGecko</td><td>BTC、ETH、BNB + TRUMP、WLD、WLFI、AIA、XAU等</td><td>主流币、DeFi、永续合约、Binance Alpha</td></tr>
   </table>
 
   <h2>九、风险提示</h2>

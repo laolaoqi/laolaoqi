@@ -117,9 +117,17 @@ const MEME_DEFS: CoinDef[] = [
   { id: 'callisto-network', symbol: 'CLO', name: 'Callisto', category: 'perp' },
   { id: 'pump-fun', symbol: 'PUMP', name: 'Pump.fun', category: 'perp' },
   { id: 'sun-token', symbol: 'SUN', name: 'Sun Token', category: 'perp' },
+  { id: 'deagentai', symbol: 'AIA', name: 'DeAgentAI', category: 'perp' },
+  { id: 'tether-gold', symbol: 'XAU', name: 'Tether Gold', category: 'perp' },
+  { id: 'matrixdock-silver', symbol: 'XAG', name: 'Matrixdock Silver', category: 'perp' },
+  { id: 'world-liberty-financial', symbol: 'WLFI', name: 'World Liberty Financial', category: 'perp' },
+  { id: 'lorenzo-protocol', symbol: 'BANK', name: 'Lorenzo Protocol', category: 'perp' },
   // Binance Alpha
   { id: 'dexlab-2', symbol: 'XLAB', name: 'Dexlab', category: 'binance-alpha' },
   { id: 'rwa-inc', symbol: 'RWA', name: 'RWA Inc.', category: 'binance-alpha' },
+  { id: 'million', symbol: 'MM', name: 'Million', category: 'binance-alpha' },
+  { id: 'u', symbol: 'U', name: 'U', category: 'binance-alpha' },
+  { id: 'pingpong', symbol: 'PINGPONG', name: 'PINGPONG', category: 'binance-alpha' },
   // 波场链上
   { id: '', symbol: 'TRONLIFE', name: '波场人生', category: 'tron-chain' },
 ];

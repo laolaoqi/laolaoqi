@@ -64,22 +64,31 @@ describe('CryptoBoard — Investment Board Backend', () => {
         const symbols = boardData.meme.map(c => c.symbol);
         // Always present: TRONLIFE (no CoinGecko dependency)
         expect(symbols).toContain('TRONLIFE');
-        // Total meme list should have 13 entries (10 perp + 2 alpha + 1 tron)
-        expect(boardData.meme.length).toBe(13);
+        // Total meme list should have 21 entries (15 perp + 5 alpha + 1 tron)
+        expect(boardData.meme.length).toBe(21);
+        // New perpetual contracts should be present
+        expect(symbols).toContain('AIA');
+        expect(symbols).toContain('XAU');
+        expect(symbols).toContain('XAG');
+        expect(symbols).toContain('WLFI');
+        expect(symbols).toContain('BANK');
         // If CoinGecko is not rate-limited, we should see more coins with data
         // (This test is lenient to handle 429 rate limiting)
         const withPrice = boardData.meme.filter(c => c.price > 0);
-        console.log(`[Test] Meme coins with price data: ${withPrice.length}/13`);
+        console.log(`[Test] Meme coins with price data: ${withPrice.length}/21`);
       }
     });
 
     it('should include Binance Alpha tokens (XLAB, RWA) as entries', () => {
       if (boardData) {
         const symbols = boardData.meme.map(c => c.symbol);
-        // XLAB and RWA should always be in the list as entries
+        // Binance Alpha tokens should always be in the list as entries
         // (they may have price=0 if CoinGecko rate-limited)
         expect(symbols).toContain('XLAB');
         expect(symbols).toContain('RWA');
+        expect(symbols).toContain('MM');
+        expect(symbols).toContain('U');
+        expect(symbols).toContain('PINGPONG');
       }
     });
 
