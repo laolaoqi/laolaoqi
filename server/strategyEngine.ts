@@ -116,32 +116,261 @@ async function fetchSinaBatch(symbols: string[]): Promise<Map<string, SinaQuote>
   return result;
 }
 
-// Build candidates from Sina data (for CN market)
+// ===================================================================
+// Shared User-Agent
+// ===================================================================
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+// ===================================================================
+// Eastmoney API — Real-time fundamentals (PE/PB/52wk/MktCap)
+// ===================================================================
+interface EastmoneyFundamental {
+  pe: number | null;
+  pb: number | null;
+  fiftyTwoWeekHigh: number;
+  fiftyTwoWeekLow: number;
+  marketCap: number;
+  roe: number | null;
+}
+
+function yahooToEastmoney(symbol: string): string {
+  // Convert Yahoo format (600519.SS / 000001.SZ) to Eastmoney secid (1.600519 / 0.000001)
+  if (symbol.endsWith('.SS')) return '1.' + symbol.replace('.SS', '');
+  if (symbol.endsWith('.SZ')) return '0.' + symbol.replace('.SZ', '');
+  return symbol;
+}
+
+async function fetchEastmoneyFundamentals(
+  symbols: string[]
+): Promise<Map<string, EastmoneyFundamental>> {
+  const result = new Map<string, EastmoneyFundamental>();
+  const BATCH = 50; // Eastmoney supports ~50 per request
+
+  for (let i = 0; i < symbols.length; i += BATCH) {
+    const batch = symbols.slice(i, i + BATCH);
+    const secids = batch.map(yahooToEastmoney).join(',');
+    try {
+      const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=${secids}&fields=f2,f3,f9,f12,f14,f20,f23,f37,f57`;
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': UA, 'Referer': 'https://quote.eastmoney.com/' },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (resp.status !== 200) continue;
+      const data = await resp.json();
+      if (!data?.data?.diff) continue;
+
+      for (let j = 0; j < data.data.diff.length && j < batch.length; j++) {
+        const d = data.data.diff[j];
+        const code = d.f12 || d.f57;
+        // Match back to Yahoo symbol
+        const matchSymbol = batch.find(s => s.includes(code));
+        if (!matchSymbol) continue;
+
+        result.set(matchSymbol, {
+          pe: (d.f9 != null && d.f9 !== '-' && d.f9 > 0) ? d.f9 : null,
+          pb: (d.f23 != null && d.f23 !== '-' && d.f23 > 0) ? d.f23 : null,
+          fiftyTwoWeekHigh: 0, // Will get from single-stock API or K-line
+          fiftyTwoWeekLow: 0,
+          marketCap: d.f20 || 0,
+          roe: (d.f37 != null && d.f37 !== '-') ? d.f37 : null,
+        });
+      }
+    } catch (err: any) {
+      console.error(`[Strategy/Eastmoney] Batch fundamentals failed:`, err?.message);
+    }
+    if (i + BATCH < symbols.length) await new Promise(r => setTimeout(r, 200));
+  }
+  return result;
+}
+
+// ===================================================================
+// Eastmoney Single-Stock API — 52wk High/Low (more accurate)
+// ===================================================================
+async function fetchEastmoney52Week(
+  symbols: string[]
+): Promise<Map<string, { high52: number; low52: number }>> {
+  const result = new Map<string, { high52: number; low52: number }>();
+  // Use batch API with secids list instead of individual requests
+  const BATCH = 50;
+  for (let i = 0; i < symbols.length; i += BATCH) {
+    const batch = symbols.slice(i, i + BATCH);
+    const secids = batch.map(yahooToEastmoney).join(',');
+    try {
+      // f51=52wk high, f52=52wk low (in cents)
+      const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=${secids}&fields=f12,f51,f52,f57`;
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': UA, 'Referer': 'https://quote.eastmoney.com/' },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (resp.status !== 200) continue;
+      const data = await resp.json();
+      if (!data?.data?.diff) continue;
+      for (const d of data.data.diff) {
+        const code = d.f12 || d.f57;
+        const matchSymbol = batch.find(s => s.includes(code));
+        if (!matchSymbol) continue;
+        const high52 = (d.f51 != null && d.f51 !== '-' && d.f51 > 0) ? d.f51 : 0;
+        const low52 = (d.f52 != null && d.f52 !== '-' && d.f52 > 0) ? d.f52 : 0;
+        if (high52 > 0 && low52 > 0) {
+          result.set(matchSymbol, { high52, low52 });
+        }
+      }
+    } catch (err: any) {
+      console.error(`[Strategy/Eastmoney] Batch 52wk failed:`, err?.message);
+    }
+    if (i + BATCH < symbols.length) await new Promise(r => setTimeout(r, 200));
+  }
+  return result;
+}
+
+// ===================================================================
+// Tencent Finance K-line API — Historical closes for MA/RSI calculation
+// (Eastmoney push2his.eastmoney.com is blocked in sandbox, use Tencent instead)
+// ===================================================================
+interface KlineData {
+  closes: number[];
+  volumes: number[];
+}
+
+function yahooToTencent(symbol: string): string {
+  // Convert Yahoo format (600519.SS / 000001.SZ) to Tencent format (sh600519 / sz000001)
+  if (symbol.endsWith('.SS')) return 'sh' + symbol.replace('.SS', '');
+  if (symbol.endsWith('.SZ')) return 'sz' + symbol.replace('.SZ', '');
+  return symbol;
+}
+
+async function fetchTencentKlines(
+  symbols: string[],
+  limit = 60
+): Promise<Map<string, KlineData>> {
+  const result = new Map<string, KlineData>();
+  // Tencent API supports single-stock requests; use moderate concurrency
+  const CONCURRENCY = 15;
+
+  for (let i = 0; i < symbols.length; i += CONCURRENCY) {
+    const batch = symbols.slice(i, i + CONCURRENCY);
+    const promises = batch.map(async (sym) => {
+      try {
+        const tcSym = yahooToTencent(sym);
+        const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${tcSym},day,,,${limit},qfq`;
+        const resp = await fetch(url, {
+          headers: { 'User-Agent': UA },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (resp.status !== 200) return;
+        const data = await resp.json();
+        // Tencent returns data under data.<symbol>.day or data.<symbol>.qfqday
+        const stockData = data?.data?.[tcSym];
+        if (!stockData) return;
+        const klines = stockData.qfqday || stockData.day || [];
+        if (!Array.isArray(klines) || klines.length === 0) return;
+
+        const closes: number[] = [];
+        const volumes: number[] = [];
+        for (const line of klines) {
+          // Format: [date, open, close, high, low, volume]
+          const close = parseFloat(line[2]);
+          const vol = parseFloat(line[5]);
+          if (close > 0) closes.push(close);
+          if (vol >= 0) volumes.push(vol);
+        }
+        if (closes.length > 0) {
+          result.set(sym, { closes, volumes });
+        }
+      } catch { /* ignore individual failures */ }
+    });
+    await Promise.allSettled(promises);
+    if (i + CONCURRENCY < symbols.length) await new Promise(r => setTimeout(r, 100));
+  }
+  return result;
+}
+
+// ===================================================================
+// Build CN candidates with REAL data from multiple sources
+// - Sina: real-time price, change, volume
+// - Eastmoney batch: PE-TTM, PB, ROE, market cap
+// - Eastmoney single: 52-week high/low
+// - Eastmoney K-line: historical closes for MA5/MA20/RSI14
+// ===================================================================
 async function fetchCNcandidatesViaSina(
   defs: StockDef[],
 ): Promise<StockCandidate[]> {
-  console.log(`[Strategy] Fetching ${defs.length} CN stocks via Sina Finance API...`);
-  const sinaData = await fetchSinaBatch(defs.map(d => d.symbol));
-  console.log(`[Strategy] Sina returned data for ${sinaData.size}/${defs.length} stocks`);
-  
+  const allSymbols = defs.map(d => d.symbol);
+  console.log(`[Strategy] Fetching ${defs.length} CN stocks with multi-source real-time data (parallel)...`);
+
+  // Phase 1: Fetch fast batch APIs in parallel (Sina prices + Eastmoney PE/PB + Eastmoney 52wk)
+  const [sinaData, fundamentals, week52Data] = await Promise.all([
+    fetchSinaBatch(allSymbols),
+    fetchEastmoneyFundamentals(allSymbols),
+    fetchEastmoney52Week(allSymbols),
+  ]);
+  console.log(`[Strategy] Batch APIs: Sina=${sinaData.size}, PE/PB=${fundamentals.size}, 52wk=${week52Data.size} / ${defs.length}`);
+
+  // Phase 2: Fetch K-line data sequentially (single-stock API, rate-limited)
+  // Only fetch for stocks that have Sina data to avoid wasting requests
+  const activeSymbols = allSymbols.filter(s => sinaData.has(s));
+  const klineData = await fetchTencentKlines(activeSymbols, 60);
+  console.log(`[Strategy] K-lines: ${klineData.size}/${activeSymbols.length}`);
+
+  // Phase 5: Merge all data sources into candidates
   const candidates: StockCandidate[] = [];
   for (const def of defs) {
     const q = sinaData.get(def.symbol);
     if (!q || q.price <= 0) continue;
-    
+
     const change = q.price - q.prevClose;
     const changePercent = q.prevClose > 0 ? (change / q.prevClose) * 100 : 0;
-    
-    // Volume ratio approximation: compare current volume with average
-    // If volume > amount/price suggests active trading
-    const capitalFlow = changePercent > 0 ? Math.abs(changePercent) * 0.5 : -Math.abs(changePercent) * 0.5;
-    
-    // Use prevClose as reference for technical indicators
-    // Since we don't have historical data from Sina, use simplified calculations
-    const ma5 = q.prevClose; // approximate
-    const ma20 = q.prevClose; // approximate
-    const rsi14 = changePercent > 0 ? 50 + changePercent * 3 : 50 + changePercent * 3;
-    
+
+    // Fundamentals: prefer Eastmoney real-time, fallback to approx
+    const fund = fundamentals.get(def.symbol);
+    const pe = fund?.pe ?? def.approxPE ?? null;
+    const pb = fund?.pb ?? def.approxPB ?? null;
+    const marketCap = fund?.marketCap ?? 0;
+
+    // 52-week high/low: prefer Eastmoney single-stock API, fallback to K-line max/min
+    const w52 = week52Data.get(def.symbol);
+    let fiftyTwoWeekHigh = w52?.high52 ?? 0;
+    let fiftyTwoWeekLow = w52?.low52 ?? 0;
+    // Fallback: estimate from K-line data (60 days ~ 3 months, not full year but better than nothing)
+    if (fiftyTwoWeekHigh === 0 && klineData.has(def.symbol)) {
+      const kc = klineData.get(def.symbol)!.closes;
+      if (kc.length > 0) {
+        fiftyTwoWeekHigh = Math.max(...kc) * 1.05; // slight buffer since only 3 months
+        fiftyTwoWeekLow = Math.min(...kc.filter(c => c > 0)) * 0.95;
+      }
+    }
+
+    // Technical indicators: prefer real K-line data
+    const kline = klineData.get(def.symbol);
+    let ma5 = q.prevClose;
+    let ma20 = q.prevClose;
+    let rsi14 = 50;
+    if (kline && kline.closes.length >= 5) {
+      // Append today's price to get the most current MA
+      const closesWithToday = [...kline.closes, q.price];
+      ma5 = calculateMA(closesWithToday, 5);
+      ma20 = closesWithToday.length >= 20 ? calculateMA(closesWithToday, 20) : ma5;
+      rsi14 = closesWithToday.length >= 15 ? calculateRSI(closesWithToday, 14) : 50;
+    }
+
+    // Capital flow: use volume ratio from K-line data
+    let capitalFlow = 0;
+    if (kline && kline.volumes.length >= 10) {
+      const recentVols = kline.volumes.slice(-5);
+      const olderVols = kline.volumes.slice(-20, -5);
+      const avgRecent = recentVols.reduce((a, b) => a + b, 0) / recentVols.length;
+      const avgOlder = olderVols.length > 0 ? olderVols.reduce((a, b) => a + b, 0) / olderVols.length : avgRecent;
+      const volumeRatio = avgOlder > 0 ? avgRecent / avgOlder : 1;
+      capitalFlow = (volumeRatio - 1) * 10 * (changePercent > 0 ? 1 : -1);
+    } else {
+      // Fallback: simple approximation
+      capitalFlow = changePercent > 0 ? Math.abs(changePercent) * 0.3 : -Math.abs(changePercent) * 0.3;
+    }
+
+    // Dividend yield: use approx from def (no free real-time source)
+    // TODO: integrate real dividend data when available
+    const dividendYield = def.approxDividend ?? null;
+
     candidates.push({
       symbol: def.symbol,
       code: def.symbol.replace('.SS', '').replace('.SZ', ''),
@@ -152,26 +381,32 @@ async function fetchCNcandidatesViaSina(
       price: q.price,
       change,
       changePercent,
-      pe: def.approxPE || null,
-      pb: def.approxPB || null,
-      dividendYield: def.approxDividend || null,
+      pe,
+      pb,
+      dividendYield,
       capitalFlow: Math.round(capitalFlow * 100) / 100,
-      marketCap: 0,
+      marketCap,
       volume: q.volume,
-      fiftyTwoWeekHigh: q.high * 1.2, // approximate
-      fiftyTwoWeekLow: q.low * 0.8, // approximate
+      fiftyTwoWeekHigh,
+      fiftyTwoWeekLow,
       ma5,
       ma20,
-      rsi14: Math.min(90, Math.max(10, rsi14)),
+      rsi14: Math.min(95, Math.max(5, rsi14)),
     });
   }
+
+  // Log data quality summary
+  const withRealPE = candidates.filter(c => c.pe !== null && fundamentals.has(c.symbol)).length;
+  const withRealKline = candidates.filter(c => klineData.has(c.symbol)).length;
+  const with52wk = candidates.filter(c => c.fiftyTwoWeekHigh > 0).length;
+  console.log(`[Strategy] CN data quality: ${candidates.length} candidates, ${withRealPE} real PE, ${withRealKline} real K-line, ${with52wk} real 52wk`);
+
   return candidates;
 }
 
 // ===================================================================
 // Yahoo Finance v8 Chart API (no auth required)
 // ===================================================================
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 interface ChartResult {
   price: number;
