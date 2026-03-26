@@ -9,9 +9,9 @@ import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl, getRegisterUrl } from '@/const';
 import { Link } from 'wouter';
 import SimPortfolioPanel from '@/components/SimPortfolioPanel';
-import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Zap, Shield, Globe, Clock, Lock, AlertTriangle, LogIn, UserPlus } from 'lucide-react';
+import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Zap, Shield, Globe, Clock, Lock, AlertTriangle, LogIn, UserPlus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSEO } from '@/hooks/useSEO';
 
 // Guest trial constants
@@ -388,6 +388,61 @@ export default function CryptoInvestment() {
     return () => clearInterval(timer);
   }, []);
 
+  // ── Sort state for meme/perp table ──
+  type SortMode = 'default' | 'change-desc' | 'change-asc' | 'price-desc' | 'price-asc' | 'volume-desc' | 'volume-asc';
+  const SORT_STORAGE_KEY = 'ha_crypto_invest_sort';
+
+  const [memeSort, setMemeSort] = useState<SortMode>(() => {
+    try {
+      const saved = localStorage.getItem(SORT_STORAGE_KEY);
+      return (saved as SortMode) || 'default';
+    } catch { return 'default'; }
+  });
+
+  // Persist sort preference
+  useEffect(() => {
+    try { localStorage.setItem(SORT_STORAGE_KEY, memeSort); } catch {}
+  }, [memeSort]);
+
+  const cycleSort = useCallback((dimension: 'change' | 'price' | 'volume') => {
+    setMemeSort(prev => {
+      const desc = `${dimension}-desc` as SortMode;
+      const asc = `${dimension}-asc` as SortMode;
+      if (prev === desc) return asc;
+      if (prev === asc) return 'default';
+      return desc;
+    });
+  }, []);
+
+  // Sorted meme coins
+  const sortedMeme = useMemo(() => {
+    if (!data?.meme) return [];
+    if (memeSort === 'default') return data.meme;
+    return [...data.meme].sort((a, b) => {
+      switch (memeSort) {
+        case 'change-desc': return b.change24h - a.change24h;
+        case 'change-asc': return a.change24h - b.change24h;
+        case 'price-desc': return b.price - a.price;
+        case 'price-asc': return a.price - b.price;
+        case 'volume-desc': return (b.volume24h || 0) - (a.volume24h || 0);
+        case 'volume-asc': return (a.volume24h || 0) - (b.volume24h || 0);
+        default: return 0;
+      }
+    });
+  }, [data?.meme, memeSort]);
+
+  // Sort icon helper
+  const sortIcon = (dimension: string) => {
+    if (memeSort === `${dimension}-desc`) return <ArrowDown size={10} />;
+    if (memeSort === `${dimension}-asc`) return <ArrowUp size={10} />;
+    return <ArrowUpDown size={10} className="opacity-40" />;
+  };
+
+  const sortHeaderClass = (dimension: string) =>
+    memeSort.startsWith(dimension)
+      ? 'text-[#ff6b00] cursor-pointer select-none hover:text-[#ff8800] transition-colors'
+      : 'text-muted-foreground cursor-pointer select-none hover:text-[#ff6b00] transition-colors';
+
   // Show loading while checking access
   if (accessLoading) {
     return (
@@ -620,6 +675,14 @@ export default function CryptoInvestment() {
                   空气币 / 永续合约
                 </h2>
                 <div className="flex items-center gap-1.5 ml-auto">
+                  {memeSort !== 'default' && (
+                    <button
+                      onClick={() => setMemeSort('default')}
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(255,68,68,0.12)] text-[#ff4444] hover:bg-[rgba(255,68,68,0.2)] transition-colors font-medium"
+                    >
+                      重置排序
+                    </button>
+                  )}
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(255,107,0,0.12)] text-[#ff6b00]">永续</span>
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(255,215,0,0.12)] text-[#ffd700]">Alpha</span>
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(255,51,102,0.12)] text-[#ff3366]">TRON</span>
@@ -632,17 +695,23 @@ export default function CryptoInvestment() {
                     <tr className="border-b border-[rgba(255,107,0,0.06)]">
                       <th className="text-left px-3 py-2.5 text-xs text-muted-foreground font-medium w-8">#</th>
                       <th className="text-left px-3 py-2.5 text-xs text-muted-foreground font-medium">合约/代币</th>
-                      <th className="text-right px-3 py-2.5 text-xs text-muted-foreground font-medium">价格</th>
-                      <th className="text-right px-3 py-2.5 text-xs text-muted-foreground font-medium">24h</th>
+                      <th className={`text-right px-3 py-2.5 text-xs font-medium ${sortHeaderClass('price')}`} onClick={() => cycleSort('price')}>
+                        <span className="inline-flex items-center gap-1 justify-end">价格 {sortIcon('price')}</span>
+                      </th>
+                      <th className={`text-right px-3 py-2.5 text-xs font-medium ${sortHeaderClass('change')}`} onClick={() => cycleSort('change')}>
+                        <span className="inline-flex items-center gap-1 justify-end">24h {sortIcon('change')}</span>
+                      </th>
                       <th className="text-center px-2 py-2.5 text-xs text-muted-foreground font-medium hidden sm:table-cell">7日走势</th>
-                      <th className="text-right px-3 py-2.5 text-xs text-muted-foreground font-medium hidden md:table-cell">24h成交额</th>
+                      <th className={`text-right px-3 py-2.5 text-xs font-medium hidden md:table-cell ${sortHeaderClass('volume')}`} onClick={() => cycleSort('volume')}>
+                        <span className="inline-flex items-center gap-1 justify-end">24h成交额 {sortIcon('volume')}</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.meme.length === 0 ? (
+                    {sortedMeme.length === 0 ? (
                       <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">暂无数据</td></tr>
                     ) : (
-                      data.meme.map((coin, i) => {
+                      sortedMeme.map((coin, i) => {
                         const isUp = coin.change24h >= 0;
                         const noData = coin.price === 0;
                         return (

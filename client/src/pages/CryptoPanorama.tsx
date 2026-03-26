@@ -8,7 +8,7 @@ import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
 import { Link } from 'wouter';
-import { ArrowLeft, RefreshCw, Zap, Clock, TrendingUp, TrendingDown, X, Shield, Lock, LogIn, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, BarChart2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Zap, Clock, TrendingUp, TrendingDown, X, Shield, Lock, LogIn, ArrowUpDown, ArrowUp, ArrowDown, DollarSign, BarChart2, Activity } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSEO } from '@/hooks/useSEO';
 
@@ -685,21 +685,30 @@ export default function CryptoPanorama() {
     return () => clearInterval(timer);
   }, []);
 
-  // Sort state: 'default' | 'change-desc' | 'change-asc' | 'price-desc' | 'price-asc'
-  const [sortMode, setSortMode] = useState<'default' | 'change-desc' | 'change-asc' | 'price-desc' | 'price-asc'>('default');
+  // Sort state with localStorage persistence
+  type PanoramaSortMode = 'default' | 'change-desc' | 'change-asc' | 'price-desc' | 'price-asc' | 'volume-desc' | 'volume-asc';
+  const PANORAMA_SORT_KEY = 'ha_crypto_panorama_sort';
+
+  const [sortMode, setSortMode] = useState<PanoramaSortMode>(() => {
+    try {
+      const saved = localStorage.getItem(PANORAMA_SORT_KEY);
+      return (saved as PanoramaSortMode) || 'default';
+    } catch { return 'default'; }
+  });
+
+  // Persist sort preference
+  useEffect(() => {
+    try { localStorage.setItem(PANORAMA_SORT_KEY, sortMode); } catch {}
+  }, [sortMode]);
 
   // Cycle sort mode for a given dimension
-  const cycleSortMode = useCallback((dimension: 'change' | 'price') => {
+  const cycleSortMode = useCallback((dimension: 'change' | 'price' | 'volume') => {
     setSortMode(prev => {
-      if (dimension === 'change') {
-        if (prev === 'change-desc') return 'change-asc';
-        if (prev === 'change-asc') return 'default';
-        return 'change-desc';
-      } else {
-        if (prev === 'price-desc') return 'price-asc';
-        if (prev === 'price-asc') return 'default';
-        return 'price-desc';
-      }
+      const desc = `${dimension}-desc` as PanoramaSortMode;
+      const asc = `${dimension}-asc` as PanoramaSortMode;
+      if (prev === desc) return asc;
+      if (prev === asc) return 'default';
+      return desc;
     });
   }, []);
 
@@ -714,6 +723,8 @@ export default function CryptoPanorama() {
         case 'change-asc': return a.change24h - b.change24h;
         case 'price-desc': return b.price - a.price;
         case 'price-asc': return a.price - b.price;
+        case 'volume-desc': return (b.volume24h || 0) - (a.volume24h || 0);
+        case 'volume-asc': return (a.volume24h || 0) - (b.volume24h || 0);
         default: return 0;
       }
     });
@@ -832,6 +843,18 @@ export default function CryptoPanorama() {
                 {sortMode === 'price-desc' ? <ArrowDown size={10} /> : sortMode === 'price-asc' ? <ArrowUp size={10} /> : <ArrowUpDown size={10} />}
                 <span className="hidden sm:inline">价格</span>
                 <DollarSign size={10} className="sm:hidden" />
+              </button>
+              <button
+                onClick={() => cycleSortMode('volume')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold transition-all ${
+                  sortMode.startsWith('volume')
+                    ? 'bg-[rgba(0,204,102,0.15)] border-[#00cc66] text-[#00cc66] shadow-[0_0_8px_rgba(0,204,102,0.2)]'
+                    : 'bg-transparent border-[rgba(0,212,255,0.15)] text-muted-foreground hover:border-[rgba(0,204,102,0.3)] hover:text-[#00cc66]'
+                }`}
+              >
+                {sortMode === 'volume-desc' ? <ArrowDown size={10} /> : sortMode === 'volume-asc' ? <ArrowUp size={10} /> : <ArrowUpDown size={10} />}
+                <span className="hidden sm:inline">成交额</span>
+                <Activity size={10} className="sm:hidden" />
               </button>
               {sortMode !== 'default' && (
                 <button
