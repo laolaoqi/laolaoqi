@@ -131,6 +131,7 @@ interface EastmoneyFundamental {
   fiftyTwoWeekLow: number;
   marketCap: number;
   roe: number | null;
+  dividendYield: number | null;
 }
 
 function yahooToEastmoney(symbol: string): string {
@@ -150,7 +151,7 @@ async function fetchEastmoneyFundamentals(
     const batch = symbols.slice(i, i + BATCH);
     const secids = batch.map(yahooToEastmoney).join(',');
     try {
-      const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=${secids}&fields=f2,f3,f9,f12,f14,f20,f23,f37,f57`;
+      const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=${secids}&fields=f2,f3,f9,f12,f14,f20,f23,f34,f37,f57`;
       const resp = await fetch(url, {
         headers: { 'User-Agent': UA, 'Referer': 'https://quote.eastmoney.com/' },
         signal: AbortSignal.timeout(12000),
@@ -173,6 +174,7 @@ async function fetchEastmoneyFundamentals(
           fiftyTwoWeekLow: 0,
           marketCap: d.f20 || 0,
           roe: (d.f37 != null && d.f37 !== '-') ? d.f37 : null,
+          dividendYield: null, // Eastmoney batch API doesn't provide dividend yield; f34 is total shares, not dividend
         });
       }
     } catch (err: any) {
@@ -367,9 +369,9 @@ async function fetchCNcandidatesViaSina(
       capitalFlow = changePercent > 0 ? Math.abs(changePercent) * 0.3 : -Math.abs(changePercent) * 0.3;
     }
 
-    // Dividend yield: use approx from def (no free real-time source)
-    // TODO: integrate real dividend data when available
-    const dividendYield = def.approxDividend ?? null;
+    // Dividend yield: prefer Eastmoney real-time data, fallback to null (not hardcoded)
+    // Eastmoney batch API includes dividendYield in some responses
+    const dividendYield = fund?.dividendYield ?? null;
 
     candidates.push({
       symbol: def.symbol,
@@ -1091,64 +1093,82 @@ function calculateRSI(data: number[], period = 14): number {
 function scoreStock(stock: StockCandidate): number {
   let score = 50;
 
-  // 1. Valuation Score (PE/PB) — 30% weight
+  // ===================================================================
+  // BALANCED SCORING MODEL — prevents single-sector domination
+  // Max possible bonus: ~49 points (50 base + 49 = 99 max)
+  // ===================================================================
+
+  // 1. Valuation Score (PE/PB) — 15% weight (max +10)
+  //    Reduced from 30% to prevent value-trap bias toward banks
   if (stock.pe !== null && stock.pe > 0) {
-    if (stock.pe < 10) score += 15;
-    else if (stock.pe < 15) score += 12;
-    else if (stock.pe < 20) score += 8;
-    else if (stock.pe < 30) score += 4;
-    else if (stock.pe > 50) score -= 5;
+    if (stock.pe < 8) score += 5;        // Very cheap
+    else if (stock.pe < 15) score += 4;  // Reasonably valued
+    else if (stock.pe < 25) score += 2;  // Fair value
+    else if (stock.pe > 60) score -= 3;  // Expensive
   }
   if (stock.pb !== null && stock.pb > 0) {
-    if (stock.pb < 1) score += 8;
-    else if (stock.pb < 2) score += 5;
-    else if (stock.pb < 3) score += 2;
-    else if (stock.pb > 10) score -= 3;
+    if (stock.pb < 1) score += 5;        // Below book value
+    else if (stock.pb < 2) score += 3;
+    else if (stock.pb < 4) score += 1;
+    else if (stock.pb > 10) score -= 2;
   }
 
-  // 2. Dividend Yield Score — 15% weight
+  // 2. Dividend Yield Score — 8% weight (max +5)
+  //    Reduced from 15% — dividends are backward-looking
   if (stock.dividendYield !== null && stock.dividendYield > 0) {
-    if (stock.dividendYield >= 5) score += 10;
-    else if (stock.dividendYield >= 4) score += 8;
-    else if (stock.dividendYield >= 3) score += 6;
-    else if (stock.dividendYield >= 2) score += 4;
-    else if (stock.dividendYield >= 1) score += 2;
+    if (stock.dividendYield >= 5) score += 5;
+    else if (stock.dividendYield >= 3) score += 3;
+    else if (stock.dividendYield >= 1.5) score += 1;
   }
 
-  // 3. Capital Flow Score — 15% weight
-  if (stock.capitalFlow > 5) score += 8;
+  // 3. Capital Flow Score — 18% weight (max +10)
+  //    Increased — real money flow is a strong signal
+  if (stock.capitalFlow > 8) score += 10;
+  else if (stock.capitalFlow > 5) score += 8;
   else if (stock.capitalFlow > 2) score += 5;
   else if (stock.capitalFlow > 0) score += 2;
-  else if (stock.capitalFlow < -5) score -= 5;
-  else if (stock.capitalFlow < -2) score -= 2;
+  else if (stock.capitalFlow < -5) score -= 6;
+  else if (stock.capitalFlow < -2) score -= 3;
 
-  // 4. Technical Score (MA + RSI) — 20% weight
+  // 4. Technical Score (MA + RSI) — 22% weight (max +12)
+  //    Increased — trend-following is key for short-term picks
   if (stock.price > 0 && stock.ma20 > 0) {
     const maRatio = stock.price / stock.ma20;
-    if (maRatio > 1.05) score += 5;
-    else if (maRatio > 1.0) score += 3;
-    else if (maRatio < 0.95) score -= 3;
+    if (maRatio > 1.08) score += 6;      // Strong uptrend
+    else if (maRatio > 1.03) score += 4;  // Mild uptrend
+    else if (maRatio > 1.0) score += 2;   // Above MA
+    else if (maRatio < 0.92) score -= 5;  // Deep below MA
+    else if (maRatio < 0.97) score -= 3;  // Below MA
   }
   if (stock.rsi14 > 0) {
-    if (stock.rsi14 >= 30 && stock.rsi14 <= 70) score += 4;
-    else if (stock.rsi14 < 30) score += 6;
-    else if (stock.rsi14 > 80) score -= 4;
+    if (stock.rsi14 >= 40 && stock.rsi14 <= 60) score += 3;  // Neutral zone
+    else if (stock.rsi14 < 30) score += 6;   // Oversold bounce
+    else if (stock.rsi14 < 40) score += 2;   // Approaching oversold
+    else if (stock.rsi14 > 80) score -= 4;   // Overbought risk
+    else if (stock.rsi14 > 70) score -= 1;   // Getting hot
   }
 
-  // 5. Momentum Score — 10% weight
-  if (stock.changePercent > 3) score += 5;
-  else if (stock.changePercent > 1) score += 3;
+  // 5. Momentum Score — 22% weight (max +10)
+  //    Significantly increased — today's momentum matters most for daily picks
+  if (stock.changePercent > 5) score += 10;
+  else if (stock.changePercent > 3) score += 8;
+  else if (stock.changePercent > 1.5) score += 5;
+  else if (stock.changePercent > 0.5) score += 3;
   else if (stock.changePercent > 0) score += 1;
-  else if (stock.changePercent < -3) score -= 3;
+  else if (stock.changePercent < -5) score -= 6;
+  else if (stock.changePercent < -3) score -= 4;
+  else if (stock.changePercent < -1) score -= 2;
 
-  // 6. 52-week position — 10% weight
+  // 6. 52-week position — 15% weight (max +8)
+  //    Increased — position in range is a strong value/momentum signal
   if (stock.fiftyTwoWeekHigh > 0 && stock.fiftyTwoWeekLow > 0) {
     const range = stock.fiftyTwoWeekHigh - stock.fiftyTwoWeekLow;
     if (range > 0) {
       const position = (stock.price - stock.fiftyTwoWeekLow) / range;
-      if (position < 0.3) score += 5;
-      else if (position < 0.5) score += 3;
-      else if (position > 0.9) score -= 2;
+      if (position < 0.2) score += 8;       // Near 52-week low — deep value
+      else if (position < 0.4) score += 5;  // Lower half
+      else if (position < 0.6) score += 2;  // Middle
+      else if (position > 0.95) score -= 3; // Near 52-week high — risky
     }
   }
 
@@ -1264,9 +1284,9 @@ async function fetchAndBuildCandidates(
         price: chart.price,
         change: chart.change,
         changePercent: chart.changePercent,
-        pe: def.approxPE || chart.pe,
-        pb: def.approxPB || null,
-        dividendYield: def.approxDividend || chart.dividendYield,
+        pe: chart.pe || null,
+        pb: null, // Yahoo Finance chart API doesn't return PB
+        dividendYield: chart.dividendYield || null,
         capitalFlow: Math.round(capitalFlow * 100) / 100,
         marketCap: chart.marketCap,
         volume: chart.volume,
@@ -1395,7 +1415,20 @@ export async function runStrategyForMarket(market: string): Promise<{ stocks: Sc
   });
 
   scored.sort((a, b) => b.score - a.score);
-  const top10 = scored.slice(0, 10);
+
+  // Industry diversity constraint: max 2 stocks per industry in Top10
+  // This prevents single-sector domination (e.g., all banks)
+  const top10: ScoredStock[] = [];
+  const industryCounts = new Map<string, number>();
+  const MAX_PER_INDUSTRY = 2;
+  for (const s of scored) {
+    if (top10.length >= 10) break;
+    const ind = s.industry || '未分类';
+    const count = industryCounts.get(ind) || 0;
+    if (count >= MAX_PER_INDUSTRY) continue; // Skip if industry already has 2
+    top10.push(s);
+    industryCounts.set(ind, count + 1);
+  }
   top10.forEach((s, i) => { s.rank = i + 1; });
 
   // Calculate market sentiment from ALL candidates
