@@ -1,8 +1,8 @@
 // ===================================================================
 // Crypto Investment Board — 主流币 vs 空气币/永续合约 投资看板
-// 后端定时任务：CoinGecko 数据抓取 → DB持久化 + 内存缓存
-// 包含Logo图标 + 7日迷你K线数据
-// 零AI token消耗，纯API数据驱动
+// 后端定时任务：Binance(主) + CoinGecko(辅) 数据抓取 → DB持久化 + 内存缓存
+// Binance: 实时价格/涨跌幅/成交额（无限流量，3594+交易对）
+// CoinGecko: Logo + Sparkline7d + Binance未覆盖币种的价格
 // ===================================================================
 
 import { getDb } from './db';
@@ -81,59 +81,108 @@ export async function loadCacheFromDB(): Promise<CryptoBoardData | null> {
 }
 
 // ===================================================================
-// Coin definitions — CoinGecko ID + display info
+// Coin definitions — with Binance symbol mapping
 // ===================================================================
 interface CoinDef {
-  id: string;          // CoinGecko API ID
-  symbol: string;      // Display symbol (e.g. TRUMP)
-  name: string;        // Display name
-  category?: string;   // 'binance-alpha' | 'tron-chain' | 'perp'
+  id: string;              // CoinGecko API ID
+  symbol: string;          // Display symbol (e.g. TRUMP)
+  name: string;            // Display name
+  category?: string;       // 'binance-alpha' | 'tron-chain' | 'perp'
+  binanceSymbol?: string;  // Binance trading pair (e.g. "BTCUSDT"), undefined = not on Binance
 }
 
-// 主流币前10
+// 主流币前10 — all available on Binance
 const MAINSTREAM_DEFS: CoinDef[] = [
-  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' },
-  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
-  { id: 'solana', symbol: 'SOL', name: 'Solana' },
-  { id: 'binancecoin', symbol: 'BNB', name: 'BNB' },
-  { id: 'ripple', symbol: 'XRP', name: 'XRP' },
-  { id: 'cardano', symbol: 'ADA', name: 'Cardano' },
-  { id: 'avalanche-2', symbol: 'AVAX', name: 'Avalanche' },
-  { id: 'tron', symbol: 'TRX', name: 'TRON' },
-  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin' },
-  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink' },
+  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', binanceSymbol: 'BTCUSDT' },
+  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', binanceSymbol: 'ETHUSDT' },
+  { id: 'solana', symbol: 'SOL', name: 'Solana', binanceSymbol: 'SOLUSDT' },
+  { id: 'binancecoin', symbol: 'BNB', name: 'BNB', binanceSymbol: 'BNBUSDT' },
+  { id: 'ripple', symbol: 'XRP', name: 'XRP', binanceSymbol: 'XRPUSDT' },
+  { id: 'cardano', symbol: 'ADA', name: 'Cardano', binanceSymbol: 'ADAUSDT' },
+  { id: 'avalanche-2', symbol: 'AVAX', name: 'Avalanche', binanceSymbol: 'AVAXUSDT' },
+  { id: 'tron', symbol: 'TRX', name: 'TRON', binanceSymbol: 'TRXUSDT' },
+  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', binanceSymbol: 'DOGEUSDT' },
+  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', binanceSymbol: 'LINKUSDT' },
 ];
 
 // 空气币/永续合约 — 用户指定列表
 const MEME_DEFS: CoinDef[] = [
   // 永续合约
-  { id: 'official-trump', symbol: 'TRUMP', name: 'Official Trump', category: 'perp' },
-  { id: 'worldcoin-wld', symbol: 'WLD', name: 'Worldcoin', category: 'perp' },
-  { id: 'hyperliquid', symbol: 'HYPE', name: 'Hyperliquid', category: 'perp' },
-  { id: 'aster-2', symbol: 'ASTER', name: 'Aster', category: 'perp' },
-  { id: 'myx-finance', symbol: 'MYX', name: 'MYX Finance', category: 'perp' },
-  { id: 'chainopera-ai', symbol: 'COAI', name: 'ChainOpera AI', category: 'perp' },
-  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', category: 'perp' },
-  { id: 'callisto-network', symbol: 'CLO', name: 'Callisto', category: 'perp' },
-  { id: 'pump-fun', symbol: 'PUMP', name: 'Pump.fun', category: 'perp' },
-  { id: 'sun-token', symbol: 'SUN', name: 'Sun Token', category: 'perp' },
-  { id: 'deagentai', symbol: 'AIA', name: 'DeAgentAI', category: 'perp' },
-  { id: 'tether-gold', symbol: 'XAU', name: 'Tether Gold', category: 'perp' },
-  { id: 'matrixdock-silver', symbol: 'XAG', name: 'Matrixdock Silver', category: 'perp' },
-  { id: 'world-liberty-financial', symbol: 'WLFI', name: 'World Liberty Financial', category: 'perp' },
-  { id: 'lorenzo-protocol', symbol: 'BANK', name: 'Lorenzo Protocol', category: 'perp' },
+  { id: 'official-trump', symbol: 'TRUMP', name: 'Official Trump', category: 'perp', binanceSymbol: 'TRUMPUSDT' },
+  { id: 'worldcoin-wld', symbol: 'WLD', name: 'Worldcoin', category: 'perp', binanceSymbol: 'WLDUSDT' },
+  { id: 'hyperliquid', symbol: 'HYPE', name: 'Hyperliquid', category: 'perp' },  // NOT on Binance
+  { id: 'aster-2', symbol: 'ASTER', name: 'Aster', category: 'perp', binanceSymbol: 'ASTERUSDT' },
+  { id: 'myx-finance', symbol: 'MYX', name: 'MYX Finance', category: 'perp', binanceSymbol: 'MYXUSDT' },
+  { id: 'chainopera-ai', symbol: 'COAI', name: 'ChainOpera AI', category: 'perp', binanceSymbol: 'COAIUSDT' },
+  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', category: 'perp', binanceSymbol: 'DOGEUSDT' },
+  { id: 'callisto-network', symbol: 'CLO', name: 'Callisto', category: 'perp', binanceSymbol: 'CLOUSDT' },
+  { id: 'pump-fun', symbol: 'PUMP', name: 'Pump.fun', category: 'perp', binanceSymbol: 'PUMPUSDT' },
+  { id: 'sun-token', symbol: 'SUN', name: 'Sun Token', category: 'perp', binanceSymbol: 'SUNUSDT' },
+  { id: 'deagentai', symbol: 'AIA', name: 'DeAgentAI', category: 'perp', binanceSymbol: 'AIAUSDT' },
+  { id: 'tether-gold', symbol: 'XAU', name: 'Tether Gold', category: 'perp' },  // NOT on Binance (XAUTUSDT)
+  { id: 'matrixdock-silver', symbol: 'XAG', name: 'Matrixdock Silver', category: 'perp', binanceSymbol: 'XAGUSDT' },
+  { id: 'world-liberty-financial', symbol: 'WLFI', name: 'World Liberty Financial', category: 'perp', binanceSymbol: 'WLFIUSDT' },
+  { id: 'lorenzo-protocol', symbol: 'BANK', name: 'Lorenzo Protocol', category: 'perp', binanceSymbol: 'BANKUSDT' },
   // Binance Alpha
-  { id: 'dexlab-2', symbol: 'XLAB', name: 'Dexlab', category: 'binance-alpha' },
-  { id: 'rwa-inc', symbol: 'RWA', name: 'RWA Inc.', category: 'binance-alpha' },
-  { id: 'million', symbol: 'MM', name: 'Million', category: 'binance-alpha' },
-  { id: 'u', symbol: 'U', name: 'U', category: 'binance-alpha' },
-  { id: 'pingpong', symbol: 'PINGPONG', name: 'PINGPONG', category: 'binance-alpha' },
+  { id: 'dexlab-2', symbol: 'XLAB', name: 'Dexlab', category: 'binance-alpha', binanceSymbol: 'XLABUSDT' },
+  { id: 'rwa-inc', symbol: 'RWA', name: 'RWA Inc.', category: 'binance-alpha', binanceSymbol: 'RWAUSDT' },
+  { id: 'million', symbol: 'MM', name: 'Million', category: 'binance-alpha', binanceSymbol: 'MMUSDT' },
+  { id: 'u', symbol: 'U', name: 'U', category: 'binance-alpha', binanceSymbol: 'UUSDT' },
+  { id: 'pingpong', symbol: 'PINGPONG', name: 'PINGPONG', category: 'binance-alpha', binanceSymbol: 'PINGPONGUSDT' },
   // 波场链上
   { id: '', symbol: 'TRONLIFE', name: '波场人生', category: 'tron-chain' },
 ];
 
 // ===================================================================
-// CoinGecko fetch with sparkline + logo (with retry)
+// Binance API — Primary data source (fast, unlimited)
+// ===================================================================
+interface BinanceTicker {
+  symbol: string;
+  lastPrice: string;
+  priceChangePercent: string;
+  quoteVolume: string;
+}
+
+// Cache the full Binance ticker list (refreshed every fetch cycle)
+let binanceTickerMap: Map<string, BinanceTicker> = new Map();
+
+async function fetchBinanceAllTickers(): Promise<Map<string, BinanceTicker>> {
+  try {
+    const resp = await fetch('https://api.binance.com/api/v3/ticker/24hr', {
+      headers: { 'User-Agent': UA },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!resp.ok) throw new Error(`Binance HTTP ${resp.status}`);
+    const data: BinanceTicker[] = await resp.json();
+    
+    const map = new Map<string, BinanceTicker>();
+    for (const t of data) {
+      map.set(t.symbol, t);
+    }
+    
+    console.log(`[CryptoBoard] Binance: ${data.length} tickers fetched`);
+    binanceTickerMap = map;
+    return map;
+  } catch (err: any) {
+    console.error('[CryptoBoard] Binance fetch failed:', err?.message);
+    // Return previous cache if available
+    return binanceTickerMap;
+  }
+}
+
+function getBinancePrice(def: CoinDef, tickerMap: Map<string, BinanceTicker>): { price: number; change24h: number; volume24h: number } | null {
+  if (!def.binanceSymbol) return null;
+  const ticker = tickerMap.get(def.binanceSymbol);
+  if (!ticker) return null;
+  const price = parseFloat(ticker.lastPrice);
+  const change = parseFloat(ticker.priceChangePercent);
+  const volume = parseFloat(ticker.quoteVolume);
+  if (isNaN(price) || price === 0) return null;
+  return { price, change24h: change, volume24h: volume };
+}
+
+// ===================================================================
+// CoinGecko — Fallback for prices + Logo/Sparkline enrichment
 // ===================================================================
 async function fetchWithRetry(url: string, retries = 2): Promise<any> {
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -143,9 +192,9 @@ async function fetchWithRetry(url: string, retries = 2): Promise<any> {
         signal: AbortSignal.timeout(20000),
       });
       if (resp.status === 429) {
-        console.warn(`[CryptoBoard] Rate limited (429), attempt ${attempt + 1}/${retries + 1}`);
+        console.warn(`[CryptoBoard] CoinGecko rate limited (429), attempt ${attempt + 1}/${retries + 1}`);
         if (attempt < retries) {
-          await sleep(5000 * (attempt + 1)); // exponential backoff
+          await sleep(5000 * (attempt + 1));
           continue;
         }
         throw new Error('CoinGecko rate limited (429)');
@@ -162,62 +211,74 @@ async function fetchWithRetry(url: string, retries = 2): Promise<any> {
   }
 }
 
-async function fetchCoinsWithDetails(defs: CoinDef[]): Promise<CryptoCoin[]> {
+// Logo + Sparkline cache (updated less frequently than prices)
+interface CoinEnrichment {
+  logo: string;
+  sparkline7d: number[];
+  marketCap: number;
+}
+const enrichmentCache = new Map<string, CoinEnrichment>();
+let lastEnrichmentFetch = 0;
+const ENRICHMENT_TTL = 60 * 60 * 1000; // 1 hour — logos and sparklines don't change often
+
+async function fetchCoinGeckoEnrichment(defs: CoinDef[]): Promise<void> {
+  // Only refresh enrichment data every hour
+  if (Date.now() - lastEnrichmentFetch < ENRICHMENT_TTL && enrichmentCache.size > 0) {
+    console.log('[CryptoBoard] Enrichment cache still fresh, skipping CoinGecko fetch');
+    return;
+  }
+
   const cgDefs = defs.filter(d => d.id);
-  const nonCgDefs = defs.filter(d => !d.id);
-  const coins: CryptoCoin[] = [];
+  if (cgDefs.length === 0) return;
 
-  if (cgDefs.length > 0) {
-    try {
-      const idsParam = cgDefs.map(d => d.id).join(',');
-      const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${idsParam}&order=market_cap_desc&per_page=50&page=1&sparkline=true`;
-      const data: any[] = await fetchWithRetry(url);
+  try {
+    const idsParam = cgDefs.map(d => d.id).join(',');
+    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${idsParam}&order=market_cap_desc&per_page=50&page=1&sparkline=true`;
+    const data: any[] = await fetchWithRetry(url);
 
-      const dataMap = new Map<string, any>();
-      for (const d of data) {
-        dataMap.set(d.id, d);
-      }
-
-      for (const def of cgDefs) {
-        const d = dataMap.get(def.id);
-        if (d) {
-          const rawSparkline = d.sparkline_in_7d?.price || [];
-          const sparkline = downsampleSparkline(rawSparkline, 28);
-          coins.push({
-            name: def.name,
-            symbol: def.symbol,
-            price: d.current_price || 0,
-            change24h: d.price_change_percentage_24h || 0,
-            marketCap: d.market_cap || 0,
-            volume24h: d.total_volume || 0,
-            logo: d.image || '',
-            sparkline7d: sparkline,
-            rank: 0,
-          });
-        } else {
-          coins.push({
-            name: def.name, symbol: def.symbol,
-            price: 0, change24h: 0, marketCap: 0, volume24h: 0,
-            logo: '', sparkline7d: [], rank: 0,
-          });
-        }
-      }
-    } catch (err: any) {
-      console.error('[CryptoBoard] CoinGecko detailed fetch failed:', err?.message);
-      // Return null to signal total failure — caller will use DB cache
-      return [];
+    for (const d of data) {
+      const rawSparkline = d.sparkline_in_7d?.price || [];
+      const sparkline = downsampleSparkline(rawSparkline, 28);
+      enrichmentCache.set(d.id, {
+        logo: d.image || '',
+        sparkline7d: sparkline,
+        marketCap: d.market_cap || 0,
+      });
     }
+
+    lastEnrichmentFetch = Date.now();
+    console.log(`[CryptoBoard] CoinGecko enrichment: ${data.length} coins (logos+sparklines) cached`);
+  } catch (err: any) {
+    console.warn('[CryptoBoard] CoinGecko enrichment fetch failed (non-critical):', err?.message);
+    // Non-critical — we still have Binance prices
+  }
+}
+
+// Fetch price from CoinGecko for coins NOT on Binance
+async function fetchCoinGeckoPrices(defs: CoinDef[]): Promise<Map<string, { price: number; change24h: number; volume24h: number; marketCap: number }>> {
+  const result = new Map<string, { price: number; change24h: number; volume24h: number; marketCap: number }>();
+  const cgDefs = defs.filter(d => d.id && !d.binanceSymbol);
+  if (cgDefs.length === 0) return result;
+
+  try {
+    const idsParam = cgDefs.map(d => d.id).join(',');
+    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${idsParam}&order=market_cap_desc&per_page=50&page=1&sparkline=false`;
+    const data: any[] = await fetchWithRetry(url);
+
+    for (const d of data) {
+      result.set(d.id, {
+        price: d.current_price || 0,
+        change24h: d.price_change_percentage_24h || 0,
+        volume24h: d.total_volume || 0,
+        marketCap: d.market_cap || 0,
+      });
+    }
+    console.log(`[CryptoBoard] CoinGecko fallback prices: ${data.length} coins (for non-Binance coins)`);
+  } catch (err: any) {
+    console.warn('[CryptoBoard] CoinGecko fallback price fetch failed:', err?.message);
   }
 
-  for (const def of nonCgDefs) {
-    coins.push({
-      name: def.name, symbol: def.symbol,
-      price: 0, change24h: 0, marketCap: 0, volume24h: 0,
-      logo: '', sparkline7d: [], rank: 0,
-    });
-  }
-
-  return coins;
+  return result;
 }
 
 function downsampleSparkline(data: number[], targetSize: number): number[] {
@@ -233,15 +294,71 @@ function downsampleSparkline(data: number[], targetSize: number): number[] {
 }
 
 // ===================================================================
-// Fetch functions
+// Hybrid fetch: Binance (primary) + CoinGecko (fallback + enrichment)
 // ===================================================================
-async function fetchMainstreamCoins(): Promise<CryptoCoin[]> {
-  const coins = await fetchCoinsWithDetails(MAINSTREAM_DEFS);
+async function fetchCoinsHybrid(defs: CoinDef[], binanceMap: Map<string, BinanceTicker>): Promise<CryptoCoin[]> {
+  // Get CoinGecko prices for coins not on Binance
+  const nonBinanceDefs = defs.filter(d => !d.binanceSymbol && d.id);
+  const cgPrices = nonBinanceDefs.length > 0 ? await fetchCoinGeckoPrices(defs) : new Map();
+
+  const coins: CryptoCoin[] = [];
+
+  for (const def of defs) {
+    // Try Binance first
+    const binanceData = getBinancePrice(def, binanceMap);
+    
+    if (binanceData) {
+      // Got price from Binance — enrich with CoinGecko logo/sparkline from cache
+      const enrichment = enrichmentCache.get(def.id);
+      coins.push({
+        name: def.name,
+        symbol: def.symbol,
+        price: binanceData.price,
+        change24h: binanceData.change24h,
+        volume24h: binanceData.volume24h,
+        marketCap: enrichment?.marketCap || 0,
+        logo: enrichment?.logo || '',
+        sparkline7d: enrichment?.sparkline7d || [],
+        rank: 0,
+      });
+    } else if (def.id && cgPrices.has(def.id)) {
+      // Fallback to CoinGecko price (for HYPE, XAU, etc.)
+      const cg = cgPrices.get(def.id)!;
+      const enrichment = enrichmentCache.get(def.id);
+      coins.push({
+        name: def.name,
+        symbol: def.symbol,
+        price: cg.price,
+        change24h: cg.change24h,
+        volume24h: cg.volume24h,
+        marketCap: cg.marketCap || enrichment?.marketCap || 0,
+        logo: enrichment?.logo || '',
+        sparkline7d: enrichment?.sparkline7d || [],
+        rank: 0,
+      });
+    } else {
+      // No data available (TRONLIFE or failed fetch)
+      coins.push({
+        name: def.name, symbol: def.symbol,
+        price: 0, change24h: 0, marketCap: 0, volume24h: 0,
+        logo: '', sparkline7d: [], rank: 0,
+      });
+    }
+  }
+
+  return coins;
+}
+
+// ===================================================================
+// Fetch functions (using hybrid approach)
+// ===================================================================
+async function fetchMainstreamCoins(binanceMap: Map<string, BinanceTicker>): Promise<CryptoCoin[]> {
+  const coins = await fetchCoinsHybrid(MAINSTREAM_DEFS, binanceMap);
   return coins.map((c, i) => ({ ...c, rank: i + 1 }));
 }
 
-async function fetchMemeCoins(): Promise<CryptoCoin[]> {
-  const coins = await fetchCoinsWithDetails(MEME_DEFS);
+async function fetchMemeCoins(binanceMap: Map<string, BinanceTicker>): Promise<CryptoCoin[]> {
+  const coins = await fetchCoinsHybrid(MEME_DEFS, binanceMap);
   const withPrice = coins.filter(c => c.price > 0).length;
   console.log(`[CryptoBoard] Meme coins fetched: ${withPrice}/${MEME_DEFS.length} with price data`);
   return coins.map((c, i) => ({ ...c, rank: i + 1 }));
@@ -295,7 +412,7 @@ function hasRealData(coins: CryptoCoin[]): boolean {
 }
 
 // ===================================================================
-// Main Job Runner — staggered requests with DB persistence
+// Main Job Runner — Binance first, CoinGecko enrichment
 // ===================================================================
 let isRunning = false;
 
@@ -307,33 +424,38 @@ export async function runCryptoBoardJob(): Promise<CryptoBoardData | null> {
   isRunning = true;
 
   try {
-    console.log('[CryptoBoard] Starting data fetch (with logos + sparklines)...');
+    console.log('[CryptoBoard] Starting data fetch (Binance primary + CoinGecko enrichment)...');
 
-    // Step 1: Fetch global data (BTC dominance) — always try this first
+    // Step 1: Fetch ALL Binance tickers in one call (fast, ~2s)
+    const binanceMap = await fetchBinanceAllTickers();
+    const binanceOk = binanceMap.size > 0;
+    console.log(`[CryptoBoard] Binance: ${binanceMap.size} tickers available`);
+
+    // Step 2: Fetch CoinGecko enrichment (logos + sparklines) — only every hour
+    const allDefs = [...MAINSTREAM_DEFS, ...MEME_DEFS];
+    await fetchCoinGeckoEnrichment(allDefs);
+
+    // Step 3: Fetch global data (BTC dominance) from CoinGecko
     const globalData = await fetchGlobalData();
-    await sleep(3000);
 
-    // Step 2: Fetch mainstream coins
-    const mainstream = await fetchMainstreamCoins();
-    await sleep(3000);
+    // Step 4: Fetch mainstream coins (Binance primary)
+    const mainstream = await fetchMainstreamCoins(binanceMap);
 
-    // Step 3: Fetch meme coins
-    const memeCoins = await fetchMemeCoins();
+    // Step 5: Fetch meme coins (Binance primary + CoinGecko fallback for HYPE/XAU)
+    const memeCoins = await fetchMemeCoins(binanceMap);
 
-    // Step 4: Generate advice (always works as long as we have BTC dominance)
+    // Step 6: Generate advice
     const advice = generateAdvice(globalData.btcDominance);
 
-    // Step 5: Determine if we got real data or just placeholders
+    // Step 7: Determine if we got real data
     const mainstreamHasData = hasRealData(mainstream);
     const memeHasData = hasRealData(memeCoins);
 
-    // If both lists failed (all price=0), merge with DB cache to preserve last good data
+    // If both lists failed, merge with DB cache
     if (!mainstreamHasData || !memeHasData) {
       console.warn(`[CryptoBoard] Partial failure: mainstream=${mainstreamHasData}, meme=${memeHasData}. Merging with cached data...`);
       
-      // Load previous good data from DB or memory
       const prevData = cachedBoard || await loadCacheFromDB();
-      
       const finalMainstream = mainstreamHasData ? mainstream : (prevData?.mainstream || mainstream);
       const finalMeme = memeHasData ? memeCoins : (prevData?.meme || memeCoins);
 
@@ -348,17 +470,15 @@ export async function runCryptoBoardJob(): Promise<CryptoBoardData | null> {
       };
 
       cachedBoard = board;
-
-      // Only save to DB if we have at least some real data
       if (hasRealData(finalMainstream) || hasRealData(finalMeme)) {
         await saveCacheToDB(board);
       }
 
-      console.log(`[CryptoBoard] Updated (merged): ${finalMainstream.length} mainstream (real=${hasRealData(finalMainstream)}), ${finalMeme.length} meme (real=${hasRealData(finalMeme)})`);
+      console.log(`[CryptoBoard] Updated (merged): ${finalMainstream.length} mainstream, ${finalMeme.length} meme`);
       return board;
     }
 
-    // Full success — save fresh data
+    // Full success
     const board: CryptoBoardData = {
       mainstream,
       meme: memeCoins,
@@ -371,7 +491,10 @@ export async function runCryptoBoardJob(): Promise<CryptoBoardData | null> {
 
     cachedBoard = board;
     await saveCacheToDB(board);
-    console.log(`[CryptoBoard] Updated: ${mainstream.length} mainstream, ${memeCoins.length} meme, BTC dom=${globalData.btcDominance.toFixed(1)}%`);
+    
+    const binanceCount = [...MAINSTREAM_DEFS, ...MEME_DEFS].filter(d => d.binanceSymbol).length;
+    const cgFallbackCount = [...MAINSTREAM_DEFS, ...MEME_DEFS].filter(d => !d.binanceSymbol && d.id).length;
+    console.log(`[CryptoBoard] Updated: ${mainstream.length} mainstream, ${memeCoins.length} meme, BTC dom=${globalData.btcDominance.toFixed(1)}% | Sources: Binance=${binanceCount}, CoinGecko fallback=${cgFallbackCount}`);
     return board;
   } catch (err: any) {
     console.error('[CryptoBoard] Job failed:', err?.message);
@@ -411,8 +534,6 @@ export interface OHLCCandle {
 }
 
 // CoinGecko OHLC endpoint: /coins/{id}/ohlc?vs_currency=usd&days=N
-// days: 1, 7, 14, 30, 90, 180, 365, max
-// Returns: [[timestamp_ms, open, high, low, close], ...]
 const OHLC_CACHE = new Map<string, { data: OHLCCandle[]; ts: number }>();
 const OHLC_CACHE_TTL = 5 * 60_000; // 5 min
 
@@ -440,16 +561,15 @@ export async function fetchOHLC(coinId: string, days: number): Promise<OHLCCandl
     return candles;
   } catch (err: any) {
     console.error(`[CryptoBoard] OHLC fetch failed for ${coinId} (days=${days}):`, err?.message);
-    // Return cached if available even if stale
     if (cached) return cached.data;
     return [];
   }
 }
 
 // ===================================================================
-// Scheduler — load DB cache on start, then fetch fresh data
+// Scheduler — Binance-first with CoinGecko enrichment
 // ===================================================================
-const CRYPTO_BOARD_INTERVAL = 5 * 60 * 1000; // 5 minutes — crypto trades 24/7, need frequent updates
+const CRYPTO_BOARD_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 export function startCryptoBoardScheduler() {
   // Immediately load from DB cache so data is available right away
@@ -458,7 +578,6 @@ export function startCryptoBoardScheduler() {
     const dbData = await loadCacheFromDB();
     if (dbData) {
       cachedBoard = dbData;
-      // Regenerate advice with current BTC dominance from cache
       const advice = generateAdvice(dbData.btcDominance);
       cachedBoard.advice = advice.zh;
       cachedBoard.adviceEn = advice.en;
@@ -469,7 +588,7 @@ export function startCryptoBoardScheduler() {
 
     // Then fetch fresh data after a short delay
     setTimeout(() => {
-      console.log('[CryptoBoard] Initial fresh data fetch starting...');
+      console.log('[CryptoBoard] Initial fresh data fetch starting (Binance primary)...');
       runCryptoBoardJob();
     }, 10_000);
   }, 5_000);
@@ -478,5 +597,5 @@ export function startCryptoBoardScheduler() {
     runCryptoBoardJob();
   }, CRYPTO_BOARD_INTERVAL);
 
-  console.log('[CryptoBoard] Scheduler registered: DB cache in 5s, fresh fetch in 15s, then every 5min');
+  console.log('[CryptoBoard] Scheduler registered: DB cache in 5s, fresh fetch in 15s, then every 5min | Primary: Binance, Fallback: CoinGecko');
 }
